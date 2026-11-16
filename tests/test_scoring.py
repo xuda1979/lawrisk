@@ -59,6 +59,20 @@ class TestExplainability:
             assert p.para_index is not None
             assert isinstance(p.dimension, Dimension)
 
+    def test_every_penalty_has_mitigation(self):
+        """AC2+: every finding carries a concrete, non-empty remediation hint."""
+        paras = [
+            "This agreement automatically renews unless cancelled.",
+            "In no event shall the Provider be liable for consequential damages.",
+            "Customer shall indemnify the Provider against all third-party claims.",
+            "Provider processes personal data for any purpose.",
+        ]
+        r = score_document(paras, "d")
+        assert len(r.penalties) >= 4
+        for p in r.penalties:
+            assert isinstance(p.mitigation, str)
+            assert p.mitigation.strip(), f"{p.rule_id} missing mitigation"
+
     def test_dimension_rows_have_reasons(self):
         r = score_document(
             ["Fees increase at Provider's discretion.", "Data transfers outside the EU."], "d"

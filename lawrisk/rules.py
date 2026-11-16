@@ -46,6 +46,7 @@ class Rule:
     condition: re.Pattern[str] | None = None
     exclusion: re.Pattern[str] | None = None
     description: str = ""
+    mitigation: str = ""
 
 
 _CARVEOUT = re.compile(
@@ -63,6 +64,7 @@ RULES: List[Rule] = [
         exclusion=re.compile(r"(?:no auto[- ]?renewal|without auto[- ]?renewal|does not auto[- ]?renew)", re.IGNORECASE),
         severity=20,
         reason="Automatic renewal without an explicit opt-out window",
+        mitigation="Require explicit written opt-in for renewal, add a >60 day renewal notice window, or remove auto-renewal.",
     ),
     Rule(
         rule_id="R-COMM-2",
@@ -71,6 +73,7 @@ RULES: List[Rule] = [
         exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
         severity=25,
         reason="One-sided termination-without-cause right for the counterparty",
+        mitigation="Make termination rights mutual — require cause, mutual consent, or equal notice/fee windows for both parties.",
     ),
     Rule(
         rule_id="R-COMM-3",
@@ -78,6 +81,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"reserves the right to (?:adjust|increase|change|modify) (?:the )?(?:price|prices|fees)|price (?:increase|escalation)", re.IGNORECASE),
         severity=20,
         reason="Unilateral price adjustment clause without consent requirement",
+        mitigation="Cap annual fee increases at a fixed percentage with 60+ days written notice, or require mutual written consent.",
     ),
     Rule(
         rule_id="R-COMM-4",
@@ -85,6 +89,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"assign\s*:\s*|assign(?: this agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without", re.IGNORECASE),
         severity=20,
         reason="Assignment without the other party's prior written consent",
+        mitigation="Add mutual prior-written-consent approval for any assignment, and carve out assignment to an affiliate.",
     ),
     Rule(
         rule_id="R-COMM-5",
@@ -105,6 +110,7 @@ RULES: List[Rule] = [
         exclusion=_MUTUAL,
         severity=20,
         reason="Unilateral amendment of the agreement or its terms without mutual written consent",
+        mitigation="Require amendments to be agreed in writing by both parties; allow only limited, notice-based administrative changes.",
     ),
     # ----------------------------------------------------------------- liability
     Rule(
@@ -114,6 +120,7 @@ RULES: List[Rule] = [
         exclusion=re.compile(r"(?:fraud|death|personal injury|gross negligence|wilful misconduct|willful misconduct|neither party|both parties|each party|either party)", re.IGNORECASE),
         severity=25,
         reason="Broad disclaimer covering consequential/indirect damages",
+        mitigation="Carve out fraud, death or personal injury, gross negligence and willful misconduct from the exclusion.",
     ),
     Rule(
         rule_id="R-LIAB-2",
@@ -121,6 +128,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,40}limited to", re.IGNORECASE),
         severity=25,
         reason="Aggregate liability cap may be below expected exposure",
+        mitigation="Negotiate a cap that covers realistically foreseeable loss; base it on fees for 12 months or more.",
     ),
     Rule(
         rule_id="R-LIAB-3",
@@ -128,6 +136,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"indemnif(?:y|ies)[^.]{0,20}(?:against|from)[^.]{0,40}(?:all|any|third[ -]party|losses|damages|claims)", re.IGNORECASE),
         severity=30,
         reason="Broad indemnification obligation in favour of the counterparty",
+        mitigation="Limit indemnity to third-party IP- or breach-specific claims and add mutual caps and carve-outs.",
     ),
     Rule(
         rule_id="R-LIAB-4",
@@ -135,6 +144,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"(?:as[ -]is|without (?:any )?warrant(?:y|ies))", re.IGNORECASE),
         severity=30,
         reason='"As-is" delivery with warranties disclaimed',
+        mitigation="Restore basic warranties (conformity, availability) and remove absolute as-is disclaimers.",
     ),
     # ------------------------------------------------------------------- data
     Rule(
@@ -144,6 +154,7 @@ RULES: List[Rule] = [
         exclusion=re.compile(r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|comply (?:with|ing)|shall only be (?:used|processed)|only for the purpose|purpose of performing)", re.IGNORECASE),
         severity=20,
         reason="Personal data is in scope; GDPR/CCPA obligations arise",
+        mitigation="Confirm a lawful basis, a completed DPIA where needed, and a signed DPA annex with the counterparty.",
     ),
     Rule(
         rule_id="R-DATA-2",
@@ -151,6 +162,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"transfer[^.]{0,30}(?:personal )?data[^.]{0,30}(?:outside|abroad|to third|to (?:its|our) (?:affiliates?|subprocessors))", re.IGNORECASE),
         severity=35,
         reason="Cross-border / third-party data transfer without stated safeguards",
+        mitigation="Add standard contractual clauses, adequacy findings, or equivalent transfer safeguards before any transfer.",
     ),
     Rule(
         rule_id="R-DATA-3",
@@ -158,6 +170,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"process[^.]{0,30}data[^.]{0,20}(?:for any purpose|for (?:its|our) own(?: independent)? purposes|unlimited)", re.IGNORECASE),
         severity=25,
         reason="Data processing purpose may be too broad / unlimited",
+        mitigation="Restrict processing to documented, purpose-limited activities and add data minimisation wording.",
     ),
     # ------------------------------------------------------------------ export
     Rule(
@@ -170,6 +183,7 @@ RULES: List[Rule] = [
         ),
         severity=25,
         reason="Export/sanctions obligations appear but supporting controls are not visible in this clause",
+        mitigation="Add a dedicated export-compliance clause and confirm which party owns export classification and licensing.",
     ),
     Rule(
         rule_id="R-EXP-2",
@@ -178,6 +192,7 @@ RULES: List[Rule] = [
         pattern=re.compile(r"\b(cuba|iran|syria|north korea|crimea)\b", re.IGNORECASE),
         severity=50,
         reason="References to a sanctioned jurisdiction without a compliance carve-out",
+        mitigation="Remove any sanctioned-destination references or add an explicit sanctions-compliance and export-license carve-out.",
     ),
     Rule(
         rule_id="R-EXP-3",
@@ -187,6 +202,7 @@ RULES: List[Rule] = [
         exclusion=re.compile(r"(?:subject to|comply|controls|restrictions|screening|authorization|authorisation)", re.IGNORECASE),
         severity=30,
         reason="No export/re-export or diversion controls for deliverables",
+        mitigation="Add re-export and end-use control language; require end-user screening and any relevant licences.",
     ),
 ]
 
@@ -200,6 +216,7 @@ ABSENCE_RULES: List[Rule] = [
         pattern=re.compile(r"data (?:protection|controller|processor)|GDPR|CCPA|privacy policy|data processing agreement|DPA\b", re.IGNORECASE),
         severity=20,
         reason="Personal data handled but no data-protection / DPA terms found",
+        mitigation="Add data-protection wording and a signed DPA (or flow-down) before any personal-data processing.",
     ),
     Rule(
         rule_id="R-EXP-4",
@@ -208,6 +225,7 @@ ABSENCE_RULES: List[Rule] = [
         pattern=re.compile(r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance", re.IGNORECASE),
         severity=25,
         reason="Export activities likely, but no export-compliance clause found",
+        mitigation="Include an export-control and sanctions-compliance clause and allocate licence responsibility clearly.",
     ),
 ]
 
@@ -254,6 +272,7 @@ def _apply_paragraph_rules(
                         excerpt=_trim(para),
                         para_index=i,
                         keyword=m.group(0)[:80],
+                        mitigation=rule.mitigation,
                     )
                 )
         penalties.extend(_pick(hits))
@@ -282,6 +301,7 @@ def _apply_absence_rules(paragraphs: List[str], rules: List[Rule]) -> List[Penal
                 excerpt=_trim(paragraphs[first_hit]),
                 para_index=first_hit,
                 keyword=None,
+                mitigation=rule.mitigation,
             )
         )
     return penalties

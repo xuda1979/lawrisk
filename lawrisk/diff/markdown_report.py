@@ -50,18 +50,24 @@ def _risk_by_para(report: RiskReport) -> Dict[int, List[dict]]:
                 "dimension": p.dimension,
                 "severity": p.severity,
                 "reason": p.reason,
+                "mitigation": p.mitigation,
             }
         )
     return out
 
 
 def _format_risks(risks: List[dict]) -> str:
-    """One compact line per penalty: `R-COMM-1 (+20, commercial): reason`."""
+    """One compact line per penalty:
+    `R-COMM-1 (+20, commercial): reason — Fix: mitigation`.
+    """
     parts = []
     for r in risks:
         dim = r["dimension"]
         dim = getattr(dim, "value", dim)
-        parts.append(f"**{r['rule_id']}** (+{r['severity']}, {dim}): {r['reason']}")
+        line = f"**{r['rule_id']}** (+{r['severity']}, {dim}): {r['reason']}"
+        if r.get("mitigation"):
+            line += f" — Fix: {r['mitigation']}"
+        parts.append(line)
     return "; ".join(parts)
 
 

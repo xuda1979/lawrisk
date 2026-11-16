@@ -7,6 +7,7 @@ export interface Penalty {
   excerpt?: string | null
   para_index?: number | null
   keyword?: string | null
+  mitigation?: string | null
 }
 
 export interface DimensionScore {
@@ -63,6 +64,7 @@ export interface RowRisk {
   dimension: string
   severity: number
   reason: string
+  mitigation?: string | null
 }
 
 export interface AlignedRow {

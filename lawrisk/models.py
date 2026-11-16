@@ -37,6 +37,10 @@ class Penalty(BaseModel):
     keyword: Optional[str] = Field(
         default=None, description="Offending keyword/token that matched the rule"
     )
+    mitigation: Optional[str] = Field(
+        default=None,
+        description="Concrete, deterministic remediation suggestion for the finding",
+    )
 
 
 class DimensionScore(BaseModel):

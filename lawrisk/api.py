@@ -143,6 +143,7 @@ def _risk_by_para(report: RiskReport) -> Dict[int, List[dict]]:
                 "dimension": p.dimension,
                 "severity": p.severity,
                 "reason": p.reason,
+                "mitigation": p.mitigation,
             }
         )
     return out

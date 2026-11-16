@@ -64,6 +64,11 @@ export function RiskPanel({ title, report }: { title: string; report: RiskReport
                 {p.excerpt && (
                   <blockquote className="finding__excerpt">“{p.excerpt}”</blockquote>
                 )}
+                {p.mitigation && (
+                  <p className="finding__mitigation">
+                    <span className="finding__mitigation-label">Fix:</span> {p.mitigation}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
