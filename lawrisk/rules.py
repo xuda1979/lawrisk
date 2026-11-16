@@ -81,7 +81,7 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"(?:terminate|end|cancel)[^.]{0,40}"
             r"(?:without cause|for any(?: reason| purpose)|"
-            r"at (?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience|"
+            r"(?:at|for)\s+(?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience|"
             r"for convenience|without assigning any reason)",
             re.IGNORECASE,
         ),
@@ -94,7 +94,14 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-3",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"(?:reserves the right to (?:adjust|increase|change|modify)|may (?:adjust|increase|change|modify)|(?:can|may) adjust) (?:the )?(?:price|prices|fees|fee)|price (?:increase|escalation)", re.IGNORECASE),
+        pattern=re.compile(
+            r"(?:reserves the right to (?:adjust|increase|change|modify)|"
+            r"may (?:adjust|increase|change|modify)|(?:can|may) adjust)"
+            r" (?:the )?(?:(?:monthly|annual|yearly|service|platform|subscription|"
+            r"license|licence|usage)\s+)?(?:price|prices|fees|fee)"
+            r"|price (?:increase|escalation)",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"(?:no price increase|without (?:any )?price increase|"
             r"there (?:shall|will|can|is|be) no|"
@@ -164,8 +171,8 @@ RULES: List[Rule] = [
             r"(?:interest|penalty|service charge|finance charge)[^.;]{0,45}(?:on|for)"
             r"[^.;]{0,20}(?:overdue|delinquent|late|unpaid)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
             r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%|"
-            r"(?:interest|penalty|fee|charge)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
-            r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?"
+            r"(?:interest|penalty|fee|charge)[^.;]{0,20}(?:at|of|=)[^.;:]{0,30}"
+            r"(?:a rate of\s*)?\(?\d+(?:\.\d+)?\)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?"
             r"[^.;]{0,40}(?:on|for)[^.;]{0,20}(?:overdue|delinquent|late|unpaid)|"
             r"(?:late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge))"
             r"[^.;]{0,20}(?:of|=|at|:)\s*\$[0-9][0-9,]*(?:\.\d+)?[^.;]{0,25}"
@@ -262,6 +269,13 @@ RULES: List[Rule] = [
         rule_id="R-LIAB-4",
         dimension=Dimension.LIABILITY,
         pattern=re.compile(r"(?:as[ -]is|without (?:any )?warrant(?:y|ies))", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:warrant(?:y|ies)[^.;]{0,40}(?:set forth|in this (?:agreement|clause|section)|"
+            r"(?:shall|will) apply|remain)|"
+            r"(?:notwithstanding|except as (?:set forth|provided)|provided\s+that\b|however|but)\b"
+            r"[^.;]{0,80}warrant)",
+            re.IGNORECASE,
+        ),
         severity=30,
         reason='"As-is" delivery with warranties disclaimed',
         mitigation="Restore basic warranties (conformity, availability) and remove absolute as-is disclaimers.",
@@ -330,12 +344,21 @@ RULES: List[Rule] = [
         pattern=re.compile(r"personal (?:data|information)|personally identifiable", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|"
+            r"standard contractual clauses|sccs?|adequacy decision|appropriate safeguards|"
             r"comply (?:with|ing)|consent|lawful basis|"
             r"(?:shall|will) only be (?:used|processed)|(?:only|solely) for the purpose|"
             r"purpose of performing|"
+            r"solely to (?:provide|perform|fulfil|fulfill)|"
+            r"(?:only|solely|strictly) (?:as|to)[^.]{0,20}(?:necessary|required) (?:for|to)|"
+            r"for no other purpose|no other purpose|"
+            r"no (?:transfer|processing|collection|sharing|disclosure)(?:s)? of (?:personal )?(?:data|information)|"
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
             r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain)\s+"
-            r"personal (?:data|information))",
+            r"personal (?:data|information)|"
+            r"(?:neither|no (?:party|person))[^.;]{0,40}"
+            r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
+            r"\s+personal (?:data|information))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -416,7 +439,8 @@ RULES: List[Rule] = [
             r"(?:comply (?:with|ing)|in compliance|"
             r"subject to (?:[^.]{0,20})?(?:export|sanction)s?|"
             r"responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|"
-            r"applicable (?:export control|sanctions) laws)",
+            r"applicable (?:export control|sanctions) laws|"
+            r"with(out)? (?:the )?(?:prior |written ){0,2}authori[sz](?:ation)?)",
             re.IGNORECASE,
         ),
         severity=25,
@@ -427,12 +451,21 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-EXP-2",
         dimension=Dimension.EXPORT,
-        condition=re.compile(r"export|sanction|embargo", re.IGNORECASE),
+        condition=re.compile(
+            r"export|sanction|embargo|"
+            r"ship(?:s|ped|ping|ment|ments)?\b|deliver(?:ies|y|ed)?\b|"
+            r"order(?:s|ed|ing)?\b|sold\b|sell\b|distribut(?:e|es|ed|ing|ion)\b|"
+            r"fulfil(?:l)?(?:s|led|lment)?\b",
+            re.IGNORECASE,
+        ),
         pattern=re.compile(r"\b(cuba|iran|syria|north korea|crimea)\b", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:shall|will|must|may) not (?:be )?(?:export(?:ed)?|ship(?:ped)?|"
-            r"transfer(?:red)?|sell|sold|deliver(?:ed)?|provide(?:d)?|distribute(?:d)?)\b|"
-            r"\bno (?:export|shipment|transfer|sale|sales)[^.;]{0,40}(?:to|into)\b|"
+            r"transfer(?:red)?|sell|sold|deliver(?:ed)?|provide(?:d)?|distribute(?:d)?"
+            r"|fulfil(?:l)?(?:ed)?)\b|"
+            r"(?:are|is|were|do|does)\s+not\s+(?:be\s+)?(?:exported|shipped|transferred|sold|delivered|"
+            r"provided|distributed|fulfil(?:l)?ed)\b|"
+            r"\bno (?:export|shipment|transfer|sale|sales|fulfil(?:l)?ment)[^.;]{0,40}(?:to|into)\b|"
             r"prohibit(?:s|ed)?\b|banned\b",
             re.IGNORECASE,
         ),
@@ -447,9 +480,9 @@ RULES: List[Rule] = [
         condition=re.compile(r"deliver|ship|supply|technology|software", re.IGNORECASE),
         pattern=re.compile(r"(?:re[- ]?export|diversion|end[- ]?use)", re.IGNORECASE),
         exclusion=re.compile(
-            r"(?:require[sd]?[^.]{0,30}authoriz|obtain[^.]{0,30}authoriz|"
-            r"prior written authoriz|written authoriz(?:ation)? (?:of|from|by)|"
-            r"with (?:the )?(?:prior |written )?authoriz(?:ation)?|"
+            r"(?:require[sd]?[^.]{0,30}authori[sz]|obtain[^.]{0,30}authori[sz]|"
+            r"prior written authori[sz]|written authori[sz](?:ation)? (?:of|from|by)|"
+            r"with (?:the )?(?:prior |written )?authori[sz](?:ation)?|"
             r"subject to|comply|controls|restrictions|screening)",
             re.IGNORECASE,
         ),
@@ -474,7 +507,11 @@ ABSENCE_RULES: List[Rule] = [
         exclusion=re.compile(
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
             r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain)\s+"
-            r"personal (?:data|information)",
+            r"personal (?:data|information)|"
+            r"(?:neither|no (?:party|person))[^.;]{0,40}"
+            r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
+            r"\s+personal (?:data|information)",
             re.IGNORECASE,
         ),
         severity=20,

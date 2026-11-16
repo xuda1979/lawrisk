@@ -825,3 +825,105 @@ class TestRuleMeshes:
             ["Either party may amend this Agreement by written agreement signed by both parties."], "d"
         )
         assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_for_convenience_with_at_termination_flagged(self):
+        # Regression: "at its convenience" (the "at ... convenience" form of the
+        # one-sided termination right) must fire R-COMM-2; mutual "either party"
+        # constructions stay silent.
+        r = score_document(
+            ["Company may terminate this agreement at its own convenience, without cause and without penalty."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+        r2 = score_document(
+            ["Either party may terminate this agreement at any time for its convenience on written notice."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r2.penalties)
+
+    def test_monthly_fee_increase_flagged(self):
+        # Regression: "may increase the monthly fees" (adjective before the fee
+        # noun) is the same unilateral price right as "increase the fees" and
+        # must fire R-COMM-3.
+        r = score_document(
+            ["Provider may increase the monthly fees by up to 10% at its sole discretion."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_written_rate_unpaid_invoices_flagged(self):
+        # Regression: a written-out rate ("one and one-half percent (1.5%) per
+        # month") on unpaid invoices is an above-market late-payment rate that
+        # must fire R-COMM-6 even without an explicit comma after the amount.
+        r = score_document(
+            ["Any amounts not paid when due shall accrue interest at one and one-half percent (1.5%) per month on the unpaid balance until paid."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_denied_list_processing_not_flagged(self):
+        # Regression: a denial enumerating multiple prohibited actions ("collect,
+        # process, use, share or store") must still satisfy the R-DATA-1
+        # exclusion, and the SCC-bound transfer must not fire R-DATA-1 either.
+        r = score_document(
+            ["Neither party shall collect, process, use, share, or store personal data except as strictly necessary for performing this agreement."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties)
+
+    def test_scc_terms_do_not_fire_data_processing_rule(self):
+        # Regression: "transferred subject to the Standard Contractual Clauses"
+        # is a safeguard against unrestricted personal-data processing and must
+        # not fire R-DATA-1 (the SCC wording must not itself be the trigger).
+        r = score_document(
+            ["Customer personal data may be transferred to the provider's affiliate in the United States subject to the Standard Contractual Clauses approved by the European Commission."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-1" for p in r.penalties)
+
+    def test_authorised_reexport_permitted(self):
+        # Regression: "re-export ... without the prior written authorisation"
+        # (UK spelling) is a consent-bound control and must not fire R-EXP-1 or
+        # R-EXP-3, while an unrestricted re-export still fires both.
+        r = score_document(
+            ["No re-export or diversion of the software shall occur without the prior written authorisation of the licensor."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-EXP-1", "R-EXP-3"} for p in r.penalties)
+        r2 = score_document(
+            ["Customers may re-export the software to any country or use it for any end-use."],
+            "d",
+        )
+        assert any(p.rule_id == "R-EXP-3" for p in r2.penalties)
+
+    def test_warranty_survives_as_is_disclaimer(self):
+        # Regression: an "as-is" disclaimer with an express warranty that
+        # survives ("warranties set forth in Section 5 shall apply") is a
+        # qualified disclaimer and must not fire R-LIAB-4, while a bare as-is
+        # clause still does.
+        r = score_document(
+            ["The software is provided as-is; however, the warranties set forth in Section 5 shall apply."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-4" for p in r.penalties)
+        r2 = score_document(
+            ["Support is delivered as-is without any warranties of any kind."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-4" for p in r2.penalties)
+
+    def test_sanctioned_destination_without_export_word_flagged(self):
+        # Regression: a sales clause shipping directly to a sanctioned country
+        # without the words "export"/"sanction"/"embargo" must still fire R-EXP-2
+        # via the shipment/trade topic gate, and a prohibition statement stays
+        # silent.
+        r = score_document(
+            ["Orders shall be fulfilled worldwide; the vendor maintains a sales office in Tehran and ships directly to customers in Cuba."],
+            "d",
+        )
+        assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
+        r2 = score_document(
+            ["Orders are not fulfilled in Cuba, Iran, Syria, North Korea or Crimea."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-2" for p in r2.penalties)
