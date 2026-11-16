@@ -17,7 +17,7 @@ All endpoints are local and deterministic; LLM summarisation is optional
 from __future__ import annotations
 
 import uuid
-from typing import List
+from typing import Dict, List
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -131,19 +131,60 @@ def _risk_panel(name: str, paragraphs: List[str]) -> RiskReport:
     return score_document(paragraphs, document_id=f"{name}-{uuid.uuid4().hex[:8]}")
 
 
+def _risk_by_para(report: RiskReport) -> Dict[int, List[dict]]:
+    """Map global paragraph index -> penalties that fired on that paragraph."""
+    out: Dict[int, List[dict]] = {}
+    for p in report.penalties:
+        if p.para_index is None:
+            continue
+        out.setdefault(p.para_index, []).append(
+            {
+                "rule_id": p.rule_id,
+                "dimension": p.dimension,
+                "severity": p.severity,
+                "reason": p.reason,
+            }
+        )
+    return out
+
+
+def _attach_row_risks(rows: List[dict], risk_a: RiskReport, risk_b: RiskReport) -> List[dict]:
+    """Attribute risk penalties to diff rows.
+
+    Diff rows and the risk engine index the same global paragraph arrays, so a
+    penalty's para_index tells us exactly which changed clause carried the
+    points. Each row gains per-side lists (leftRisks/rightRisks) plus the
+    summed severity so the web diff can flag risky changed clauses.
+    """
+    left_map = _risk_by_para(risk_a)
+    right_map = _risk_by_para(risk_b)
+    for r in rows:
+        lk = r.get("leftIdx")
+        rk = r.get("rightIdx")
+        left = left_map.get(lk, []) if lk is not None else []
+        right = right_map.get(rk, []) if rk is not None else []
+        r["leftRisks"] = left
+        r["rightRisks"] = right
+        r["leftRiskSum"] = sum(p["severity"] for p in left)
+        r["rightRiskSum"] = sum(p["severity"] for p in right)
+    return rows
+
+
 @app.post("/api/diff-text", response_model=CompareResult)
 def diff_text(req: DiffTextRequest) -> CompareResult:
     if not req.left.strip() or not req.right.strip():
         raise HTTPException(status_code=422, detail="left/right must be non-empty")
     report = diff_texts(req.left, req.right, req.name_left, req.name_right)
     report = _maybe_llm_summaries(report)
-    rows = [to_dict(r) for r in aligned_rows(report)]
     paras_a = list(split_paragraphs(req.left))
     paras_b = list(split_paragraphs(req.right))
+    risk_a = _risk_panel(req.name_left, paras_a)
+    risk_b = _risk_panel(req.name_right, paras_b)
+    rows = _attach_row_risks([to_dict(r) for r in aligned_rows(report)], risk_a, risk_b)
     return CompareResult(
         diff=report.model_dump(),
-        risk_a=_risk_panel(req.name_left, paras_a),
-        risk_b=_risk_panel(req.name_right, paras_b),
+        risk_a=risk_a,
+        risk_b=risk_b,
         rows=rows,
         markdown=render_markdown(report),
         llm_enabled=describe_layer()["enabled"],
@@ -176,7 +217,7 @@ async def compare(
     risk_b = score_document(doc_b.paragraphs, doc_b.document_id)
     report = _maybe_llm_summaries(report)
 
-    rows = [to_dict(r) for r in aligned_rows(report)]
+    rows = _attach_row_risks([to_dict(r) for r in aligned_rows(report)], risk_a, risk_b)
     return CompareResult(
         diff=report.model_dump(),
         risk_a=risk_a,
@@ -231,11 +272,12 @@ async def compare_template(
     )
     baseline_full = "\n\n".join(baseline_paragraphs)
     doc_full = "\n\n".join(doc.paragraphs)
+    rows = _attach_row_risks([to_dict(r) for r in aligned_rows(report)], baseline_risk, risk)
     return CompareResult(
         diff=report.model_dump(),
         risk_a=baseline_risk,
         risk_b=risk,
-        rows=[to_dict(r) for r in aligned_rows(report)],
+        rows=rows,
         markdown=render_markdown(report),
         llm_enabled=describe_layer()["enabled"],
         facts_a=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],

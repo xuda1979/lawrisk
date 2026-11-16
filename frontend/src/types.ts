@@ -58,6 +58,13 @@ export interface DiffReportPayload {
   summary: string
 }
 
+export interface RowRisk {
+  rule_id: string
+  dimension: string
+  severity: number
+  reason: string
+}
+
 export interface AlignedRow {
   op: 'add' | 'delete' | 'modify'
   section: string
@@ -68,6 +75,10 @@ export interface AlignedRow {
   summary: string
   leftRemoved: string[]
   rightAdded: string[]
+  leftRisks?: RowRisk[]
+  rightRisks?: RowRisk[]
+  leftRiskSum?: number
+  rightRiskSum?: number
 }
 
 export interface FieldRun {

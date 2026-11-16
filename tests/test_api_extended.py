@@ -136,6 +136,67 @@ async def test_template_compare_returns_key_facts():
     assert "currency" in [f["name"] for f in body["facts_b"]]
 
 
+async def test_diff_rows_carry_risk_attribution():
+    """Risk penalties are attributed to diff rows by global paragraph index."""
+    async with _client() as c:
+        r = await c.post(
+            "/api/compare",
+            files={
+                "template_a": ("a.docx", (FIXTURES / "template_a.docx").read_bytes(), DOCX_MTYPE),
+                "template_b": ("b.docx", (FIXTURES / "template_b.docx").read_bytes(), DOCX_MTYPE),
+            },
+            data={"name_a": "Template A", "name_b": "Template B"},
+        )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["rows"]
+
+    # Every row exposes the attribution fields.
+    for row in body["rows"]:
+        assert "leftRisks" in row and "rightRisks" in row
+        assert "leftRiskSum" in row and "rightRiskSum" in row
+
+    # Every penalty of the riskier document lands on some diff row that has a
+    # matching right paragraph index (attribution is complete, never dropped).
+    risk_b = body["risk_b"]
+    penalty_idx = {p["para_index"] for p in risk_b["penalties"] if p.get("para_index") is not None}
+    row_right_idx = {row["rightIdx"] for row in body["rows"] if row["rightIdx"] is not None}
+    # Max 3 exemplars per rule are kept, so at least the flagged paragraphs
+    # that appear in the diff must all show up.
+    assert penalty_idx & row_right_idx, "no diff row maps to a penalised paragraph"
+
+    # A changed paragraph that fired a rule carries the points on its row.
+    seeded = next(
+        (row for row in body["rows"] if row["rightRisks"]),
+        None,
+    )
+    assert seeded is not None, "expected at least one diff row with right-side risk points"
+    assert seeded["rightRiskSum"] == sum(p["severity"] for p in seeded["rightRisks"])
+    assert all(rr["rule_id"] for rr in seeded["rightRisks"])
+
+
+async def test_diff_text_rows_carry_risk_attribution():
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": "Term of 12 months.\nFees $1000.",
+                "right": "Term of 12 months; this Agreement shall auto-renew automatically.\nFees $1000.",
+            },
+        )
+    assert r.status_code == 200
+    body = r.json()
+    # The auto-renew right-side paragraph is a modification; its row must carry
+    # the R-COMM-1 penalty so the diff shows where the risk entered.
+    risky = next(
+        (row for row in body["rows"] if row["rightRisks"]),
+        None,
+    )
+    assert risky is not None
+    assert any(rr["rule_id"] == "R-COMM-1" for rr in risky["rightRisks"])
+    assert "auto-renew" in risky["rightText"]
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

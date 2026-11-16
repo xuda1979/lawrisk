@@ -910,6 +910,40 @@ mark.hl-removed {
   color: var(--mod-ink);
 }
 
+/* risk attribution on diff rows */
+.risk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.risk-chip--med {
+  background: var(--mod);
+  color: var(--mod-ink);
+}
+
+.risk-chip--high {
+  background: var(--del);
+  color: var(--del-ink);
+}
+
+.risk-chip__icon {
+  flex-shrink: 0;
+}
+
+.risk-chip__rules {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
 /* markdown */
 .report-summary {
   margin: 0 0 10px;

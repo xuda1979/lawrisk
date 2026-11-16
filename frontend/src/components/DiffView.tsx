@@ -1,10 +1,43 @@
 import { useMemo, useState } from 'react'
-import type { AlignedRow } from '../types'
+import type { AlignedRow, RowRisk } from '../types'
 
 const OP_LABEL: Record<string, string> = {
   add: 'added',
   delete: 'deleted',
   modify: 'modified',
+}
+
+function RiskChip({ side, risks }: { side: 'A' | 'B'; risks: RowRisk[] }) {
+  if (risks.length === 0) return null
+  const sum = risks.reduce((acc, r) => acc + r.severity, 0)
+  return (
+    <span className={`risk-chip risk-chip--${sum >= 50 ? 'high' : 'med'}`} title={risks.map((r) => `${r.rule_id}: ${r.reason}`).join('\n')}>
+      <svg
+        className="risk-chip__icon"
+        width="9"
+        height="9"
+        viewBox="0 0 10 10"
+        aria-hidden="true"
+      >
+        <path d="M5 0 L10 9 L0 9 Z" fill="currentColor" />
+      </svg>
+      {side} +{sum} pts
+      <span className="risk-chip__rules">{risks.map((r) => r.rule_id).join(' ')}</span>
+    </span>
+  )
+}
+
+function diffMeta(row: AlignedRow) {
+  const l = row.leftRisks ?? []
+  const r = row.rightRisks ?? []
+  return (
+    <>
+      <RiskChip side="A" risks={l} />
+      <RiskChip side="B" risks={r} />
+      <span className={`pill pill--${row.op}`}>{OP_LABEL[row.op]}</span>
+      <em>{row.summary}</em>
+    </>
+  )
 }
 
 function inline(text: string | null, mark: string[], op: string) {
@@ -100,8 +133,7 @@ export function DiffView({
                 />
               </div>
               <div className="diff-meta">
-                <span className={`pill pill--${row.op}`}>{OP_LABEL[row.op]}</span>
-                <em>{row.summary}</em>
+                {diffMeta(row)}
               </div>
             </div>
           ))}
