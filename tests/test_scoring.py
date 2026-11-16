@@ -1214,3 +1214,115 @@ class TestRuleMeshes:
             "d",
         )
         assert all(p.rule_id != "R-EXP-2" for p in r2.penalties)
+
+    def test_unpaid_invoice_interest_rate_flagged(self):
+        # Regression: adjective-led "Unpaid invoices shall accrue interest at
+        # 18%" is an above-market late-payment rate that must fire R-COMM-6.
+        r = score_document(["Unpaid invoices shall accrue interest at 18% per annum."], "d")
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_past_due_balance_interest_rate_flagged(self):
+        # Regression: "Balances more than 30 days past due will accrue interest
+        # at 1.5% per month" must fire R-COMM-6 (noun-led, past-due form).
+        r = score_document(
+            ["Balances more than 30 days past due will accrue interest at 1.5% per month."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_cancel_for_no_reason_flagged(self):
+        # Regression: terminating "for no reason" is a convenience-style
+        # one-sided right that must fire R-COMM-2.
+        r = score_document(
+            ["Customer may cancel this agreement for no reason upon 30 days' notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_adjust_the_pricing_flagged(self):
+        # Regression: "may adjust the pricing" must fire R-COMM-3 (noun form
+        # "pricing" was missing).
+        r = score_document(["Provider may adjust the pricing at any time."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_terms_amended_passive_by_provider_flagged(self):
+        # Regression: passive phrasing "These terms may be amended by Provider
+        # at any time without notice" is a unilateral amendment right and must
+        # fire R-COMM-5.
+        r = score_document(
+            ["These terms may be amended by Provider at any time without notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_terms_changed_passive_sole_discretion_flagged(self):
+        # Regression: "The terms and conditions may be changed by the Company at
+        # its sole discretion" must fire R-COMM-5.
+        r = score_document(
+            ["The terms and conditions may be changed by the Company at its sole discretion."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_extension_automatic_absent_notice_flagged(self):
+        # Regression: "extended ... automatically absent written notice of
+        # termination" is an automatic rollover without an opt-out window and
+        # must fire R-COMM-1.
+        r = score_document(
+            ["The agreement shall be extended for one year at a time automatically absent written notice of termination."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_extension_automatic_with_non_renewal_notice_not_flagged(self):
+        # Regression: "extended automatically ... unless either party delivers
+        # written notice of non-renewal" is a genuine opt-out and must suppress
+        # R-COMM-1 even when the adverb follows the verb phrase.
+        r = score_document(
+            ["The term shall be extended automatically for one year unless either party delivers written notice of non-renewal at least 60 days prior to expiration."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_neither_party_ships_to_sanctioned_destination_not_flagged(self):
+        # Regression: a compliant prohibition ("Neither party shall ship goods
+        # to Iran or Cuba") must not fire R-EXP-2.
+        r = score_document(["Neither party shall ship goods to Iran or Cuba."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_no_goods_shipped_to_sanctioned_destination_not_flagged(self):
+        # Regression: "No goods shall be shipped to Syria, Iran or North Korea"
+        # must not fire R-EXP-2.
+        r = score_document(
+            ["No goods shall be shipped to Syria, Iran or North Korea."], "d"
+        )
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_reexport_requires_prior_approval_not_flagged(self):
+        # Regression: "Re-export of the software requires prior written
+        # approval" is a licensing control statement and must not fire R-EXP-1
+        # or R-EXP-3.
+        r = score_document(
+            ["Re-export of the software requires prior written approval."], "d"
+        )
+        assert all(p.rule_id not in {"R-EXP-1", "R-EXP-3"} for p in r.penalties)
+
+    def test_reexport_requires_export_licence_not_flagged(self):
+        # Regression: "re-export requires an export licence" must not fire
+        # R-EXP-1 or R-EXP-3.
+        r = score_document(
+            ["Re-export of the software requires an export licence."], "d"
+        )
+        assert all(p.rule_id not in {"R-EXP-1", "R-EXP-3"} for p in r.penalties)
+
+    def test_reexport_only_with_prior_consent_not_flagged(self):
+        # Regression: "may be re-exported only with the licensor's prior written
+        # consent" is a consent-bound control and must not fire R-EXP-1 or
+        # R-EXP-3, while "without ... consent" remains a gap that fires.
+        r = score_document(
+            ["The software may be re-exported only with the licensor's prior written consent."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-EXP-1", "R-EXP-3"} for p in r.penalties)
+        r2 = score_document(
+            ["The software may be re-exported without the licensor's prior written consent."],
+            "d",
+        )
+        assert any(p.rule_id in {"R-EXP-1", "R-EXP-3"} for p in r2.penalties)
