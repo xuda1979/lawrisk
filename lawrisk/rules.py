@@ -61,15 +61,23 @@ RULES: List[Rule] = [
         rule_id="R-COMM-1",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"auto[- ]?renew(?:s|al)?|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?",
+            r"auto[- ]?renew(?:s|al)?|automatic renewal(?:s)?|"
+            r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:no auto[- ]?renewal|without auto[- ]?renewal|"
+            r"(?:no|without) automatic renewal|"
             r"(?:does|shall|will|may) not (?:be )?(?:auto[- ]?renew|"
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?)|"
+            r"(?:does|shall|will|may) not (?:be )?renewed automatically|"
+            r"shall be deemed not renewed|"
             r"(?:neither party|no party)[^.;]{0,60}"
-            r"(?:auto[- ]?renew|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?))",
+            r"(?:auto[- ]?renew|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?)|"
+            r"(?:either party|neither party|no party)[^.;]{0,80}"
+            r"(?:elect(?:s|ing)?|choos(?:es|e|ing)?|opt(?:s|ing)?|intend(?:s|ing)?) not to renew|"
+            r"(?:auto[- ]?renew|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|automatic renewal)"
+            r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -241,6 +249,16 @@ RULES: List[Rule] = [
         rule_id="R-LIAB-2",
         dimension=Dimension.LIABILITY,
         pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,60}(?:limited to|shall not exceed|capped? at)", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:shall|will|is|is hereby|be) not (?:be )?limited(?: to)?|"
+            r"not be limited to|not limited to|"
+            r"liability[^.;]{0,40}shall not (?:be )?limited|"
+            r"no (?:limitation|cap) (?:of|on) liability|"
+            r"nothing in (?:this|any) (?:clause|section|agreement)[^.;]{0,40}(?:limits?|caps?|excludes?)|"
+            r"without limitation of liability|"
+            r"not subject to any (?:limitation|cap)",
+            re.IGNORECASE,
+        ),
         severity=25,
         reason="Aggregate liability cap may be below expected exposure",
         mitigation="Negotiate a cap that covers realistically foreseeable loss; base it on fees for 12 months or more.",
@@ -342,7 +360,14 @@ RULES: List[Rule] = [
         exclusion=re.compile(
             r"(?:require|required|obligat|as (?:required|needed)|in accordance with|"
             r"only for|solely|necessary to (?:comply|fulfil|fulfill)|legal obligation|"
-            r"not (?:be )?(?:retained|kept))",
+            r"not (?:be )?(?:retained|kept)|"
+            r"until[^.;]{0,40}(?:deleted|removed|purged|destroyed|returned)|"
+            r"deleted[^.;]{0,30}within|removed[^.;]{0,30}within|returned[^.;]{0,30}within|"
+            r"within (?:a period of|ninety|[0-9]+|thirty|sixty|seven|\w+)\s*(?:\(?\s*[0-9]+\s*\)?)?\s*"
+            r"(?:ninety|[0-9]+)?\s*(?:days?|weeks?|months?|years?)[^.;]{0,30}(?:of|after|from) (?:termination|such termination)|"
+            r"only to the extent (?:needed|necessary) to return|"
+            r"return(?:ed)?[^.;]{0,30}on (?:the )?(?:customer'?s|data subject'?s)? request|"
+            r"for a period of[^.;]{0,30}(?:days?|weeks?|months?|years?))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -542,8 +567,11 @@ ABSENCE_RULES: List[Rule] = [
         condition=re.compile(
             r"export|sanctions?|embargo|"
             r"international\s+(?:sale|sales|shipment|shipments|transfer|transfers|trade|transaction)|"
-            r"ship(?:ped|ping|ment|ments)[^.]{0,15}internationally|"
-            r"international(?:ly)?[^.]{0,15}(?:ship(?:ped|ping|ments?|ped)\b|trade\b)",
+            r"ship(?:ped|s|ping|ment|ments)[^.]{0,20}(?:internationally|abroad|overseas)|"
+            r"deliver(?:s|ed|ing)?\b[^.]{0,20}(?:internationally|abroad|overseas)|"
+            r"sold[^.]{0,20}(?:abroad|overseas|internationally)|"
+            r"international(?:ly)?[^.]{0,15}(?:ship(?:ped|ping|ments?|ped)\b|trade\b)|"
+            r"\babroad\b|\boverseas\b",
             re.IGNORECASE,
         ),
         pattern=re.compile(

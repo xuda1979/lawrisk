@@ -182,6 +182,60 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
 
+    def test_automatic_renewal_noun_form_detected(self):
+        # Regression: the noun form "automatic renewal" (no verb) must also
+        # fire R-COMM-1; the verb-pattern only was an under-fire gap.
+        r = score_document(
+            ["The agreement shall include an automatic renewal provision."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_no_automatic_renewal_noun_form_not_detected(self):
+        # Regression: the negated noun form must suppress R-COMM-1.
+        r = score_document(
+            ["There shall be no automatic renewal of this agreement."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_elects_not_to_renew_with_opt_out_not_flagged(self):
+        # Regression: an explicit opt-out window ("either party elects not to
+        # renew" with notice) must suppress R-COMM-1, not fire it.
+        r = score_document(
+            [
+                "This agreement shall renew automatically unless either party elects "
+                "not to renew by written notice given at least 30 days before expiry."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_notice_of_non_renewal_opt_out_not_flagged(self):
+        # Regression: a non-renewal notice window ("notice of non-renewal")
+        # immediately after the renewal term is a genuine opt-out and must
+        # suppress R-COMM-1.
+        r = score_document(
+            [
+                "The term shall be extended automatically for one year unless either "
+                "party delivers written notice of non-renewal at least 60 days prior "
+                "to expiration."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_unrelated_non_renewal_notice_does_not_mask_autorenewal(self):
+        # Regression: a non-renewal notice about an unrelated subject in the
+        # same paragraph must not suppress a genuine auto-renewal clause scoped
+        # to the renewal term.
+        r = score_document(
+            [
+                "This agreement shall renew automatically for one-year terms; notice "
+                "of non-renewal must be given by the tenant in any lease."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
     def test_mutual_termination_not_flagged(self):
         r = score_document(
             ["Either party may terminate this agreement for convenience."], "d"
@@ -266,6 +320,18 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-LIAB-2" for p in r.penalties)
 
+    def test_liability_cap_denial_not_flagged(self):
+        # Regression: cap-denial language ("shall not be limited to",
+        # "nothing in this clause limits") must NOT fire R-LIAB-2.
+        cases = [
+            ["Nothing in this clause limits Provider's liability; liability shall not be limited to the fees paid."],
+            ["Provider's liability shall not be limited to amounts received."],
+            ["There shall be no limitation of liability for fraud."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-LIAB-2" for p in r.penalties), paras
+
     def test_late_payment_charge_flagged(self):
         r = score_document(
             ["A late payment service charge of 1.5% per month applies to overdue amounts."], "d"
@@ -277,6 +343,32 @@ class TestRuleMeshes:
         # absence rule R-EXP-4 (export-compliance clause missing).
         r = score_document(
             ["The Provider shall provide the deliverables by the due date."], "d"
+        )
+        assert all(p.rule_id != "R-EXP-4" for p in r.penalties)
+
+    def test_international_shipment_verbs_trigger_export_absence(self):
+        # Regression: plain international trade verbs ("ships the goods
+        # internationally", "deliver overseas", "sold to buyers abroad") must
+        # trigger R-EXP-4's topic condition even when the word "export" and the
+        # noun "shipment" never appear.
+        cases = [
+            ["The vendor ships the goods internationally."],
+            ["The vendor will deliver the goods overseas."],
+            ["Goods are sold to buyers abroad."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-EXP-4" for p in r.penalties), paras
+
+    def test_international_trade_with_compliance_not_flagged(self):
+        # Guard: even with an international-trade topic trigger, an existing
+        # export-compliance clause must keep R-EXP-4 (absence) silent.
+        r = score_document(
+            [
+                "The vendor ships the goods internationally and complies with "
+                "export control regulations."
+            ],
+            "d",
         )
         assert all(p.rule_id != "R-EXP-4" for p in r.penalties)
 
@@ -446,6 +538,30 @@ class TestRuleMeshes:
             ["Provider shall delete all customer data upon termination of this agreement."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_bounded_retention_window_not_flagged(self):
+        # Regression: retention bounded to a delete/return window after
+        # termination is a protective bound and must not fire R-DATA-5.
+        cases = [
+            ["Provider shall retain customer data after termination only until such data is deleted within ninety (90) days of termination."],
+            ["Provider may keep customer data following termination only to the extent needed to return it to the customer on request."],
+            ["Provider may store customer data after termination for a period of 90 days."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), paras
+
+    def test_unbounded_retention_still_flagged(self):
+        # Guard: genuinely unbounded retention ("for seven years") and open
+        # post-termination keeping must still fire R-DATA-5 despite the new
+        # bounded-window exclusions.
+        cases = [
+            ["Customer data shall be retained after termination for seven years."],
+            ["Provider may keep personal information following termination of this agreement."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), paras
 
     def test_extended_rules_keep_clean_footer_text_clean(self):
         """Calibration guard: extended rule set adds no findings to clean fixtures."""
