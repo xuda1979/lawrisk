@@ -10,10 +10,18 @@ risky — not just what changed.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Mapping, Optional
 
 from lawrisk.diff.differ import DiffOp, DiffReport
-from lawrisk.models import RiskReport
+from lawrisk.models import FieldRun, RiskReport
+
+# Display labels match the frontend FactsPanel (frontend/src/components/FactsPanel.tsx).
+FACT_LABEL: Dict[str, str] = {
+    "currency": "Currency",
+    "term": "Term",
+    "governing_law": "Governing law",
+    "arbitration": "Arbitration seat",
+}
 
 
 def _bullet(it, max_excerpt: int = 260) -> str:
@@ -77,10 +85,48 @@ def _risk_note(it, left_map, right_map, label_left: str, label_right: str) -> st
     return "\n\n".join(f"> ⚠ {p}" for p in parts)
 
 
+def _facts_table(facts: List[Mapping]) -> str:
+    """Render found contract key facts as a Markdown table, deduped by name.
+
+    Accepts dictified FieldRun rows (model_dump()) or FieldRun models. Only
+    `found` facts are shown; repeated detectors on the same field collapse to
+    the first row so each label appears once.
+    """
+    seen: Dict[str, dict] = {}
+    for raw in facts:
+        if isinstance(raw, FieldRun):
+            row: Mapping = {
+                "name": raw.name,
+                "value": raw.value,
+                "source": raw.source,
+                "found": raw.found,
+            }
+        else:
+            row = raw
+        if not row.get("found", True):
+            continue
+        label = FACT_LABEL.get(str(row.get("name")), str(row.get("name")))
+        if label in seen:
+            continue
+        seen[label] = dict(row)
+    if not seen:
+        return ""
+    lines = ["| Field | Value | Source |", "|-------|-------|--------|"]
+    for label, row in seen.items():
+        value = (row.get("value") or "—").replace("|", "\\|")
+        source = (row.get("source") or "").replace("|", "\\|")
+        if len(source) > 120:
+            source = source[:117] + "…"
+        lines.append(f"| {label} | {value} | “{source}” |")
+    return "\n".join(lines)
+
+
 def render_markdown(
     report: DiffReport,
     risk_left: Optional[RiskReport] = None,
     risk_right: Optional[RiskReport] = None,
+    facts_left: Optional[List] = None,
+    facts_right: Optional[List] = None,
     label_left: str = "Document A",
     label_right: str = "Document B",
 ) -> str:
@@ -101,6 +147,21 @@ def render_markdown(
     lines.append("")
     lines.append(report.summary)
     lines.append("")
+
+    if facts_left is not None and facts_right is not None:
+        left_table = _facts_table(facts_left)
+        right_table = _facts_table(facts_right)
+        if left_table or right_table:
+            lines.append(f"## Contract key facts")
+            lines.append("")
+            lines.append(f"### {label_left or 'Document A'}")
+            lines.append("")
+            lines.append(left_table or "_No key fields detected._")
+            lines.append("")
+            lines.append(f"### {label_right or 'Document B'}")
+            lines.append("")
+            lines.append(right_table or "_No key fields detected._")
+            lines.append("")
 
     left_map = _risk_by_para(risk_left) if risk_left is not None else {}
     right_map = _risk_by_para(risk_right) if risk_right is not None else {}

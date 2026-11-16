@@ -188,6 +188,8 @@ def diff_text(req: DiffTextRequest) -> CompareResult:
         rows=rows,
         markdown=render_markdown(
             report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+            facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
             label_left=req.name_left, label_right=req.name_right,
         ),
         llm_enabled=describe_layer()["enabled"],
@@ -228,6 +230,8 @@ async def compare(
         rows=rows,
         markdown=render_markdown(
             report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in doc_a.fields],
+            facts_right=[f.model_dump() for f in doc_b.fields],
             label_left=name_a, label_right=name_b,
         ),
         llm_enabled=describe_layer()["enabled"],
@@ -286,6 +290,8 @@ async def compare_template(
         rows=rows,
         markdown=render_markdown(
             report, risk_left=baseline_risk, risk_right=risk,
+            facts_left=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+            facts_right=[f.model_dump() for f in doc.fields],
             label_left="Template", label_right=name,
         ),
         llm_enabled=describe_layer()["enabled"],

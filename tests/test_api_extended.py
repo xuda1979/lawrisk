@@ -216,6 +216,39 @@ async def test_markdown_report_carries_risk_attribution():
     assert "| B:R-COMM-1+20 |" in md or "B:R-COMM-1+" in md
 
 
+async def test_markdown_report_carries_key_facts():
+    """The exported Markdown report includes the contract key-facts panel."""
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": (
+                    "This Agreement is governed by the laws of England.\n"
+                    "Term of 24 months.\nFees $5000."
+                ),
+                "right": (
+                    "This Agreement is governed by the laws of New York.\n"
+                    "Term of 12 months; disputes shall be resolved by arbitration in Geneva.\n"
+                    "Fees in USD."
+                ),
+                "name_left": "Doc A",
+                "name_right": "Doc B",
+            },
+        )
+    assert r.status_code == 200
+    md = r.json()["markdown"]
+    assert "Contract key facts" in md
+    # Per-document fact tables carry label, value and detector name.
+    assert "### Doc A" in md
+    assert "### Doc B" in md
+    assert "England" in md
+    assert "New York" in md
+    assert "Governing law" in md
+    assert "Arbitration seat" in md
+    assert "Currency" in md
+    assert "| Field | Value | Source |" in md
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
