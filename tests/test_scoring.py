@@ -110,7 +110,15 @@ class TestCalibration:
 
     def test_risky_contract_names_sanctioned_country(self, score_docx):
         r = score_docx("risky_contract")
-        assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
+        # The fixture's sanctioned-country mention is a prohibition ("shall not
+        # be exported to Cuba"), i.e. a compliance carve-out, so it must NOT
+        # fire. R-EXP-2 is instead exercised below via an explicitly risky
+        # export-to-sanctioned-destination sentence.
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+        r2 = score_document(
+            ["Deliverables may be exported to Cuba without restriction."], "d"
+        )
+        assert any(p.rule_id == "R-EXP-2" for p in r2.penalties)
 
     def test_risky_contract_flags_unilateral_amendment(self, score_docx):
         r = score_docx("risky_contract")
@@ -498,6 +506,64 @@ class TestRuleMeshes:
             ["Re-export of deliverables requires prior written authorization from Provider."], "d"
         )
         assert all(p.rule_id != "R-EXP-3" for p in r.penalties)
+
+    def test_mutual_price_adjustment_not_flagged(self):
+        # Regression: mutual/indexed price adjustments must not fire R-COMM-3.
+        r = score_document(
+            [
+                "Fees may be adjusted annually by mutual written agreement of the parties.",
+                "The parties agree to adjust the price each year in accordance with the published CPI index.",
+                "There will be no price increase during the initial twelve month term.",
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_unilateral_price_adjustment_flagged(self):
+        r = score_document(
+            ["Provider reserves the right to adjust the fees at any time upon 60 days written notice."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_mutual_own_fault_indemnity_not_flagged(self):
+        # Regression: mutual or own-fault indemnity constructions must not fire R-LIAB-3.
+        r = score_document(
+            [
+                "Each party shall indemnify the other party against third party claims arising from its own breach or negligence.",
+                "Either party shall indemnify the other against claims arising out of the indemnifying party's own negligence.",
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-3" for p in r.penalties)
+
+    def test_compliance_limited_processing_not_flagged(self):
+        # Regression: "necessary to comply with law" is a lawful-basis carve-out,
+        # not an unlimited processing purpose (R-DATA-3).
+        r = score_document(
+            ["Provider may process data for any purpose necessary to comply with applicable law."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_unrestricted_export_flags_and_prohibition_does_not(self):
+        # Regression: R-EXP-1 must match "exported/exporting", and a sanctioned-
+        # destination prohibition is a compliance carve-out that must not fire
+        # R-EXP-2, whereas a genuinely-risk export to a sanctioned destination
+        # must still fire.
+        r = score_document(
+            [
+                "Deliverables may be exported to any country without restriction.",
+                "The parties shall not export goods or services to Cuba, Iran, Syria, North Korea or Crimea.",
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-EXP-1" for p in r.penalties)
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+        r2 = score_document(
+            ["Deliverables may be exported to Cuba without restriction."], "d"
+        )
+        assert any(p.rule_id == "R-EXP-2" for p in r2.penalties)
 
     def test_absence_rule_excerpt_never_a_heading(self):
         """R-DATA-4 must anchor on a body paragraph, not a section heading.

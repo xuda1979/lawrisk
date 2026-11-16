@@ -89,6 +89,13 @@ RULES: List[Rule] = [
         rule_id="R-COMM-3",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(r"reserves the right to (?:adjust|increase|change|modify) (?:the )?(?:price|prices|fees)|price (?:increase|escalation)", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:no price increase|without (?:any )?price increase|"
+            r"there (?:shall|will|can|is|be) no|"
+            r"by mutual(?: written)? agreement|mutual written consent|"
+            r"in accordance with [^.;]{0,40}(?:cpi|index(?:ed)?))",
+            re.IGNORECASE,
+        ),
         severity=20,
         reason="Unilateral price adjustment clause without consent requirement",
         mitigation="Cap annual fee increases at a fixed percentage with 60+ days written notice, or require mutual written consent.",
@@ -215,6 +222,14 @@ RULES: List[Rule] = [
             r"(?:all|any|third[ -]party|losses|damages|claims)",
             re.IGNORECASE,
         ),
+        exclusion=re.compile(
+            r"(?:each party indemnif|either party indemnif|"
+            r"mutual(?:ly)? indemnif|"
+            r"arising (?:out of|from) (?:its own|the indemnifying party's own|"
+            r"such party's own) (?:breach|negligence)|"
+            r"to the extent (?:caused by|arising from) (?:its |the indemnifying party's )?own)",
+            re.IGNORECASE,
+        ),
         severity=30,
         reason="Broad indemnification obligation in favour of the counterparty",
         mitigation="Limit indemnity to third-party IP- or breach-specific claims and add mutual caps and carve-outs.",
@@ -312,6 +327,14 @@ RULES: List[Rule] = [
         rule_id="R-DATA-3",
         dimension=Dimension.DATA,
         pattern=re.compile(r"process[^.]{0,30}data[^.]{0,20}(?:for any purpose|for (?:its|our) own(?: independent)? purposes|unlimited)", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:necessary to comply|necessary for (?:compliance with|the purpose of complying)|"
+            r"as (?:required|needed|mandated) by (?:applicable )?law|"
+            r"required by (?:applicable )?(?:law|regulation)|"
+            r"to meet (?:its|their) legal (?:and regulatory )?obligations?|"
+            r"legal (?:and regulatory )?obligations?)",
+            re.IGNORECASE,
+        ),
         severity=25,
         reason="Data processing purpose may be too broad / unlimited",
         mitigation="Restrict processing to documented, purpose-limited activities and add data minimisation wording.",
@@ -321,7 +344,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-EXP-1",
         dimension=Dimension.EXPORT,
-        pattern=re.compile(r"\b(?:exports?|sanctions?|embargoes?|bribery|anti[- ]corruption|itar|deemed exports?)\b", re.IGNORECASE),
+        pattern=re.compile(r"\b(?:export(?:s|ed|ing)?|sanction(?:s|ed|ing)?|embargo(?:s|ed|ing)?|bribery|anti[- ]corruption|itar|deemed export(?:s|ed)?)\b", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:comply (?:with|ing)|in compliance|"
             r"subject to (?:[^.]{0,20})?(?:export|sanction)s?|"
@@ -337,8 +360,15 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-EXP-2",
         dimension=Dimension.EXPORT,
-        condition=re.compile(r"export|sanctions|embargo", re.IGNORECASE),
+        condition=re.compile(r"export|sanction|embargo", re.IGNORECASE),
         pattern=re.compile(r"\b(cuba|iran|syria|north korea|crimea)\b", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:shall|will|must|may) not (?:be )?(?:export(?:ed)?|ship(?:ped)?|"
+            r"transfer(?:red)?|sell|sold|deliver(?:ed)?|provide(?:d)?|distribute(?:d)?)\b|"
+            r"\bno (?:export|shipment|transfer|sale|sales)[^.;]{0,40}(?:to|into)\b|"
+            r"prohibit(?:s|ed)?\b|banned\b",
+            re.IGNORECASE,
+        ),
         severity=50,
         reason="References to a sanctioned jurisdiction without a compliance carve-out",
         mitigation="Remove any sanctioned-destination references or add an explicit sanctions-compliance and export-license carve-out.",
