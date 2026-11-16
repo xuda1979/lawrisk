@@ -15,6 +15,9 @@ firms). Upload two document templates (DOCX / PDF / TXT) and get:
 4. **Template library (P3)** — bundled baseline clause sets (MSA, SaaS, NDA,
    DPA). Diff an incoming agreement against a known-good structure via
    `POST /api/templates/{id}/compare`, list them via `GET /api/templates`.
+5. **Contract key-facts panel (P4)** — every compared document also surfaces
+   its extracted business fields: deal currency, term, governing law and
+   arbitration seat, each with the verbatim source paragraph.
 
 Everything runs locally on regex/keyword rules (低成本、可复现). LLM
 summarisation is optional and off by default.
@@ -120,7 +123,7 @@ document with `POST /api/templates/msa/compare`. Dump them offline with:
 ## Tests
 
 ```bash
-pytest -q        # 55 tests, all local
+pytest -q        # 57 tests, all local
 cd frontend && npm run build   # verifies the SPA compiles
 ```
 

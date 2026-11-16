@@ -570,6 +570,97 @@ body {
   background: var(--muted);
 }
 
+/* per-dimension risk drivers */
+.drivers {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.drivers__head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.drivers__head small {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.drivers__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.driver {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 9px;
+}
+
+.driver__name {
+  font-weight: 600;
+}
+
+.driver__score {
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+}
+
+.driver__arrow {
+  color: var(--muted);
+}
+
+.driver__delta {
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0 7px;
+}
+
+.driver__delta--up {
+  background: var(--del);
+  color: var(--del-ink);
+}
+
+.driver__delta--down {
+  background: var(--add);
+  color: var(--add-ink);
+}
+
+.driver__delta-- {
+  color: var(--muted);
+  background: var(--bg);
+}
+
+.driver--top {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.driver__flag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 .tabs {
   display: flex;
   gap: 6px;
