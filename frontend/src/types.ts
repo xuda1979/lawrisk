@@ -143,3 +143,24 @@ export interface TemplateLibrary {
   templates: ClauseTemplate[]
   llm: { enabled: boolean; provider: string; deterministic: boolean }
 }
+
+export interface RuleInfo {
+  rule_id: string
+  dimension: string
+  dimension_label: string
+  severity: number
+  reason: string
+  mitigation: string
+  description?: string
+  kind: 'paragraph' | 'absence'
+  has_condition: boolean
+  has_exclusion: boolean
+  pattern?: string
+  condition?: string
+}
+
+export interface RuleCatalog {
+  engine: string
+  source: string
+  rules: RuleInfo[]
+}

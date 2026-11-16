@@ -39,7 +39,7 @@ from lawrisk.textutil import split_paragraphs
 from lawrisk.llm import describe_layer, summarize_clause
 from lawrisk.models import DocParse, RiskReport
 from lawrisk.parser import parse_document
-from lawrisk.rules import score_document
+from lawrisk.rules import ENGINE_VERSION, rule_catalog, score_document
 from lawrisk.static import mount_spa_if_available
 from lawrisk.templates import diff_against_template, get_template, list_templates
 
@@ -108,6 +108,17 @@ class ReviewResult(BaseModel):
 class TemplateListResult(BaseModel):
     templates: list
     llm: dict
+
+
+class RuleCatalogResult(BaseModel):
+    engine: str = Field(default=ENGINE_VERSION, description="Risk engine version string")
+    source: str = Field(
+        default="lawrisk.rules", description="Python module the catalog is generated from"
+    )
+    rules: list = Field(
+        default_factory=list,
+        description="Full rule catalog: {rule_id, dimension, severity, reason, mitigation, kind, ...}",
+    )
 
 
 @app.get("/api/health")
@@ -298,6 +309,12 @@ def template_library() -> TemplateListResult:
         templates=[t.to_dict() for t in list_templates()],
         llm=describe_layer(),
     )
+
+
+@app.get("/api/rules", response_model=RuleCatalogResult)
+def rules_catalog() -> RuleCatalogResult:
+    """Return the full, deterministic risk rule catalog (handbook)."""
+    return RuleCatalogResult(engine=ENGINE_VERSION, rules=rule_catalog())
 
 
 @app.post("/api/templates/{template_id}/compare", response_model=CompareResult)

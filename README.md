@@ -77,6 +77,7 @@ skipped when `LAWRISK_SERVE_SPA=0`.
 | `/api/diff-text`| POST   | JSON `{left, right, ...}` → CompareResult for plain text |
 | `/api/templates`| GET    | List the bundled clause-template library (P3)          |
 | `/api/templates/{id}/compare` | POST | One file → diff vs a baseline template + risk panel |
+| `/api/rules`   | GET    | Rule handbook: the full deterministic rule catalog (id, dimension, severity, reason, mitigation, kind) |
 | `/api/review`  | POST   | One file → section-grouped risk review + Markdown/DOCX/HTML reports |
 
 Uploaded files are size-limited to 20 MiB (413 on exceed). All endpoints are
@@ -128,7 +129,7 @@ document with `POST /api/templates/msa/compare`. Dump them offline with:
 ## Tests
 
 ```bash
-pytest -q        # 90 tests, all local
+pytest -q        # 92 tests, all local
 cd frontend && npm run build   # verifies the SPA compiles
 ```
 

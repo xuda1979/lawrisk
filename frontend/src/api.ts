@@ -1,4 +1,4 @@
-import type { CompareResult, ReviewResult, TemplateLibrary } from './types'
+import type { CompareResult, ReviewResult, RuleCatalog, TemplateLibrary } from './types'
 
 const API = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
 
@@ -31,6 +31,12 @@ export async function health(): Promise<{ status: string; llm_enabled: boolean }
 export async function listTemplates(): Promise<TemplateLibrary> {
   const res = await fetch(`${API}/api/templates`)
   if (!res.ok) throw new Error('Template library unavailable')
+  return res.json()
+}
+
+export async function fetchRules(): Promise<RuleCatalog> {
+  const res = await fetch(`${API}/api/rules`)
+  if (!res.ok) throw new Error('Rule handbook unavailable')
   return res.json()
 }
 

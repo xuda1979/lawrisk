@@ -86,3 +86,48 @@ async def test_diff_text_endpoint():
     body = r.json()
     assert body["markdown"]
     assert body["rows"]
+
+
+async def test_rules_catalog_endpoint():
+    """AC6: the rule handbook serialises the full rule set (incl. absence rules)."""
+    async with _client() as c:
+        r = await c.get("/api/rules")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["engine"]
+    entries = body["rules"]
+    assert len(entries) >= 15
+    assert len({e["rule_id"] for e in entries}) == len(entries)
+    # Every dimension is covered by at least one paragraph rule.
+    dims = {e["dimension"] for e in entries if e["kind"] == "paragraph"}
+    assert {"commercial", "liability", "data", "export"} <= dims
+    # Absence rules are included too.
+    assert any(e["rule_id"] == "R-DATA-4" and e["kind"] == "absence" for e in entries)
+    for e in entries:
+        assert e["reason"]
+        assert e["mitigation"]
+        assert "severity" in e and e["severity"] > 0
+
+
+async def test_rules_catalog_resolves_every_fired_penalty():
+    """Invariant: any penalty id produced by scoring resolves in the catalog.
+
+    This guarantees the handbook is always able to explain a finding the
+    engine emits — the catalog can never drift from the rule set.
+    """
+    async with _client() as c:
+        r = await c.get("/api/rules")
+    catalog = {e["rule_id"] for e in r.json()["rules"]}
+    # Score the riskiest fixture so a broad spread of rules actually fires.
+    data = (FIXTURES / "risky_contract.docx").read_bytes()
+    async with _client() as c:
+        r = await c.post(
+            "/api/parse",
+            files={"file": ("risky_contract.docx", data, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        )
+    paragraphs = r.json()["doc"]["paragraphs"]
+    async with _client() as c:
+        r = await c.post("/api/score", json={"paragraphs": paragraphs})
+    fired = {p["rule_id"] for p in r.json()["penalties"]}
+    assert fired, "risky_contract fixture must fire at least one rule"
+    assert fired <= catalog, f"fired rules missing from catalog: {fired - catalog}"

@@ -324,6 +324,43 @@ _DIMENSION_NAMES = {
     Dimension.EXPORT: "Export compliance",
 }
 
+# Absence rules fire only when the topic is present but protective wording is
+# missing; kept out of the plain regex-free serialisation below because they
+# carry no literal match pattern of their own.
+KIND_PARAGRAPH = "paragraph"
+KIND_ABSENCE = "absence"
+
+
+def rule_catalog() -> list[dict]:
+    """Serialise the full rule set for the /api/rules handbook endpoint.
+
+    Each entry is a plain dict (no compiled regex survives serialisation):
+    id, dimension, severity, reason, mitigation, description and kind
+    (paragraph vs document-level absence check). Pattern fragments are exposed
+    as-is (source is public) so the handbook can explain what triggers a rule.
+    """
+    catalog: list[dict] = []
+    for kind, rules in ((KIND_PARAGRAPH, RULES), (KIND_ABSENCE, ABSENCE_RULES)):
+        for rule in rules:
+            entry = {
+                "rule_id": rule.rule_id,
+                "dimension": rule.dimension.value,
+                "dimension_label": _DIMENSION_NAMES[rule.dimension],
+                "severity": rule.severity,
+                "reason": rule.reason,
+                "mitigation": rule.mitigation,
+                "description": rule.description,
+                "kind": kind,
+                "has_condition": rule.condition is not None,
+                "has_exclusion": rule.exclusion is not None,
+            }
+            if rule.pattern is not None:
+                entry["pattern"] = rule.pattern.pattern
+            if rule.condition is not None:
+                entry["condition"] = rule.condition.pattern
+            catalog.append(entry)
+    return catalog
+
 
 def _trim(text: str, limit: int = 240) -> str:
     t = re.sub(r"\s+", " ", text or "").strip()

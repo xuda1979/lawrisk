@@ -7,6 +7,7 @@ import { FactsPanel } from './components/FactsPanel'
 import { ReportView } from './components/ReportView'
 import { ReviewView } from './components/ReviewView'
 import { RiskPanel } from './components/RiskPanel'
+import { RulesPanel } from './components/RulesPanel'
 import { TemplatesPanel } from './components/TemplatesPanel'
 import { VerdictBanner } from './components/VerdictBanner'
 import type { CompareResult, ReviewResult } from './types'
@@ -167,6 +168,7 @@ export default function App() {
                 setTab('diff')
               }}
             />
+            <RulesPanel />
           </aside>
 
           <main className="content">
@@ -251,6 +253,7 @@ export default function App() {
                 setTab('diff')
               }}
             />
+            <RulesPanel />
           </aside>
 
           <main className="content">
