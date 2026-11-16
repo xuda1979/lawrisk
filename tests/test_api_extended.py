@@ -197,6 +197,25 @@ async def test_diff_text_rows_carry_risk_attribution():
     assert "auto-renew" in risky["rightText"]
 
 
+async def test_markdown_report_carries_risk_attribution():
+    """The exported Markdown report names the rules that fired on changed clauses."""
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": "Term of 12 months.\nFees $1000.",
+                "right": "Term of 12 months; this Agreement shall auto-renew automatically.\nFees $1000.",
+            },
+        )
+    assert r.status_code == 200
+    md = r.json()["markdown"]
+    assert "Overall risk" in md
+    assert "R-COMM-1" in md
+    # The fired rule appears on the changed clause's bullet note and in the ledger.
+    assert "B (right) risk" in md
+    assert "| B:R-COMM-1+20 |" in md or "B:R-COMM-1+" in md
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
