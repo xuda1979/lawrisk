@@ -23,6 +23,14 @@ FACT_LABEL: Dict[str, str] = {
     "arbitration": "Arbitration seat",
 }
 
+# Long-form dimension names for the risk-by-dimension table.
+DIM_LABEL: Dict[str, str] = {
+    "commercial": "Commercial risk",
+    "liability": "Liability / legal risk",
+    "data": "Data protection",
+    "export": "Export compliance",
+}
+
 
 def _bullet(it, max_excerpt: int = 260) -> str:
     if it.op is DiffOp.ADD:
@@ -127,6 +135,19 @@ def _facts_table(facts: List[Mapping]) -> str:
     return "\n".join(lines)
 
 
+def _dimensions_table(risk: RiskReport, label: str) -> str:
+    """Render one document's per-dimension scores as a Markdown table."""
+    lines = [f"### {label or 'Document'}", "", "| Dimension | Score | Level | Findings |", "|-----------|-------|-------|----------|"]
+    for d in risk.dimensions:
+        dim = getattr(d.dimension, "value", d.dimension)
+        name = DIM_LABEL.get(str(dim), str(dim))
+        n = sum(1 for p in risk.penalties if p.dimension is d.dimension)
+        lines.append(
+            f"| {name} | {d.normalized:.0f}/100 | {d.risk_level.value} | {n} |"
+        )
+    return "\n".join(lines)
+
+
 def render_markdown(
     report: DiffReport,
     risk_left: Optional[RiskReport] = None,
@@ -168,6 +189,14 @@ def render_markdown(
             lines.append("")
             lines.append(right_table or "_No key fields detected._")
             lines.append("")
+
+    if risk_left is not None and risk_right is not None:
+        lines.append("## Risk by dimension")
+        lines.append("")
+        lines.append(_dimensions_table(risk_left, label_left or "Document A"))
+        lines.append("")
+        lines.append(_dimensions_table(risk_right, label_right or "Document B"))
+        lines.append("")
 
     left_map = _risk_by_para(risk_left) if risk_left is not None else {}
     right_map = _risk_by_para(risk_right) if risk_right is not None else {}

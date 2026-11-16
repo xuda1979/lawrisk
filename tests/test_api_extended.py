@@ -249,6 +249,28 @@ async def test_markdown_report_carries_key_facts():
     assert "| Field | Value | Source |" in md
 
 
+async def test_markdown_report_carries_dimension_tables():
+    """The exported Markdown report breaks risk into per-dimension A/B tables."""
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": "Term of 12 months.\nFees $1000.",
+                "right": "Term of 12 months; this Agreement shall auto-renew automatically.\nFees $1000.",
+            },
+        )
+    assert r.status_code == 200
+    md = r.json()["markdown"]
+    assert "## Risk by dimension" in md
+    # One table per document with the global dimension labels and a scores row.
+    count = md.count("| Dimension | Score | Level | Findings |")
+    assert count == 2, md
+    assert "Commercial risk" in md
+    assert "Liability / legal risk" in md
+    assert "Data protection" in md
+    assert "Export compliance" in md
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
