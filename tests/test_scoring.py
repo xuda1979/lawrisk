@@ -264,6 +264,43 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
 
+    def test_late_payment_interest_decimal_rate_flagged(self):
+        # Regression: "1.8% per month" crosses a decimal point; the pattern must
+        # not let the [^.;] window stop at the "." inside the rate.
+        r = score_document(
+            ["Customer shall pay interest at 1.8% per month on all overdue amounts."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_late_fee_percentage_flagged(self):
+        # Regression: "late fee of 5%" has no "late payment"/"interest" wording;
+        # the fixed-rate form must be caught on its own.
+        r = score_document(
+            ["A late fee of 5% per month applies to delinquent accounts."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_market_benchmarked_interest_not_flagged(self):
+        # Regression: interest benchmarked to a market/statutory/bank rate is the
+        # rule's own recommended non-risky style (see mitigation "Cap late-payment
+        # interest at a statutory or market rate").
+        r = score_document(
+            ["Late payments attract interest at a rate of 1.5% per annum above the ECB base rate."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
+
+    def test_statutory_rate_interest_not_flagged(self):
+        r = score_document(
+            ["Late payments accrue interest at the statutory rate."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
+
+    def test_euribor_benchmark_interest_not_flagged(self):
+        r = score_document(
+            ["Late payments attract EURIBOR interest at 3 month EURIBOR plus 2%."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
+
     def test_non_refundable_fees_flagged(self):
         r = score_document(
             ["All fees are non-refundable and non-cancellable."], "d"

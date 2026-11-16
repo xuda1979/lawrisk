@@ -131,8 +131,23 @@ RULES: List[Rule] = [
         rule_id="R-COMM-6",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"late payment(?:s)?[^.]{0,40}(?:interest|penalty|fee|charge)|"
-            r"interest[^.]{0,20}(?:at|of|=)[^.]{0,25}(?:per month|per annum|%|percent)",
+            r"(?:late payment(?:s)?|overdue (?:amounts?|invoices?)|delinquent accounts?|"
+            r"late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge))"
+            r"[^.;]{0,40}(?:interest|penalty|fee|charge)|"
+            r"(?:interest|penalty|fee|charge)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
+            r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?|"
+            r"(?:late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge))"
+            r"[^.;]{0,20}(?:of|=|at|:)[^.;:]{0,10}\d+(?:\.\d+)?\s*%",
+            re.IGNORECASE,
+        ),
+        exclusion=re.compile(
+            r"(?:statutory|legal|applicable)[^.;:,]{0,20}(?:rate|interest|maximum|ceiling|cap|limit)|"
+            r"market rate|prevailing (?:market )?rate|prime rate|"
+            r"(?:ecb\s+rate|base rate|reference rate|benchmark rate|central[- ]bank rate)|"
+            r"euribor|libor|sofr\b|sonia\b|"
+            r"late payment (?:act|legislation|directive|regulations?)|"
+            r"in accordance with (?:applicable )?law|as (?:required|per) (?:statute|law)|"
+            r"required by (?:statute|law|applicable law)",
             re.IGNORECASE,
         ),
         severity=20,
