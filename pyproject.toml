@@ -24,6 +24,7 @@ dev = [
 
 [project.scripts]
 lawrisk-serve = "lawrisk.serve:main"
+lawrisk-cli = "lawrisk.cli:main"
 
 [tool.setuptools]
 packages = ["lawrisk", "lawrisk.diff"]

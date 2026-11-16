@@ -83,6 +83,23 @@ skipped when `LAWRISK_SERVE_SPA=0`.
 Uploaded files are size-limited to 20 MiB (413 on exceed). All endpoints are
 local, deterministic and LLM-free by default.
 
+### Command-line interface
+
+`lawrisk-cli` runs the same parse → score → diff pipeline directly on local
+files, with no server required. Deterministic and LLM-free, matching the web
+API exactly:
+
+```bash
+lawrisk-cli score  tests/fixtures/risky_contract.docx      # verdict line
+lawrisk-cli review tests/fixtures/risky_contract.docx      # Markdown review report
+lawrisk-cli diff   tests/fixtures/template_a.docx tests/fixtures/template_b.docx
+lawrisk-cli rules                                        # rule handbook
+```
+
+Every subcommand takes `--json` to emit machine-readable output instead;
+`diff` accepts `--name-a/--name-b` labels. All inputs accept DOCX / PDF / TXT
+(dispatched by file extension). `python -m lawrisk.cli ...` is equivalent.
+
 ### LLM enhancement (optional)
 
 Set `LAWRISK_LLM=1` to enable the summary layer; `LAWRISK_LLM_PROVIDER=mock`
@@ -129,7 +146,7 @@ document with `POST /api/templates/msa/compare`. Dump them offline with:
 ## Tests
 
 ```bash
-pytest -q        # 92 tests, all local
+pytest -q        # 98 tests, all local
 cd frontend && npm run build   # verifies the SPA compiles
 ```
 

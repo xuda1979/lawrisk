@@ -126,7 +126,7 @@ def health() -> dict:
     return {
         "status": "ok",
         "llm_enabled": describe_layer()["enabled"],
-        "engine": "lawrisk-engine-v1",
+        "engine": ENGINE_VERSION,
         "llm": describe_layer(),
     }
 

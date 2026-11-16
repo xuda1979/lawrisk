@@ -16,12 +16,16 @@ def _client():
 
 
 async def test_health():
+    from lawrisk.rules import ENGINE_VERSION
+
     async with _client() as c:
         r = await c.get("/api/health")
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "ok"
     assert "llm_enabled" in body
+    # The health endpoint must report the real engine version, not a copy.
+    assert body["engine"] == ENGINE_VERSION
 
 
 async def test_score_endpoint():

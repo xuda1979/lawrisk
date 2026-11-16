@@ -414,8 +414,24 @@ def _apply_absence_rules(paragraphs: List[str], rules: List[Rule]) -> List[Penal
             continue
         if rule.pattern.search(full):
             continue
-        first_hit = next((i for i, p in enumerate(paragraphs) if rule.condition.search(p.casefold())), None)
-        if first_hit is None:
+        # Anchor the finding on a real body paragraph, never a heading, so the
+        # excerpt points at the clause that raised the topic. If the topic only
+        # appears inside headings (e.g. a "PERSONAL DATA" section title), fall
+        # back to that heading as the closest verbatim source.
+        body_hit = next(
+            (
+                i
+                for i, p in enumerate(paragraphs)
+                if not looks_like_heading(p) and rule.condition.search(p.casefold())
+            ),
+            None,
+        )
+        if body_hit is None:
+            body_hit = next(
+                (i for i, p in enumerate(paragraphs) if rule.condition.search(p.casefold())),
+                None,
+            )
+        if body_hit is None:
             continue
         penalties.append(
             Penalty(
@@ -423,8 +439,8 @@ def _apply_absence_rules(paragraphs: List[str], rules: List[Rule]) -> List[Penal
                 reason=rule.reason,
                 rule_id=rule.rule_id,
                 severity=rule.severity,
-                excerpt=_trim(paragraphs[first_hit]),
-                para_index=first_hit,
+                excerpt=_trim(paragraphs[body_hit]),
+                para_index=body_hit,
                 keyword=None,
                 mitigation=rule.mitigation,
             )

@@ -260,3 +260,23 @@ class TestRuleMeshes:
             not in {"R-COMM-6", "R-COMM-7", "R-LIAB-5", "R-COMM-8", "R-LIAB-6", "R-DATA-5"}
             for p in r.penalties
         )
+
+    def test_absence_rule_excerpt_never_a_heading(self):
+        """R-DATA-4 must anchor on a body paragraph, not a section heading.
+
+        A heading like "1. PERSONAL DATA" satisfies the topic condition but is
+        not a clause; the finding excerpt has to quote the actual body text
+        (or fall back only when no body paragraph mentions the topic).
+        """
+        paras = [
+            "1. PERSONAL DATA",
+            "The customer will provide personal data for the services.",
+            "2. TERM AND FEES",
+        ]
+        r = score_document(paras, "d")
+        data4 = [p for p in r.penalties if p.rule_id == "R-DATA-4"]
+        assert data4, "absence rule must fire when the topic is present"
+        assert len(data4) == 1
+        assert data4[0].para_index == 1
+        assert "personal data" in (data4[0].excerpt or "").casefold()
+        assert "1. PERSONAL DATA" != (data4[0].excerpt or "").strip()
