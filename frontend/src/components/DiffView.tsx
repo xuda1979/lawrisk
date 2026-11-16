@@ -1,0 +1,104 @@
+import { useMemo, useState } from 'react'
+import type { AlignedRow } from '../types'
+
+const OP_LABEL: Record<string, string> = {
+  add: 'added',
+  delete: 'deleted',
+  modify: 'modified',
+}
+
+function inline(text: string | null, mark: string[], op: string) {
+  if (!text) return null
+  if ((op !== 'modify' && op !== 'delete' && op !== 'add') || mark.length === 0) {
+    return <>{text}</>
+  }
+  const words = text.split(/(\s+)/)
+  return words.map((w, i) =>
+    mark.includes(w.trim()) ? (
+      <mark key={i} className={op === 'delete' ? 'hl-removed' : 'hl-added'}>
+        {w}
+      </mark>
+    ) : (
+      <span key={i}>{w}</span>
+    ),
+  )
+}
+
+function Side({ title, text, mark, op }: { title: string; text: string | null; mark: string[]; op: string }) {
+  return (
+    <div className={`side side--${op}`}>
+      <div className="side__title">{title}</div>
+      <p className="side__text">{inline(text, mark, op)}</p>
+    </div>
+  )
+}
+
+export function DiffView({ rows }: { rows: AlignedRow[] }) {
+  const bySection = useMemo(() => {
+    const map = new Map<string, AlignedRow[]>()
+    for (const r of rows) {
+      const arr = map.get(r.section) ?? []
+      arr.push(r)
+      map.set(r.section, arr)
+    }
+    return Array.from(map.entries())
+  }, [rows])
+
+  const [active, setActive] = useState<string>('all')
+
+  if (rows.length === 0) {
+    return <div className="empty">No differences detected between the two documents.</div>
+  }
+
+  const shown = active === 'all' ? bySection : bySection.filter(([s]) => s === active)
+
+  return (
+    <div className="diff-view">
+      <div className="section-filter">
+        <button
+          className={active === 'all' ? 'active' : ''}
+          onClick={() => setActive('all')}
+        >
+          All sections
+        </button>
+        {bySection.map(([section]) => (
+          <button
+            key={section}
+            className={active === section ? 'active' : ''}
+            onClick={() => setActive(section)}
+          >
+            {section}
+          </button>
+        ))}
+      </div>
+      {shown.map(([section, items]) => (
+        <section key={section} className="diff-section">
+          <h4>{section}</h4>
+
+          {items.map((row, idx) => (
+            <div key={idx} className={`diff-row diff-row--${row.op}`}>
+              <div className="diff-grid">
+                <Side
+                  title="Template A"
+                  text={row.op === 'add' ? null : row.leftText}
+                  mark={row.leftRemoved}
+                  op={row.op}
+                />
+                <Side
+                  title="Template B"
+                  text={row.op === 'delete' ? null : row.rightText}
+                  mark={row.rightAdded}
+                  op={row.op}
+                />
+              </div>
+              <div className="diff-meta">
+                <span className={`pill pill--${row.op}`}>{OP_LABEL[row.op]}</span>
+                <em>{row.summary}</em>
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
+    </div>
+  )
+}
