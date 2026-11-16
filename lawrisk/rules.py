@@ -132,6 +132,24 @@ RULES: List[Rule] = [
         reason="Fees are non-refundable / non-cancellable, locking the counterparty into payment",
         mitigation="Allow pro-rata refunds or termination credits for unused services and carve out cancellation-for-cause.",
     ),
+    Rule(
+        rule_id="R-COMM-8",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(
+            r"(?:suspend|deactivate)[^.]{0,60}"
+            r"(?:the services|services|access|the account|any account)"
+            r"[^.]{0,50}"
+            r"(?:without (?:prior )?(?:notice|consent|warning)|"
+            r"at any time|"
+            r"at (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute)[^.]{0,15}(?:discretion)|"
+            r"with immediate effect)",
+            re.IGNORECASE,
+        ),
+        exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
+        severity=20,
+        reason="Unilateral suspension of services/account by the counterparty without notice or consent",
+        mitigation="Require notice, a cure period and cause for any suspension, and credit for service downtime.",
+    ),
     # ----------------------------------------------------------------- liability
     Rule(
         rule_id="R-LIAB-1",
@@ -179,7 +197,44 @@ RULES: List[Rule] = [
         reason="Availability / quality of services is disclaimed (interruption or error-free operation not warranted)",
         mitigation="Add service-level and availability commitments with remedies for sustained downtime.",
     ),
+    Rule(
+        rule_id="R-LIAB-6",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(
+            r"liquidated damages[^.]{0,80}(?:forfeit|penalty|per[ -]?(?:day|week|month|occurrence|event)|"
+            r"fixed (?:amount|sum))|"
+            r"liquidated damages\b",
+            re.IGNORECASE,
+        ),
+        exclusion=re.compile(
+            r"(?:no|not|exclude(e?d)?|only|solely|cap(?:ed)?|limited to|"
+            r"genuine pre[- ]?estimate|reasonable estimate|proportionate)",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Liquidated-damages / penalty clause may allow disproportionate recovery",
+        mitigation="Cap liquidated damages at a genuine pre-estimate of loss; avoid penalty-style per-day accrual without a bound.",
+    ),
     # ------------------------------------------------------------------- data
+    Rule(
+        rule_id="R-DATA-5",
+        dimension=Dimension.DATA,
+        pattern=re.compile(
+            r"(?:data|information)[^.]{0,60}"
+            r"(?:shall (?:be )?(?:retained?|kept)|may (?:be )?(?:retained?|kept))"
+            r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)",
+            re.IGNORECASE,
+        ),
+        exclusion=re.compile(
+            r"(?:require|required|obligat|as (?:required|needed)|in accordance with|"
+            r"only for|solely|necessary to (?:comply|fulfil|fulfill)|legal obligation|"
+            r"not (?:be )?(?:retained|kept))",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Customer data may be retained after termination without a bounded, consent-limited basis",
+        mitigation="Bound post-termination data retention to legal requirements, delete or return data within a defined window after term.",
+    ),
     Rule(
         rule_id="R-DATA-1",
         dimension=Dimension.DATA,

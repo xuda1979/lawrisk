@@ -210,6 +210,42 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-LIAB-5" for p in r.penalties)
 
+    def test_unilateral_suspension_flagged(self):
+        r = score_document(
+            ["Provider may suspend the Services at any time without prior notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-8" for p in r.penalties)
+
+    def test_notice_bound_suspension_not_flagged(self):
+        r = score_document(
+            ["Provider may suspend the Services only if 30 days' written notice is given."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-8" for p in r.penalties)
+
+    def test_liquidated_damages_flagged(self):
+        r = score_document(
+            ["Customer shall pay liquidated damages of $1,000 per day for delay."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-6" for p in r.penalties)
+
+    def test_genuine_pre_estimate_not_flagged(self):
+        r = score_document(
+            ["Liquidated damages are a genuine pre-estimate of loss."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-6" for p in r.penalties)
+
+    def test_post_termination_retention_flagged(self):
+        r = score_document(
+            ["Customer data shall be retained after termination for seven years."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_law_bound_retention_not_flagged(self):
+        r = score_document(
+            ["Customer data shall be retained after termination only as required by law."], "d"
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
     def test_extended_rules_keep_clean_footer_text_clean(self):
         """Calibration guard: extended rule set adds no findings to clean fixtures."""
         r = score_document(
@@ -220,5 +256,7 @@ class TestRuleMeshes:
             "d",
         )
         assert all(
-            p.rule_id not in {"R-COMM-6", "R-COMM-7", "R-LIAB-5"} for p in r.penalties
+            p.rule_id
+            not in {"R-COMM-6", "R-COMM-7", "R-LIAB-5", "R-COMM-8", "R-LIAB-6", "R-DATA-5"}
+            for p in r.penalties
         )
