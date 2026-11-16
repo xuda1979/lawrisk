@@ -112,6 +112,26 @@ RULES: List[Rule] = [
         reason="Unilateral amendment of the agreement or its terms without mutual written consent",
         mitigation="Require amendments to be agreed in writing by both parties; allow only limited, notice-based administrative changes.",
     ),
+    Rule(
+        rule_id="R-COMM-6",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(
+            r"late payment(?:s)?[^.]{0,40}(?:interest|penalty|fee)|"
+            r"interest[^.]{0,20}(?:at|of|=)[^.]{0,25}(?:per month|per annum|%|percent)",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Late-payment interest/penalty applies to the counterparty above market rates",
+        mitigation="Cap late-payment interest at a statutory or market rate and add a grace period before interest accrues.",
+    ),
+    Rule(
+        rule_id="R-COMM-7",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(r"non[ -]?refundable(?: and non[ -]?cancellable)?|non[ -]?cancellable", re.IGNORECASE),
+        severity=15,
+        reason="Fees are non-refundable / non-cancellable, locking the counterparty into payment",
+        mitigation="Allow pro-rata refunds or termination credits for unused services and carve out cancellation-for-cause.",
+    ),
     # ----------------------------------------------------------------- liability
     Rule(
         rule_id="R-LIAB-1",
@@ -145,6 +165,19 @@ RULES: List[Rule] = [
         severity=30,
         reason='"As-is" delivery with warranties disclaimed',
         mitigation="Restore basic warranties (conformity, availability) and remove absolute as-is disclaimers.",
+    ),
+    Rule(
+        rule_id="R-LIAB-5",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(
+            r"(?:does not|will not|shall not|makes? no)[^.]{0,40}"
+            r"(?:warrant(?:y|ies?)?|guarantee|represent)[^.]{0,40}"
+            r"(?:uninterrupted|error[- ]?free|available|fit for)",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Availability / quality of services is disclaimed (interruption or error-free operation not warranted)",
+        mitigation="Add service-level and availability commitments with remedies for sustained downtime.",
     ),
     # ------------------------------------------------------------------- data
     Rule(

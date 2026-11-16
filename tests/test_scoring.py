@@ -173,3 +173,52 @@ class TestRuleMeshes:
             ["Personal data shall be processed in accordance with GDPR and the DPA."], "d"
         )
         assert all(p.rule_id != "R-DATA-1" for p in r.penalties)
+
+    def test_late_payment_interest_flagged(self):
+        r = score_document(
+            ["Late payments attract interest at 2% per month."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_ordinary_dunning_not_flagged(self):
+        r = score_document(
+            ["Invoices are due within 30 days; reminders will be sent for overdue amounts."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
+
+    def test_non_refundable_fees_flagged(self):
+        r = score_document(
+            ["All fees are non-refundable and non-cancellable."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-7" for p in r.penalties)
+
+    def test_refund_policy_not_flagged(self):
+        r = score_document(
+            ["Unused portions of prepaid fees may be refunded on written request."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-7" for p in r.penalties)
+
+    def test_availability_disclaimer_flagged(self):
+        r = score_document(
+            ["Provider does not warrant that the Services will be uninterrupted or error-free."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
+
+    def test_availability_sla_not_flagged(self):
+        r = score_document(
+            ["The Services will be available 99.9% of the time; guaranteed response times apply."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-5" for p in r.penalties)
+
+    def test_extended_rules_keep_clean_footer_text_clean(self):
+        """Calibration guard: extended rule set adds no findings to clean fixtures."""
+        r = score_document(
+            [
+                "Professional services agreement between the parties.",
+                "Either party may terminate by mutual written agreement.",
+            ],
+            "d",
+        )
+        assert all(
+            p.rule_id not in {"R-COMM-6", "R-COMM-7", "R-LIAB-5"} for p in r.penalties
+        )
