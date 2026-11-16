@@ -175,6 +175,60 @@ class TestRuleMeshes:
         )
         assert all(p.dimension is not Dimension.EXPORT for p in r.penalties)
 
+    def test_subject_to_us_sanctions_not_flagged(self):
+        # Regression: "subject to US sanctions" must be recognised as an
+        # export-affirming clause, not a sanctions risk (R-EXP-1 exclusion).
+        r = score_document(
+            ["This Agreement is subject to US sanctions regulations and export licensing."], "d"
+        )
+        assert all(p.rule_id != "R-EXP-1" for p in r.penalties)
+
+    def test_reexport_diversion_compliance_not_flagged(self):
+        # Regression: an affirmative re-export/diversion control clause must not
+        # trigger the absence rule R-EXP-4.
+        r = score_document(
+            ["Promptly notify the other party of any export re-export diversion risk and comply with applicable controls."], "d"
+        )
+        assert all(p.rule_id != "R-EXP-4" for p in r.penalties)
+
+    def test_unrestricted_assignment_flagged(self):
+        r = score_document(
+            ["Provider may assign this agreement without the prior written consent of Customer."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_consent_bound_assignment_not_flagged(self):
+        r = score_document(
+            ["Neither party may assign this agreement without the consent of the other party."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_affiliate_assignment_not_flagged(self):
+        r = score_document(
+            ["Either party may assign this agreement to an affiliate without consent."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_liability_cap_shall_not_exceed_flagged(self):
+        r = score_document(
+            ["The aggregate liability of each party shall not exceed the fees paid."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-2" for p in r.penalties)
+
+    def test_liability_cap_long_gap_flagged(self):
+        # Regression: the subject/gap between "liability" and "limited to" may
+        # exceed the original 40-char window.
+        r = score_document(
+            ["The total liability of either party under this agreement is limited to twelve months of fees."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-2" for p in r.penalties)
+
+    def test_late_payment_charge_flagged(self):
+        r = score_document(
+            ["A late payment service charge of 1.5% per month applies to overdue amounts."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
     def test_deliverable_mention_without_export_topic_not_flagged(self):
         # Regression: plain "deliverables" wording must not trigger the
         # absence rule R-EXP-4 (export-compliance clause missing).

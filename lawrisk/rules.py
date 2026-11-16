@@ -91,6 +91,12 @@ RULES: List[Rule] = [
         rule_id="R-COMM-4",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(r"assign\s*:\s*|assign(?: this agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:(?:neither|either|each|both) party may(?: not)? assign|"
+            r"(?:may|shall|will) not assign(?: this agreement)?|"
+            r"assign[^.]{0,60}(?:to an affiliate|with (?:the )?(?:prior )?written consent))",
+            re.IGNORECASE,
+        ),
         severity=20,
         reason="Assignment without the other party's prior written consent",
         mitigation="Add mutual prior-written-consent approval for any assignment, and carve out assignment to an affiliate.",
@@ -120,7 +126,7 @@ RULES: List[Rule] = [
         rule_id="R-COMM-6",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"late payment(?:s)?[^.]{0,40}(?:interest|penalty|fee)|"
+            r"late payment(?:s)?[^.]{0,40}(?:interest|penalty|fee|charge)|"
             r"interest[^.]{0,20}(?:at|of|=)[^.]{0,25}(?:per month|per annum|%|percent)",
             re.IGNORECASE,
         ),
@@ -167,7 +173,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-2",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,40}limited to", re.IGNORECASE),
+        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,60}(?:limited to|shall not exceed)", re.IGNORECASE),
         severity=25,
         reason="Aggregate liability cap may be below expected exposure",
         mitigation="Negotiate a cap that covers realistically foreseeable loss; base it on fees for 12 months or more.",
@@ -274,7 +280,10 @@ RULES: List[Rule] = [
         dimension=Dimension.EXPORT,
         pattern=re.compile(r"\b(?:exports?|sanctions?|embargoes?|bribery|anti[- ]corruption|itar|deemed exports?)\b", re.IGNORECASE),
         exclusion=re.compile(
-            r"(?:comply (?:with|ing)|in compliance|subject to (?:applicable )?(?:export|sanction)|responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|applicable (?:export control|sanctions) laws)",
+            r"(?:comply (?:with|ing)|in compliance|"
+            r"subject to (?:[^.]{0,20})?(?:export|sanction)s?|"
+            r"responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|"
+            r"applicable (?:export control|sanctions) laws)",
             re.IGNORECASE,
         ),
         severity=25,
@@ -322,7 +331,12 @@ ABSENCE_RULES: List[Rule] = [
             r"international\s+(?:sale|sales|shipment|shipments|transfer|transfers|trade|transaction)",
             re.IGNORECASE,
         ),
-        pattern=re.compile(r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance", re.IGNORECASE),
+        pattern=re.compile(
+            r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance|"
+            r"export (?:licens|regulation|law)|sanctions (?:licens|regulation|law)|"
+            r"re[- ]?export|diversion|controls",
+            re.IGNORECASE,
+        ),
         severity=25,
         reason="Export activities likely, but no export-compliance clause found",
         mitigation="Include an export-control and sanctions-compliance clause and allocate licence responsibility clearly.",
