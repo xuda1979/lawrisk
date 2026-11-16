@@ -471,6 +471,21 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-COMM-7" for p in r.penalties)
 
+    def test_no_refunds_shall_be_made_flagged(self):
+        # Regression: "no refunds shall/will be made" wording (no literal
+        # "non-refundable") must fire R-COMM-7.
+        r = score_document(
+            ["All amounts paid under this agreement are final; no refunds shall be made once services have been delivered."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-7" for p in r.penalties)
+
+    def test_no_refunds_will_be_given_flagged(self):
+        # Regression: "no refunds will be given for any reason" must fire.
+        r = score_document(
+            ["Once the order is placed, no refunds will be given for any reason."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-7" for p in r.penalties)
+
     def test_availability_disclaimer_flagged(self):
         r = score_document(
             ["Provider does not warrant that the Services will be uninterrupted or error-free."], "d"
@@ -482,6 +497,22 @@ class TestRuleMeshes:
             ["The Services will be available 99.9% of the time; guaranteed response times apply."], "d"
         )
         assert all(p.rule_id != "R-LIAB-5" for p in r.penalties)
+
+    def test_no_warranty_fitness_for_purpose_flagged(self):
+        # Regression: "makes no warranty of fitness for a particular purpose"
+        # must fire R-LIAB-5 even though the qualifier is "fitness for".
+        r = score_document(
+            ["Vendor makes no warranty of fitness for a particular purpose."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
+
+    def test_disclaims_warranties_merchantability_flagged(self):
+        # Regression: "disclaims all warranties ... including merchantability"
+        # must fire R-LIAB-5.
+        r = score_document(
+            ["Vendor disclaims all warranties, express or implied, including merchantability."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
 
     def test_unilateral_suspension_flagged(self):
         r = score_document(
@@ -628,6 +659,14 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
 
+    def test_eu_storage_location_not_transfer_flagged(self):
+        # Regression: "the European Union" (EU-as-region, not the "EU" shorthand)
+        # must not count as a cross-border transfer destination for R-DATA-2.
+        r = score_document(
+            ["Customer personal data shall be stored on servers located in the European Union only."], "d"
+        )
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
     def test_transfer_prohibition_not_flagged(self):
         # Regression: prohibition-form clauses ("shall not be transferred",
         # "No transfer ... shall occur without safeguards") are protective and
@@ -673,6 +712,22 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
 
+    def test_use_data_for_own_business_purposes_flagged(self):
+        # Regression: "use customer data for its own business purposes" must
+        # fire R-DATA-3 even though the verb is "use", not "process".
+        r = score_document(
+            ["Provider may use customer data for its own business purposes, including analytics."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_use_data_for_own_purposes_flagged(self):
+        # Regression: the verb-set extension must also catch "use ... for its
+        # own purposes" without the word "business".
+        r = score_document(
+            ["The vendor may use non-personal customer data for its own purposes."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
     def test_purpose_limited_personal_data_processing_not_flagged(self):
         # Regression: "collected and processed solely for the purpose" and
         # "will only be processed" are purpose-limited and must not fire
@@ -705,6 +760,14 @@ class TestRuleMeshes:
             ["Re-export of deliverables requires prior written authorization from Provider."], "d"
         )
         assert all(p.rule_id != "R-EXP-3" for p in r.penalties)
+
+    def test_prohibited_reexport_after_written_approval_not_flagged(self):
+        # Regression: a flat prohibition ("may not be re-exported without ...
+        # approval") is a control, not a gap, and must not fire R-EXP-1/R-EXP-3.
+        r = score_document(
+            ["Deliverables may be shipped worldwide, but may not be re-exported without the prior written approval of the licensor."], "d"
+        )
+        assert all(p.rule_id not in {"R-EXP-1", "R-EXP-3"} for p in r.penalties)
 
     def test_mutual_price_adjustment_not_flagged(self):
         # Regression: mutual/indexed price adjustments must not fire R-COMM-3.
@@ -849,6 +912,34 @@ class TestRuleMeshes:
             "d",
         )
         assert all(p.rule_id != "R-EXP-4" for p in r2.penalties)
+
+    def test_compliance_with_general_laws_including_sanctions_not_flagged(self):
+        # Regression: a generic compliance clause that expressly covers
+        # "sanctions administered by OFAC" is an export-compliance protective
+        # term and must not fire the absence rule R-EXP-4.
+        r = score_document(
+            ["Both parties shall comply with all applicable laws, including sanctions administered by OFAC."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-4" for p in r.penalties)
+
+    def test_no_business_with_sanctioned_countries_not_flagged(self):
+        # Regression: a flat prohibition of dealings with sanctioned countries
+        # is protective and must not fire the absence rule R-EXP-4.
+        r = score_document(
+            ["Neither party shall engage in business dealings with sanctioned countries."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-4" for p in r.penalties)
+
+    def test_international_trade_without_compliance_clause_still_flagged(self):
+        # Regression: the broadened protective pattern must not mask a genuine
+        # absence gap (international trade with no compliance wording anywhere).
+        r = score_document(
+            ["Buyers may sell the goods to customers abroad in any country."],
+            "d",
+        )
+        assert any(p.rule_id == "R-EXP-4" for p in r.penalties)
 
     def test_consent_based_processing_not_flagged(self):
         # Regression: consent / lawful-basis constructions resolve the lawful

@@ -209,7 +209,12 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-7",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"non[ -]?refundable(?: and non[ -]?cancellable)?|non[ -]?cancellable", re.IGNORECASE),
+        pattern=re.compile(
+            r"non[ -]?refundable(?: and non[ -]?cancellable)?|non[ -]?cancellable|"
+            r"no refunds? (?:shall|will|may|can|cannot?|may not) (?:be )?(?:made|given|paid|issued)|"
+            r"refunds? (?:will|shall) not (?:be )?(?:made|given|paid|issued)",
+            re.IGNORECASE,
+        ),
         severity=15,
         reason="Fees are non-refundable / non-cancellable, locking the counterparty into payment",
         mitigation="Allow pro-rata refunds or termination credits for unused services and carve out cancellation-for-cause.",
@@ -305,9 +310,9 @@ RULES: List[Rule] = [
         rule_id="R-LIAB-5",
         dimension=Dimension.LIABILITY,
         pattern=re.compile(
-            r"(?:does not|will not|shall not|makes? no)[^.]{0,40}"
+            r"(?:does not|will not|shall not|makes? no|disclaim(?:s|ing|ed)?)[^.]{0,40}"
             r"(?:warrant(?:y|ies?)?|guarantee|represent)[^.]{0,40}"
-            r"(?:uninterrupted|error[- ]?free|available|fit for)",
+            r"(?:uninterrupted|error[- ]?free|available|fit for|fitness for|merchantab)",
             re.IGNORECASE,
         ),
         severity=20,
@@ -418,7 +423,7 @@ RULES: List[Rule] = [
             r"[^.]{0,20}(?:personal )?(?:data|information)[^.]{0,30}"
             r"(?:to|outside|abroad|from|in|at|into)"
             r"[^.]{0,20}(?:the )?"
-            r"(?:united states|u\.?s\.?a?\.?|e\.?u\.?|eea|third[ -]countr(?:y|ies)|"
+            r"(?:united states|u\.?s\.?a?\.?\b|e\.?u\.?\b|eea\b|third[ -]countr(?:y|ies)|"
             r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
             r"third[ -]parti(?:es|y)|outside|abroad)"
             r")|(?:"
@@ -430,7 +435,7 @@ RULES: List[Rule] = [
             r"(?:abroad|outside|"
             r"(?:to|from|in|at|into|with|outside)"
             r"[^.]{0,20}(?:the )?"
-            r"(?:united states|u\.?s\.?a?\.?|e\.?u\.?|eea|third[ -]countr(?:y|ies)|"
+            r"(?:united states|u\.?s\.?a?\.?\b|e\.?u\.?\b|eea\b|third[ -]countr(?:y|ies)|"
             r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
             r"third[ -]parti(?:es|y)|outside|abroad)"
             r")"
@@ -455,7 +460,13 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-DATA-3",
         dimension=Dimension.DATA,
-        pattern=re.compile(r"process[^.]{0,30}data[^.]{0,20}(?:for any purpose|for (?:its|our) own(?: independent)? purposes|unlimited)", re.IGNORECASE),
+        pattern=re.compile(
+            r"(?:process|use|sell|disclos|retain)(?:ing|es|ed|s)?"
+            r"[^.]{0,30}data[^.]{0,20}"
+            r"(?:for any purpose|for (?:its|our) own(?: independent)?(?: business)? purposes|"
+            r"unlimited|without limitation)",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"(?:necessary to comply|necessary for (?:compliance with|the purpose of complying)|"
             r"as (?:required|needed|mandated) by (?:applicable )?law|"
@@ -479,7 +490,8 @@ RULES: List[Rule] = [
             r"subject to (?:[^.]{0,20})?(?:export|sanction)s?|"
             r"responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|"
             r"applicable (?:export control|sanctions) laws|"
-            r"with(out)? (?:the )?(?:prior |written ){0,2}authori[sz](?:ation)?)",
+            r"with(out)? (?:the )?(?:prior |written ){0,2}"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent))",
             re.IGNORECASE,
         ),
         severity=25,
@@ -522,6 +534,9 @@ RULES: List[Rule] = [
             r"(?:require[sd]?[^.]{0,30}authori[sz]|obtain[^.]{0,30}authori[sz]|"
             r"prior written authori[sz]|written authori[sz](?:ation)? (?:of|from|by)|"
             r"with (?:the )?(?:prior |written )?authori[sz](?:ation)?|"
+            r"(?:may|shall|will|must|can) not (?:be )?(?:re[- ]?export(?:ed|ing)?|export(?:ed|ing)?)"
+            r"[^.;]{0,40}without[^.;]{0,40}"
+            r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent)|"
             r"subject to|comply|controls|restrictions|screening)",
             re.IGNORECASE,
         ),
@@ -578,7 +593,18 @@ ABSENCE_RULES: List[Rule] = [
             r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance|"
             r"export (?:licens|regulation|law)|sanctions (?:licens|regulation|law)|"
             r"re[- ]?export|diversion|export controls?|"
-            r"(?:comply|compliance)[^.]{0,30}(?:controls?|measures?)",
+            r"(?:comply|compliance)[^.]{0,30}(?:controls?|measures?)|"
+            r"(?:comply|compliance)[^.]{0,40}(?:with all applicable laws?|with applicable laws?)"
+            r"[^.]{0,40}(?:including|such as)[^.]{0,40}(?:export|sanction)|"
+            r"(?:laws?|regulations?|rules?)[^.]{0,30}"
+            r"(?:including|covering|relating to|governing)[^.]{0,30}(?:export|sanction)|"
+            r"no dealings?(?: with| in)[^.]{0,40}sanctioned|"
+            r"(?:no|shall not)[^.]{0,40}business[^.]{0,40}(?:with|in)[^.]{0,40}sanctioned|"
+            r"(?:neither party|no party|no person|no one)[^.;]{0,40}"
+            r"(?:engage|deal|transact|do business)[^.;]{0,30}"
+            r"(?:with|in)[^.;]{0,30}sanctioned|"
+            r"(?:shall|will|must) not (?:engage in|conduct|enter into|do)[^.;]{0,40}"
+            r"(?:business|dealings|transactions?)?[^.;]{0,20}(?:with|in)[^.;]{0,30}sanctioned",
             re.IGNORECASE,
         ),
         severity=25,
