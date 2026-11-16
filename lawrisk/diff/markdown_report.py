@@ -116,6 +116,25 @@ def _top_risky_clauses(sections, left_map, right_map, n: int = 5):
     return ranked[:n]
 
 
+def _risk_by_section(sections, left_map, right_map):
+    """Per-section A/B combined risk points, for the review-triage table.
+
+    Returns ``(label, left_pts, right_pts, combined)`` for sections that carry
+    at least one fired penalty, ordered by descending combined points.
+    """
+    rows = []
+    for label, items in sections:
+        left_pts = right_pts = 0
+        for it in items:
+            left, right = _item_risks(it, left_map, right_map)
+            left_pts += sum(r["severity"] for r in left)
+            right_pts += sum(r["severity"] for r in right)
+        if left_pts or right_pts:
+            rows.append((label, left_pts, right_pts, left_pts + right_pts))
+    rows.sort(key=lambda t: t[3], reverse=True)
+    return rows
+
+
 def _facts_table(facts: List[Mapping]) -> str:
     """Render found contract key facts as a Markdown table, deduped by name.
 
@@ -253,6 +272,19 @@ def render_markdown(
                     lines.append("")
                 else:
                     lines.append("")
+
+    if has_risk:
+        by_section = _risk_by_section(sections, left_map, right_map)
+        if by_section:
+            lines.append("## Risk by section")
+            lines.append("")
+            lines.append("Where the changed-clause risk points concentrate — combined A + B severity.")
+            lines.append("")
+            lines.append("| Section | Left (A) | Right (B) | Total |")
+            lines.append("|---------|----------|-----------|-------|")
+            for label, left_pts, right_pts, total in by_section:
+                lines.append(f"| `{label[:50]}` | {left_pts} | {right_pts} | {total} |")
+            lines.append("")
 
     lines.append("---")
     lines.append("## Change ledger")

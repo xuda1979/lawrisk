@@ -73,6 +73,32 @@ function hasRisk(r: AlignedRow) {
   return ((r.leftRisks?.length ?? 0) + (r.rightRisks?.length ?? 0)) > 0
 }
 
+function sectionRiskTotals(rows: AlignedRow[]) {
+  const map = new Map<string, { a: number; b: number }>()
+  for (const r of rows) {
+    const a = r.leftRiskSum ?? 0
+    const b = r.rightRiskSum ?? 0
+    if (a === 0 && b === 0) continue
+    const cur = map.get(r.section) ?? { a: 0, b: 0 }
+    cur.a += a
+    cur.b += b
+    map.set(r.section, cur)
+  }
+  return map
+}
+
+function SectionBadge({ totals }: { totals: { a: number; b: number } }) {
+  const total = totals.a + totals.b
+  if (total === 0) return null
+  return (
+    <span className={`section-badge section-badge--${total >= 50 ? 'high' : 'med'}`}>
+      ⚠ {total} pts
+      {totals.a > 0 && <em className="section-badge__side">A +{totals.a}</em>}
+      {totals.b > 0 && <em className="section-badge__side">B +{totals.b}</em>}
+    </span>
+  )
+}
+
 export function DiffView({
   rows,
   left,
@@ -91,6 +117,8 @@ export function DiffView({
     }
     return Array.from(map.entries())
   }, [rows])
+
+  const riskTotals = useMemo(() => sectionRiskTotals(rows), [rows])
 
   const [active, setActive] = useState<string>('all')
   const [opType, setOpType] = useState<OpFilter>('all')
@@ -155,7 +183,10 @@ export function DiffView({
       </div>
       {shown.map(([section, items]) => (
         <section key={section} className="diff-section">
-          <h4>{section}</h4>
+          <h4>
+            {section}
+            <SectionBadge totals={riskTotals.get(section) ?? { a: 0, b: 0 }} />
+          </h4>
 
           {items.map((row, idx) => (
             <div key={idx} className={`diff-row diff-row--${row.op}`}>

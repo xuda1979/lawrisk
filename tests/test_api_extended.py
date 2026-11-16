@@ -364,6 +364,61 @@ async def test_report_ranks_highest_risk_clauses():
     assert "40 risk pts" in text
 
 
+async def test_report_risk_by_section():
+    """Both exported reports break changed-clause risk points down per section."""
+    from io import BytesIO
+
+    import base64
+
+    from docx import Document
+
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": (
+                    "TERMINATION\n\n"
+                    "Either party may terminate for cause.\n\n"
+                    "This Agreement shall remain in effect for a fixed term.\n\n"
+                    "Fees amount to $1000."
+                ),
+                "right": (
+                    "TERMINATION\n\n"
+                    "Either party may terminate for cause.\n\n"
+                    "This Agreement shall auto-renew automatically and the Provider "
+                    "reserves the right to amend the terms at its sole discretion "
+                    "without prior notice.\n\n"
+                    "Fees amount to $2000."
+                ),
+                "name_left": "Doc A",
+                "name_right": "Doc B",
+            },
+        )
+    assert r.status_code == 200
+    body = r.json()
+    md = body["markdown"]
+
+    # Section table lists where the 40 right-side points landed.
+    assert "## Risk by section" in md
+    assert "| Section | Left (A) | Right (B) | Total |" in md
+    assert "| `TERMINATION` | 0 | 40 | 40 |" in md
+    # Review-triage sections come before the verbose change ledger.
+    assert md.index("## Risk by section") < md.index("## Change ledger")
+
+    # The Word report mirrors the section table.
+    raw = base64.b64decode(body["report_docx"])
+    assert raw[:2] == b"PK"
+    document = Document(BytesIO(raw))
+    text = "\n".join(p.text for p in document.paragraphs)
+    assert "Risk by section" in text
+    section_table = next(
+        (t for t in document.tables if [c.text for c in t.rows[0].cells] == ["Section", "Left (A)", "Right (B)", "Total"]),
+        None,
+    )
+    assert section_table is not None
+    assert [c.text for c in section_table.rows[1].cells] == ["TERMINATION", "0", "40", "40"]
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

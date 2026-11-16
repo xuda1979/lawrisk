@@ -764,6 +764,42 @@ body {
   letter-spacing: 0.4px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: auto;
+  border: 1px solid transparent;
+}
+
+.section-badge--med {
+  color: var(--amber, #b8860b);
+  border-color: rgba(184, 134, 11, 0.45);
+  background: rgba(184, 134, 11, 0.08);
+}
+
+.section-badge--high {
+  color: var(--danger, #c0392b);
+  border-color: rgba(192, 57, 43, 0.45);
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.section-badge__side {
+  font-style: normal;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.85;
 }
 
 .diff-row {

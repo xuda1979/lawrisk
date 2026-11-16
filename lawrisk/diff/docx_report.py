@@ -148,6 +148,26 @@ def _top_risky_clauses(sections, left_map, right_map, n: int = 5):
     return ranked[:n]
 
 
+def _risk_by_section(sections, left_map, right_map):
+    """Per-section A/B combined risk points, for the review-triage table.
+
+    Returns ``(label, left_pts, right_pts, combined)`` for sections that carry
+    at least one fired penalty, ordered by descending combined points.
+    """
+    rows = []
+    for label, items in sections:
+        left_pts = right_pts = 0
+        for it in items:
+            left = left_map.get(it.para_index_left, []) if it.para_index_left is not None else []
+            right = right_map.get(it.para_index_right, []) if it.para_index_right is not None else []
+            left_pts += sum(r["severity"] for r in left)
+            right_pts += sum(r["severity"] for r in right)
+        if left_pts or right_pts:
+            rows.append((label, left_pts, right_pts, left_pts + right_pts))
+    rows.sort(key=lambda t: t[3], reverse=True)
+    return rows
+
+
 def _facts_rows(facts: List[Mapping]) -> List[tuple]:
     """Extract found key facts as (label, value, source), deduped by label.
 
@@ -312,6 +332,26 @@ def render_docx(
                 p.add_run(f"{it.summary[:90]}  ").bold = True
                 p.add_run(f"· {label} · {total} risk pts")
                 _add_risk_note(doc, it, left_map, right_map, label_left, label_right)
+
+    if has_risk:
+        by_section = _risk_by_section(sections, left_map, right_map)
+        if by_section:
+            doc.add_heading("Risk by section", level=2)
+            intro = doc.add_paragraph()
+            intro_run = intro.add_run(
+                "Where the changed-clause risk points concentrate — combined A + B severity."
+            )
+            intro_run.italic = True
+            table = doc.add_table(rows=1, cols=4)
+            table.style = "Table Grid"
+            for i, h in enumerate(("Section", "Left (A)", "Right (B)", "Total")):
+                table.rows[0].cells[i].text = h
+            for label, left_pts, right_pts, total in by_section:
+                cells = table.add_row().cells
+                cells[0].text = label[:50]
+                cells[1].text = str(left_pts)
+                cells[2].text = str(right_pts)
+                cells[3].text = str(total)
 
     if sections:
         _ledger_table(doc, sections, left_map, right_map, has_risk)
