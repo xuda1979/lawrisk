@@ -339,6 +339,20 @@ class TestRuleMeshes:
             for p in r.penalties
         )
 
+    def test_shall_not_assign_without_consent_not_flagged(self):
+        # Regression: the consent-bound "shall/will not assign" phrasing must be
+        # suppressed by the R-COMM-4 exclusion, not only the "may assign" form.
+        r = score_document(
+            ["Neither party shall assign this agreement without the prior written consent of the other."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_neither_will_assign_without_consent_not_flagged(self):
+        r = score_document(
+            ["Neither party will assign these presents without the prior written consent of the other."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
     def test_broad_liability_disclaimer_flagged(self):
         r = score_document(
             ["In no event shall the Provider be liable for consequential damages."], "d"

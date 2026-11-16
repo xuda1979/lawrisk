@@ -95,7 +95,7 @@ RULES: List[Rule] = [
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(r"assign\s*:\s*|assign(?: this agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without", re.IGNORECASE),
         exclusion=re.compile(
-            r"(?:(?:neither|either|each|both) party may(?: not)? assign|"
+            r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? assign|"
             r"(?:may|shall|will) not assign(?: this agreement)?|"
             r"assign[^.]{0,60}(?:to an affiliate|with (?:the )?(?:prior )?written consent))",
             re.IGNORECASE,
