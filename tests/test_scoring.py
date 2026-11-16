@@ -98,6 +98,12 @@ class TestCalibration:
         r = score_docx("risky_contract")
         assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
 
+    def test_risky_contract_flags_unilateral_amendment(self, score_docx):
+        r = score_docx("risky_contract")
+        hit = next((p for p in r.penalties if p.rule_id == "R-COMM-5"), None)
+        assert hit is not None
+        assert "amend the terms" in hit.excerpt.lower()
+
 
 class TestRuleMeshes:
     """Targeted unit checks on individual rules."""
@@ -123,6 +129,24 @@ class TestRuleMeshes:
             ["Provider may terminate this agreement without cause at any time."], "d"
         )
         assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_unilateral_amendment_flagged(self):
+        r = score_document(
+            ["Provider may amend the terms of this Agreement at any time without prior notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_mutual_amendment_not_flagged(self):
+        r = score_document(
+            ["Either party may amend this Agreement by written agreement signed by both parties."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_bound_amendment_not_flagged(self):
+        r = score_document(
+            ["This Agreement shall not be amended except by a written instrument signed by both parties."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
 
     def test_export_compliance_affirmation_not_flagged(self):
         r = score_document(

@@ -89,9 +89,10 @@ local and reproducible.
 ## Risk engine
 
 `lawrisk/rules.py` compiles a fixed rule set (auto-renewal, one-sided
-termination, unilateral price changes, assignment without consent, liability
-caps, indemnities, warranties disclaimers, data transfers, sanctioned
-jurisdictions, export controls, …). Each rule fires on the already-extracted
+termination, unilateral price changes, unilateral amendment without consent,
+assignment without consent, liability caps, indemnities, warranties
+disclaimers, data transfers, sanctioned jurisdictions, export controls, …).
+Each rule fires on the already-extracted
 paragraphs and emits a `Penalty` with `reason`, `rule_id`, `severity`, and a
 verbatim `excerpt`. Dimension scores cap at 100 and are weighted into the
 overall 0–100 score. The report carries a `deterministic_hash` (SHA-256 of
@@ -123,7 +124,7 @@ document with `POST /api/templates/msa/compare`. Dump them offline with:
 ## Tests
 
 ```bash
-pytest -q        # 62 tests, all local
+pytest -q        # 66 tests, all local
 cd frontend && npm run build   # verifies the SPA compiles
 ```
 

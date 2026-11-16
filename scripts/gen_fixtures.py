@@ -131,6 +131,7 @@ def risky_contract() -> docx.Document:
     _para(doc, "Provider reserves the right to adjust the prices unilaterally and without consent.")
     _heading(doc, "3. IP & Assignment")
     _para(doc, "Customer assigns all intellectual property and may assign this agreement to any third party without consent.")
+    _para(doc, "Provider may amend the terms of this Agreement at any time without prior notice.")
     _heading(doc, "4. Liability")
     _para(doc, "In no event shall Provider be liable for any consequential, indirect or special damages.")
     _para(doc, "Provider's aggregate liability is limited to the fees paid in the last 12 months.")

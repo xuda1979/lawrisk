@@ -86,6 +86,26 @@ RULES: List[Rule] = [
         severity=20,
         reason="Assignment without the other party's prior written consent",
     ),
+    Rule(
+        rule_id="R-COMM-5",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(
+            r"(?:"
+            r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
+            r"[^.]{0,30}"
+            r"(?:amend|modify|alter|vary|change|revise)\s+"
+            r"(?:this agreement|these presents|the terms|the terms and conditions|"
+            r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof)"
+            r"[^.]{0,35}"
+            r"(?:at any time|at (?:its|his|their)? ?(?:own )?(?:sole|absolute) discretion|"
+            r"without (?:prior )?(?:notice|consent|approval)|unilaterally)"
+            r")",
+            re.IGNORECASE,
+        ),
+        exclusion=_MUTUAL,
+        severity=20,
+        reason="Unilateral amendment of the agreement or its terms without mutual written consent",
+    ),
     # ----------------------------------------------------------------- liability
     Rule(
         rule_id="R-LIAB-1",
