@@ -147,6 +147,12 @@ RULES: List[Rule] = [
             r"[^.;]{0,40}(?:interest|penalty|fee|charge)|"
             r"(?:interest|penalty|fee|charge)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
             r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?|"
+            r"(?:interest|penalty|service charge|finance charge)[^.;]{0,45}(?:on|for)"
+            r"[^.;]{0,20}(?:overdue|delinquent|late|unpaid)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
+            r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%|"
+            r"(?:late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge))"
+            r"[^.;]{0,20}(?:of|=|at|:)\s*\$[0-9][0-9,]*(?:\.\d+)?[^.;]{0,25}"
+            r"(?:per |for each |for every |each |weekly |daily |monthly |annually|accrues|accruing|accrual)|"
             r"(?:late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge))"
             r"[^.;]{0,20}(?:of|=|at|:)[^.;:]{0,10}\d+(?:\.\d+)?\s*%",
             re.IGNORECASE,

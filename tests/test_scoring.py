@@ -324,6 +324,29 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
 
+    def test_delinquent_account_interest_flagged(self):
+        # Regression: word-order "interest on ... delinquent accounts at 1.5%
+        # per month" puts the rate after a long qualifier.
+        r = score_document(
+            ["The customer shall pay interest on any delinquent accounts at 1.5% per month."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_fixed_dollar_penalty_charge_flagged(self):
+        # Regression: a fixed-dollar penalty charge without any percentage.
+        r = score_document(
+            ["A 30-day grace period applies, after which a penalty charge of $500 accrues weekly."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_plain_dollar_fee_not_flagged(self):
+        # Precision: an ordinary dollar fee (no late payment/penalty context)
+        # must not be mistaken for a late-payment penalty.
+        r = score_document(
+            ["Customer shall pay a setup fee of $100,000 upon signature."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
+
     def test_non_refundable_fees_flagged(self):
         r = score_document(
             ["All fees are non-refundable and non-cancellable."], "d"
