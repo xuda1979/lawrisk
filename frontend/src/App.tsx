@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './index.css'
-import { compareFiles, health } from './api'
+import { compareFiles, health, reviewFile } from './api'
 import { DiffTree } from './components/DiffTree'
 import { DiffView } from './components/DiffView'
 import { FactsPanel } from './components/FactsPanel'
+import { ReviewView } from './components/ReviewView'
 import { RiskPanel } from './components/RiskPanel'
 import { TemplatesPanel } from './components/TemplatesPanel'
 import { VerdictBanner } from './components/VerdictBanner'
-import type { CompareResult } from './types'
+import type { CompareResult, ReviewResult } from './types'
 
 type Tab = 'diff' | 'tree' | 'report'
+type Mode = 'compare' | 'review'
 
 function FileDrop({
   label,
@@ -38,9 +40,11 @@ function FileDrop({
 }
 
 export default function App() {
+  const [mode, setMode] = useState<Mode>('compare')
   const [a, setA] = useState<File | null>(null)
   const [b, setB] = useState<File | null>(null)
   const [result, setResult] = useState<CompareResult | null>(null)
+  const [review, setReview] = useState<ReviewResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('diff')
@@ -74,6 +78,24 @@ export default function App() {
     }
   }, [a, b])
 
+  const runReview = useCallback(async () => {
+    if (!a) {
+      setError('Please choose a document.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await reviewFile(a, a.name)
+      setReview(res)
+      setTab('report')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Review failed')
+    } finally {
+      setBusy(false)
+    }
+  }, [a])
+
   const stats = result?.diff.stats
 
   return (
@@ -96,12 +118,37 @@ export default function App() {
       </header>
 
       <div className="controls">
-        <FileDrop label="Template A" file={a} onFile={setA} accent="a" />
-        <span className="arrow">→</span>
-        <FileDrop label="Template B" file={b} onFile={setB} accent="b" />
-        <button className="run" onClick={run} disabled={busy || !a || !b}>
-          {busy ? 'Comparing…' : 'Compare & score'}
-        </button>
+        <div className="mode">
+          <button
+            className={mode === 'compare' ? 'active' : ''}
+            onClick={() => setMode('compare')}
+          >
+            Compare two
+          </button>
+          <button
+            className={mode === 'review' ? 'active' : ''}
+            onClick={() => setMode('review')}
+          >
+            Review one
+          </button>
+        </div>
+        {mode === 'compare' ? (
+          <>
+            <FileDrop label="Template A" file={a} onFile={setA} accent="a" />
+            <span className="arrow">→</span>
+            <FileDrop label="Template B" file={b} onFile={setB} accent="b" />
+            <button className="run" onClick={run} disabled={busy || !a || !b}>
+              {busy ? 'Comparing…' : 'Compare & score'}
+            </button>
+          </>
+        ) : (
+          <>
+            <FileDrop label="Document" file={a} onFile={setA} accent="a" />
+            <button className="run" onClick={runReview} disabled={busy || !a}>
+              {busy ? 'Reviewing…' : 'Review & score'}
+            </button>
+          </>
+        )}
       </div>
 
       {error && <div className="error">{error}</div>}
@@ -192,7 +239,63 @@ export default function App() {
         </div>
       )}
 
-      {!result && (
+      {review && (
+        <div className="layout">
+          <aside className="risk">
+            <RiskPanel title={review.document_name} report={review.risk} />
+            <FactsPanel title={review.document_name} facts={review.facts} />
+            <TemplatesPanel
+              onCompare={(res) => {
+                setResult(res)
+                setTab('diff')
+              }}
+            />
+          </aside>
+
+          <main className="content">
+            <div className="tabs">
+              <button className={tab === 'report' ? 'active' : ''} onClick={() => setTab('report')}>
+                Risk findings
+              </button>
+              <button className={tab === 'diff' ? 'active' : ''} onClick={() => setTab('diff')}>
+                Markdown report
+              </button>
+            </div>
+            {tab === 'report' && <ReviewView review={review} />}
+            {tab === 'diff' && (
+              <div>
+                <p className="report-summary">{review.risk.summary}</p>
+                <div className="report-actions">
+                  <a
+                    className="download"
+                    href={`data:text/markdown;charset=utf-8,${encodeURIComponent(review.markdown)}`}
+                    download="lawrisk-review-report.md"
+                  >
+                    Download .md
+                  </a>
+                  <a
+                    className="download"
+                    href={`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${review.report_docx ?? ''}`}
+                    download="lawrisk-review-report.docx"
+                  >
+                    Download .docx
+                  </a>
+                  <a
+                    className="download download--ghost"
+                    href={`data:text/html;charset=utf-8,${encodeURIComponent(review.report_html ?? '')}`}
+                    download="lawrisk-review-report.html"
+                  >
+                    Download .html
+                  </a>
+                </div>
+                <pre className="markdown">{review.markdown}</pre>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {!result && !review && (
         <div className="hero">
           <h2>Two templates, one verdict.</h2>
           <p>

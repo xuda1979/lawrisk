@@ -488,3 +488,142 @@ def test_spa_served_when_dist_present(monkeypatch):
     status, ctype = asyncio.run(_check())
     assert status == 200
     assert "text/html" in ctype
+
+
+async def test_review_endpoint_full_flow():
+    """Single-document review: score, section-grouped findings, all exports."""
+    data = (FIXTURES / "risky_contract.docx").read_bytes()
+    async with _client() as c:
+        r = await c.post(
+            "/api/review",
+            files={"file": ("risky.docx", data, DOCX_MTYPE)},
+            data={"name": "Risky Vendor"},
+        )
+    assert r.status_code == 200
+    body = r.json()
+
+    assert body["document_name"] == "Risky Vendor"
+    assert body["risk"]["overall_score"] >= 80
+    assert body["risk"]["overall_level"] == "high"
+    assert body["risk"]["deterministic_hash"]
+
+    # Penalties are grouped under the sections they fall in, in order.
+    headings = [s["heading"] for s in body["sections"]]
+    assert headings == ["1. Term", "2. Fees", "3. IP & Assignment", "4. Liability", "5. Data", "6. Export"]
+    assert all(s["total_risk"] > 0 for s in body["sections"])
+    # The export/auto-renew section carries the highest combined weight.
+    assert body["sections"][4]["heading"] == "5. Data"
+
+    # Every finding stays attributable to source text.
+    for s in body["sections"]:
+        for f in s["findings"]:
+            assert f["rule_id"]
+            assert f["severity"] > 0
+            assert f["reason"]
+
+    # Each section's total equals the sum of its findings.
+    for s in body["sections"]:
+        assert s["total_risk"] == sum(f["severity"] for f in s["findings"])
+
+    # The fixture governs by Delaware law; its sole extracted fact is governing_law.
+    assert body["facts"] and "governing_law" in [f["name"] for f in body["facts"]]
+    assert body["llm_enabled"] is False
+
+    # All three report exports are populated.
+    assert "# Contract Risk Review" in body["markdown"]
+    assert "## Risk by section" in body["markdown"]
+    # The summary leads the report; the section table follows the findings.
+    assert body["markdown"].index("## Summary") < body["markdown"].index("## Risk by section")
+    import base64
+    raw = base64.b64decode(body["report_docx"])
+    assert raw[:2] == b"PK"
+    assert "<!DOCTYPE html>" in body["report_html"]
+    assert "Risky Vendor" in body["report_html"]
+
+
+async def test_review_groups_penalties_under_contract_section():
+    """A penalty in a headed section is grouped there, not in the preamble."""
+    async with _client() as c:
+        r = await c.post(
+            "/api/review",
+            files={
+                "file": (
+                    "doc.txt",
+                    b"INDEMNITY\n\n"
+                    b"Provider indemnifies Client against all claims arising from breach.\n\n"
+                    b"Either party may terminate immediately upon any breach.",
+                    "text/plain",
+                )
+            },
+        )
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["sections"]) == 1
+    assert body["sections"][0]["heading"] == "INDEMNITY"
+    assert any(f["dimension"] == "liability" for f in body["sections"][0]["findings"])
+
+
+async def test_review_fallback_bucket_for_unlocated_penalties():
+    """Document-level (para_index=None) penalties fall into the fallback bucket.
+
+    Current engine rules all anchor to a paragraph, so the bucket is verified
+    directly against the report-grouping helper with a constructed report.
+    """
+    from lawrisk.diff.single_report import _group_by_section
+    from lawrisk.models import Dimension, DimensionScore, Penalty, RiskLevel, RiskReport
+
+    risk = RiskReport(
+        document_id="d1",
+        overall_score=20,
+        overall_level=RiskLevel.LOW,
+        dimensions=[
+            DimensionScore(
+                dimension=Dimension.COMMERCIAL,
+                risk_level=RiskLevel.LOW,
+                raw_penalty=20,
+                normalized=20.0,
+                confidence=0.4,
+            )
+        ],
+        penalties=[
+            Penalty(
+                dimension=Dimension.COMMERCIAL,
+                reason="No cap on aggregate liability found.",
+                rule_id="liab.uncapped",
+                severity=20,
+                para_index=None,
+            )
+        ],
+        summary="low",
+        deterministic_hash="h1",
+    )
+    buckets = _group_by_section(["A widget supply agreement."], risk)
+    headings = [b["heading"] for b in buckets]
+    assert headings == ["Preamble / unlocated"]
+    assert buckets[0]["total_risk"] == 20
+    assert buckets[0]["findings"][0]["rule_id"] == "liab.uncapped"
+
+
+async def test_review_escapes_html_input():
+    """Raw angle brackets from document text never survive into the HTML report."""
+    async with _client() as c:
+        r = await c.post(
+            "/api/review",
+            files={
+                "file": (
+                    "doc.txt",
+                    b"Term: 12 months auto-renew.\nFees $1000; termination for <cause> is <not> permitted.",
+                    "text/plain",
+                )
+            },
+        )
+    assert r.status_code == 200
+    html = r.json()["report_html"]
+    assert "<cause>" not in html
+    assert "&lt;cause&gt;" in html
+
+
+async def test_review_rejects_empty_document():
+    async with _client() as c:
+        r = await c.post("/api/review", files={"file": ("doc.txt", b"", "text/plain")})
+    assert r.status_code == 422

@@ -104,6 +104,32 @@ export interface CompareResult {
   report_html?: string
 }
 
+export interface ReviewFinding {
+  rule_id: string
+  dimension: string
+  severity: number
+  reason: string
+  excerpt?: string | null
+  mitigation?: string | null
+}
+
+export interface ReviewSection {
+  heading: string
+  total_risk: number
+  findings: ReviewFinding[]
+}
+
+export interface ReviewResult {
+  document_name: string
+  risk: RiskReport
+  facts: FieldRun[]
+  sections: ReviewSection[]
+  markdown: string
+  report_docx?: string
+  report_html?: string
+  llm_enabled: boolean
+}
+
 export interface ClauseTemplate {
   id: string
   name: string

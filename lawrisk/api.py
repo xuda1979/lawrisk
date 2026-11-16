@@ -29,6 +29,11 @@ from lawrisk.diff.docx_report import render_docx
 from lawrisk.diff.html_report import render_html
 from lawrisk.diff.markdown_report import render_markdown
 from lawrisk.diff.sidebyside import aligned_rows, to_dict
+from lawrisk.diff.single_report import (
+    render_docx_review,
+    render_html_review,
+    render_markdown_review,
+)
 from lawrisk.fields import extract_fields
 from lawrisk.textutil import split_paragraphs
 from lawrisk.llm import describe_layer, summarize_clause
@@ -82,6 +87,22 @@ class CompareResult(BaseModel):
 class ParseResult(BaseModel):
     doc: DocParse
     llm_enabled: bool
+
+
+class ReviewResult(BaseModel):
+    """Single-document risk review: score + section-grouped findings + reports."""
+
+    document_name: str
+    risk: RiskReport
+    facts: list = Field(default_factory=list, description="Extracted key fields")
+    sections: list = Field(
+        default_factory=list,
+        description="Findings grouped by contract section: [{heading, total_risk, findings}]",
+    )
+    markdown: str = Field(default="", description="Markdown review report")
+    report_docx: str = Field(default="", description="Base64 .docx review report")
+    report_html: str = Field(default="", description="Self-contained HTML review report")
+    llm_enabled: bool = False
 
 
 class TemplateListResult(BaseModel):
@@ -340,6 +361,43 @@ async def compare_template(
         facts_a=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
         facts_b=[f.model_dump() for f in doc.fields],
     )
+
+
+@app.post("/api/review", response_model=ReviewResult)
+async def review_document(
+    file: UploadFile = File(...),
+    name: str = Form(default="Document"),
+) -> ReviewResult:
+    """Score a single uploaded document and group findings by contract section."""
+    data = await _read_limited(file)
+    try:
+        doc = parse_document(data, uuid.uuid4().hex[:8], file.filename or "")
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=422, detail=f"could not parse {file.filename}: {exc}")
+    if not doc.paragraphs:
+        raise HTTPException(status_code=422, detail="document must yield paragraphs")
+
+    risk = score_document(doc.paragraphs, doc.document_id)
+    facts = [f.model_dump() for f in doc.fields]
+    return ReviewResult(
+        document_name=name,
+        risk=risk,
+        facts=facts,
+        sections=_review_sections(doc.paragraphs, risk),
+        markdown=render_markdown_review(name, doc.paragraphs, risk, facts),
+        report_docx=base64.b64encode(
+            render_docx_review(name, doc.paragraphs, risk, facts)
+        ).decode("ascii"),
+        report_html=render_html_review(name, doc.paragraphs, risk, facts),
+        llm_enabled=describe_layer()["enabled"],
+    )
+
+
+def _review_sections(paragraphs: List[str], report: RiskReport) -> List[dict]:
+    """Group fired penalties under the contract section they fall in (for JSON)."""
+    from lawrisk.diff.single_report import _group_by_section
+
+    return _group_by_section(paragraphs, report)
 
 
 def _maybe_llm_summaries(report):

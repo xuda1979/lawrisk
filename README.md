@@ -18,6 +18,9 @@ firms). Upload two document templates (DOCX / PDF / TXT) and get:
 5. **Contract key-facts panel (P4)** — every compared document also surfaces
    its extracted business fields: deal currency, term, governing law and
    arbitration seat, each with the verbatim source paragraph.
+6. **Single-document risk review (P4)** — score one agreement and get findings
+   grouped under the contract sections they fall in, plus standalone
+   Markdown / DOCX / HTML review reports. New `Review one` mode in the SPA.
 
 Everything runs locally on regex/keyword rules (低成本、可复现). LLM
 summarisation is optional and off by default.
@@ -74,6 +77,7 @@ skipped when `LAWRISK_SERVE_SPA=0`.
 | `/api/diff-text`| POST   | JSON `{left, right, ...}` → CompareResult for plain text |
 | `/api/templates`| GET    | List the bundled clause-template library (P3)          |
 | `/api/templates/{id}/compare` | POST | One file → diff vs a baseline template + risk panel |
+| `/api/review`  | POST   | One file → section-grouped risk review + Markdown/DOCX/HTML reports |
 
 Uploaded files are size-limited to 20 MiB (413 on exceed). All endpoints are
 local, deterministic and LLM-free by default.
@@ -124,7 +128,7 @@ document with `POST /api/templates/msa/compare`. Dump them offline with:
 ## Tests
 
 ```bash
-pytest -q        # 72 tests, all local
+pytest -q        # 77 tests, all local
 cd frontend && npm run build   # verifies the SPA compiles
 ```
 
