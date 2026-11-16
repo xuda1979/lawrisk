@@ -70,6 +70,14 @@ export interface AlignedRow {
   rightAdded: string[]
 }
 
+export interface FieldRun {
+  name: string
+  value: string | null
+  source: string | null
+  para_index: number | null
+  found: boolean
+}
+
 export interface CompareResult {
   diff: DiffReportPayload
   risk_a: RiskReport
@@ -77,6 +85,8 @@ export interface CompareResult {
   rows: AlignedRow[]
   markdown: string
   llm_enabled: boolean
+  facts_a: FieldRun[]
+  facts_b: FieldRun[]
 }
 
 export interface ClauseTemplate {

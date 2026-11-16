@@ -3,6 +3,7 @@ import './index.css'
 import { compareFiles, health } from './api'
 import { DiffTree } from './components/DiffTree'
 import { DiffView } from './components/DiffView'
+import { FactsPanel } from './components/FactsPanel'
 import { RiskPanel } from './components/RiskPanel'
 import { TemplatesPanel } from './components/TemplatesPanel'
 import { VerdictBanner } from './components/VerdictBanner'
@@ -109,7 +110,9 @@ export default function App() {
         <div className="layout">
           <aside className="risk">
             <RiskPanel title={result.diff.document_left} report={result.risk_a} />
+            <FactsPanel title={result.diff.document_left} facts={result.facts_a} />
             <RiskPanel title={result.diff.document_right} report={result.risk_b} />
+            <FactsPanel title={result.diff.document_right} facts={result.facts_b} />
             <TemplatesPanel
               onCompare={(res) => {
                 setResult(res)

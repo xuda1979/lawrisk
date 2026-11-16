@@ -21,11 +21,12 @@ from typing import List
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from lawrisk.diff.differ import build_diff_tree, diff_texts
 from lawrisk.diff.markdown_report import render_markdown
 from lawrisk.diff.sidebyside import aligned_rows, to_dict
+from lawrisk.fields import extract_fields
 from lawrisk.textutil import split_paragraphs
 from lawrisk.llm import describe_layer, summarize_clause
 from lawrisk.models import DocParse, RiskReport
@@ -69,6 +70,8 @@ class CompareResult(BaseModel):
     rows: list
     markdown: str
     llm_enabled: bool
+    facts_a: list = Field(default_factory=list, description="Extracted key fields (A side)")
+    facts_b: list = Field(default_factory=list, description="Extracted key fields (B side)")
 
 
 class ParseResult(BaseModel):
@@ -135,13 +138,17 @@ def diff_text(req: DiffTextRequest) -> CompareResult:
     report = diff_texts(req.left, req.right, req.name_left, req.name_right)
     report = _maybe_llm_summaries(report)
     rows = [to_dict(r) for r in aligned_rows(report)]
+    paras_a = list(split_paragraphs(req.left))
+    paras_b = list(split_paragraphs(req.right))
     return CompareResult(
         diff=report.model_dump(),
-        risk_a=_risk_panel(req.name_left, list(split_paragraphs(req.left))),
-        risk_b=_risk_panel(req.name_right, list(split_paragraphs(req.right))),
+        risk_a=_risk_panel(req.name_left, paras_a),
+        risk_b=_risk_panel(req.name_right, paras_b),
         rows=rows,
         markdown=render_markdown(report),
         llm_enabled=describe_layer()["enabled"],
+        facts_a=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+        facts_b=[f.model_dump() for f in extract_fields(paras_b, req.right)],
     )
 
 
@@ -177,6 +184,8 @@ async def compare(
         rows=rows,
         markdown=render_markdown(report),
         llm_enabled=describe_layer()["enabled"],
+        facts_a=[f.model_dump() for f in doc_a.fields],
+        facts_b=[f.model_dump() for f in doc_b.fields],
     )
 
 
@@ -220,6 +229,8 @@ async def compare_template(
     baseline_risk = score_document(
         baseline_paragraphs, document_id=f"template:{template_id}"
     )
+    baseline_full = "\n\n".join(baseline_paragraphs)
+    doc_full = "\n\n".join(doc.paragraphs)
     return CompareResult(
         diff=report.model_dump(),
         risk_a=baseline_risk,
@@ -227,6 +238,8 @@ async def compare_template(
         rows=[to_dict(r) for r in aligned_rows(report)],
         markdown=render_markdown(report),
         llm_enabled=describe_layer()["enabled"],
+        facts_a=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+        facts_b=[f.model_dump() for f in doc.fields],
     )
 
 

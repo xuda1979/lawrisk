@@ -95,6 +95,47 @@ async def test_diff_text_panels_are_real():
         assert body[side]["deterministic_hash"], side
 
 
+async def test_compare_returns_key_facts():
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": "This Agreement is governed by the laws of England.\n"
+                        "Term of 12 months; the currency of the deal is USD, fees of $1000.",
+                "right": "This Agreement is governed by the laws of New York.\n"
+                         "Term of 24 months; the currency of the deal is USD, fees of $2000.",
+            },
+        )
+    assert r.status_code == 200
+    body = r.json()
+    for side in ("facts_a", "facts_b"):
+        facts = body[side]
+        assert isinstance(facts, list), side
+        names = [f["name"] for f in facts]
+        assert "currency" in names, side
+        assert "term" in names, side
+        assert "governing_law" in names, side
+        for f in facts:
+            assert f["found"] is True
+            assert f["value"]
+            assert f["source"]
+
+
+async def test_template_compare_returns_key_facts():
+    data = (FIXTURES / "template_a.docx").read_bytes()
+    async with _client() as c:
+        r = await c.post(
+            "/api/templates/msa/compare",
+            files={"document": ("a.docx", data, DOCX_MTYPE)},
+        )
+    assert r.status_code == 200
+    body = r.json()
+    # Baseline fixture (template side) and uploaded doc both carry facts.
+    assert isinstance(body["facts_a"], list)
+    assert isinstance(body["facts_b"], list)
+    assert "currency" in [f["name"] for f in body["facts_b"]]
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

@@ -22,7 +22,10 @@ CurrencyDetector: Pattern[str] = re.compile(
     re.IGNORECASE,
 )
 TermYearsDetector: Pattern[str] = re.compile(
-    r"(?:term\s+of|for\s+a\s+term|initial\s+term)[^\n]{0,20}(\d+)\s*(?:year|month)s?",
+    # The gap between the term keyword and the number must not swallow
+    # digits: "term of 120 months" would otherwise match "0" after the
+    # greedy window consumed "12".
+    r"(?:term\s+of|for\s+a\s+term|initial\s+term)[^\n\d]{0,20}(\d+)\s*(?:year|month)s?",
     re.IGNORECASE,
 )
 GoverningLawDetector: Pattern[str] = re.compile(
@@ -39,17 +42,25 @@ ArbitrationDetector: Pattern[str] = re.compile(
 
 def _extract(paras: List[str], text: str) -> List[FieldRun]:
     runs: List[FieldRun] = []
+    # Global pre-checks avoid scanning every paragraph when the doc lacks a
+    # signal. Currency is gated on its own regex, not the word "currency":
+    # "pay $100,000 in installments" contains no literal currency word yet is
+    # a perfectly detectable currency fact.
+    has_currency = bool(re.search(CurrencyDetector, text))
+    has_term = "term" in text.casefold()
+    has_govern = "govern" in text.casefold()
+    has_arbitr = "arbitr" in text.casefold()
     for i, p in enumerate(paras):
-        if "currency" in text.casefold():
+        if has_currency:
             if m := CurrencyDetector.search(p):
                 runs.append(FieldRun(name="currency", value=m.group(0)[:60], source=p[:300], para_index=i, found=True))
-        if "term" in text.casefold():
+        if has_term:
             if m := TermYearsDetector.search(p):
                 runs.append(FieldRun(name="term", value=m.group(1), source=p[:300], para_index=i, found=True))
-        if "govern" in text.casefold():
+        if has_govern:
             if m := GoverningLawDetector.search(p):
                 runs.append(FieldRun(name="governing_law", value=m.group(1)[:60], source=p[:300], para_index=i, found=True))
-        if "arbitr" in text.casefold():
+        if has_arbitr:
             if m := ArbitrationDetector.search(p):
                 runs.append(FieldRun(name="arbitration", value=m.group(1).strip()[:60], source=p[:300], para_index=i, found=True))
     return runs
