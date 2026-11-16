@@ -322,6 +322,48 @@ async def test_report_docx_export():
     assert len(document.tables) >= 5
 
 
+async def test_report_ranks_highest_risk_clauses():
+    """Both exported reports rank changed clauses by combined risk points."""
+    from io import BytesIO
+
+    import base64
+
+    from docx import Document
+
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": "Term of 12 months.\nFees $1000.",
+                "right": (
+                    "This Agreement shall auto-renew automatically; the Provider "
+                    "reserves the right to amend the terms at its sole discretion "
+                    "without prior notice.\nFees $1000."
+                ),
+                "name_left": "Doc A",
+                "name_right": "Doc B",
+            },
+        )
+    assert r.status_code == 200
+    body = r.json()
+    md = body["markdown"]
+    assert "## Highest-risk clauses" in md
+    # The single 40-point clause ranks first and names both rules.
+    assert "40 risk pts" in md
+    assert "R-COMM-1" in md
+    assert "R-COMM-5" in md
+    # Ranked section sits before the change ledger.
+    assert md.index("## Highest-risk clauses") < md.index("## Change ledger")
+
+    # The Word report carries the same ranked section.
+    raw = base64.b64decode(body["report_docx"])
+    assert raw[:2] == b"PK"
+    document = Document(BytesIO(raw))
+    text = "\n".join(p.text for p in document.paragraphs)
+    assert "Highest-risk clauses" in text
+    assert "40 risk pts" in text
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

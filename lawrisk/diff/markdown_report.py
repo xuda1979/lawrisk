@@ -99,6 +99,23 @@ def _risk_note(it, left_map, right_map, label_left: str, label_right: str) -> st
     return "\n\n".join(f"> ⚠ {p}" for p in parts)
 
 
+def _top_risky_clauses(sections, left_map, right_map, n: int = 5):
+    """Rank changed clauses by combined A/B risk severity; return top n.
+
+    Each entry is ``(section_label, DiffItem, total_severity)`` ordered by
+    descending total points. Clauses with no fired penalties are excluded.
+    """
+    ranked = []
+    for label, items in sections:
+        for it in items:
+            left, right = _item_risks(it, left_map, right_map)
+            total = sum(r["severity"] for r in left) + sum(r["severity"] for r in right)
+            if total:
+                ranked.append((label, it, total))
+    ranked.sort(key=lambda t: t[2], reverse=True)
+    return ranked[:n]
+
+
 def _facts_table(facts: List[Mapping]) -> str:
     """Render found contract key facts as a Markdown table, deduped by name.
 
@@ -214,6 +231,28 @@ def render_markdown(
                     lines.append("")
                     lines.append(note)
             lines.append("")
+
+    if has_risk:
+        top = _top_risky_clauses(sections, left_map, right_map, n=5)
+        if top:
+            lines.append("## Highest-risk clauses")
+            lines.append("")
+            lines.append(
+                "The changed clauses that accumulated the most risk points "
+                "(A + B combined), ranked — review these first."
+            )
+            lines.append("")
+            for label, it, total in top:
+                lines.append(f"#### {it.summary[:90]}")
+                lines.append("")
+                lines.append(f"`{label}` · {total} risk pts")
+                lines.append("")
+                note = _risk_note(it, left_map, right_map, label_left, label_right)
+                if note:
+                    lines.append(note)
+                    lines.append("")
+                else:
+                    lines.append("")
 
     lines.append("---")
     lines.append("## Change ledger")

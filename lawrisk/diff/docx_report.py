@@ -130,6 +130,24 @@ def _add_risk_note(doc, it, left_map, right_map, label_left, label_right) -> Non
         _risk_note_para(doc, f"⚠ B ({label_right or 'right'}) risk: {_format_risks(right)}")
 
 
+def _top_risky_clauses(sections, left_map, right_map, n: int = 5):
+    """Rank changed clauses by combined A/B risk severity; return top n.
+
+    Each entry is ``(section_label, DiffItem, total_severity)`` ordered by
+    descending total points. Clauses with no fired penalties are excluded.
+    """
+    ranked = []
+    for label, items in sections:
+        for it in items:
+            left = left_map.get(it.para_index_left, []) if it.para_index_left is not None else []
+            right = right_map.get(it.para_index_right, []) if it.para_index_right is not None else []
+            total = sum(r["severity"] for r in left) + sum(r["severity"] for r in right)
+            if total:
+                ranked.append((label, it, total))
+    ranked.sort(key=lambda t: t[2], reverse=True)
+    return ranked[:n]
+
+
 def _facts_rows(facts: List[Mapping]) -> List[tuple]:
     """Extract found key facts as (label, value, source), deduped by label.
 
@@ -278,6 +296,22 @@ def render_docx(
             if has_risk:
                 _add_risk_note(doc, it, left_map, right_map, label_left, label_right)
         doc.add_paragraph()
+
+    if has_risk:
+        top = _top_risky_clauses(sections, left_map, right_map, n=5)
+        if top:
+            doc.add_heading("Highest-risk clauses", level=2)
+            intro = doc.add_paragraph()
+            intro_run = intro.add_run(
+                "The changed clauses that accumulated the most risk points "
+                "(A + B combined), ranked — review these first."
+            )
+            intro_run.italic = True
+            for label, it, total in top:
+                p = doc.add_paragraph(style="List Bullet")
+                p.add_run(f"{it.summary[:90]}  ").bold = True
+                p.add_run(f"· {label} · {total} risk pts")
+                _add_risk_note(doc, it, left_map, right_map, label_left, label_right)
 
     if sections:
         _ledger_table(doc, sections, left_map, right_map, has_risk)
