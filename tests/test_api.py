@@ -66,6 +66,9 @@ async def test_compare_endpoint_full_pipeline():
     assert body["rows"]
     assert "risk_a" in body and "risk_b" in body
     assert body["markdown"].startswith("#")
+    # The submitted names must surface as the compared documents' labels.
+    assert body["diff"]["document_left"] == "A"
+    assert body["diff"]["document_right"] == "B"
 
 
 async def test_diff_text_endpoint():

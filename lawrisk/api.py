@@ -149,8 +149,8 @@ def diff_text(req: DiffTextRequest) -> CompareResult:
 async def compare(
     template_a: UploadFile = File(...),
     template_b: UploadFile = File(...),
-    name_a: str = "Template A",
-    name_b: str = "Template B",
+    name_a: str = Form(default="Template A"),
+    name_b: str = Form(default="Template B"),
 ) -> CompareResult:
     """Compare two uploaded documents: diff tree + risk panels."""
     data_a = await _read_limited(template_a)

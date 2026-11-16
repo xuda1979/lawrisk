@@ -5,6 +5,7 @@ import { DiffTree } from './components/DiffTree'
 import { DiffView } from './components/DiffView'
 import { RiskPanel } from './components/RiskPanel'
 import { TemplatesPanel } from './components/TemplatesPanel'
+import { VerdictBanner } from './components/VerdictBanner'
 import type { CompareResult } from './types'
 
 type Tab = 'diff' | 'tree' | 'report'
@@ -118,6 +119,12 @@ export default function App() {
           </aside>
 
           <main className="content">
+            <VerdictBanner
+              titleA={result.diff.document_left}
+              reportA={result.risk_a}
+              titleB={result.diff.document_right}
+              reportB={result.risk_b}
+            />
             <div className="tabs">
               <button className={tab === 'diff' ? 'active' : ''} onClick={() => setTab('diff')}>
                 Side-by-side
