@@ -4,6 +4,7 @@ import { compareFiles, health, reviewFile } from './api'
 import { DiffTree } from './components/DiffTree'
 import { DiffView } from './components/DiffView'
 import { FactsPanel } from './components/FactsPanel'
+import { ReportView } from './components/ReportView'
 import { ReviewView } from './components/ReviewView'
 import { RiskPanel } from './components/RiskPanel'
 import { TemplatesPanel } from './components/TemplatesPanel'
@@ -232,7 +233,7 @@ export default function App() {
                     Download .json
                   </a>
                 </div>
-                <pre className="markdown">{result.markdown}</pre>
+                <ReportView html={result.report_html ?? ''} markdown={result.markdown} />
               </div>
             )}
           </main>
@@ -288,7 +289,7 @@ export default function App() {
                     Download .html
                   </a>
                 </div>
-                <pre className="markdown">{review.markdown}</pre>
+                <ReportView html={review.report_html ?? ''} markdown={review.markdown} />
               </div>
             )}
           </main>

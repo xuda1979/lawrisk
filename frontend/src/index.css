@@ -1141,6 +1141,52 @@ mark.hl-removed {
   word-wrap: break-word;
 }
 
+/* inline rendered HTML report */
+.report-view {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.report-view__toggle {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.report-view__toggle button {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.report-view__toggle button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.report-view__toggle button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.report-view__frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: var(--panel);
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
