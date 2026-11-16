@@ -61,7 +61,11 @@ RULES: List[Rule] = [
         rule_id="R-COMM-1",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(r"auto[- ]?renew|renew automatically|automatically renew", re.IGNORECASE),
-        exclusion=re.compile(r"(?:no auto[- ]?renewal|without auto[- ]?renewal|does not auto[- ]?renew)", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:no auto[- ]?renewal|without auto[- ]?renewal|"
+            r"(?:does|shall|will) not (?:auto[- ]?renew|automatically renew))",
+            re.IGNORECASE,
+        ),
         severity=20,
         reason="Automatic renewal without an explicit opt-out window",
         mitigation="Require explicit written opt-in for renewal, add a >60 day renewal notice window, or remove auto-renewal.",
@@ -171,7 +175,11 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-3",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"indemnif(?:y|ies)[^.]{0,20}(?:against|from)[^.]{0,40}(?:all|any|third[ -]party|losses|damages|claims)", re.IGNORECASE),
+        pattern=re.compile(
+            r"indemnif(?:y|ies)[^.]{0,60}(?:against|from)[^.]{0,60}"
+            r"(?:all|any|third[ -]party|losses|damages|claims)",
+            re.IGNORECASE,
+        ),
         severity=30,
         reason="Broad indemnification obligation in favour of the counterparty",
         mitigation="Limit indemnity to third-party IP- or breach-specific claims and add mutual caps and carve-outs.",
@@ -309,7 +317,11 @@ ABSENCE_RULES: List[Rule] = [
     Rule(
         rule_id="R-EXP-4",
         dimension=Dimension.EXPORT,
-        condition=re.compile(r"export|international|deliverables", re.IGNORECASE),
+        condition=re.compile(
+            r"export|sanctions?|embargo|"
+            r"international\s+(?:sale|sales|shipment|shipments|transfer|transfers|trade|transaction)",
+            re.IGNORECASE,
+        ),
         pattern=re.compile(r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance", re.IGNORECASE),
         severity=25,
         reason="Export activities likely, but no export-compliance clause found",

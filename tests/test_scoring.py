@@ -132,6 +132,13 @@ class TestRuleMeshes:
         r = score_document(["This agreement does not auto-renew."], "d")
         assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
 
+    def test_no_automatic_renew_long_form_not_detected(self):
+        # Regression: "automatically renew" wording must also be excluded.
+        r = score_document(
+            ["This agreement does not automatically renew upon expiration."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
     def test_mutual_termination_not_flagged(self):
         r = score_document(
             ["Either party may terminate this agreement for convenience."], "d"
@@ -167,6 +174,23 @@ class TestRuleMeshes:
             ["Each party shall comply with all applicable export control and sanctions laws."], "d"
         )
         assert all(p.dimension is not Dimension.EXPORT for p in r.penalties)
+
+    def test_deliverable_mention_without_export_topic_not_flagged(self):
+        # Regression: plain "deliverables" wording must not trigger the
+        # absence rule R-EXP-4 (export-compliance clause missing).
+        r = score_document(
+            ["The Provider shall provide the deliverables by the due date."], "d"
+        )
+        assert all(p.rule_id != "R-EXP-4" for p in r.penalties)
+
+    def test_canonical_indemnity_from_third_party_claims_detected(self):
+        # Regression: the "indemnify and hold harmless X from third party
+        # claims" phrasing must recall R-LIAB-3 even when the object clause
+        # is longer than a few words.
+        r = score_document(
+            ["Buyer shall indemnify and hold harmless Seller from third party claims."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
 
     def test_data_protection_clause_not_flagged(self):
         r = score_document(
