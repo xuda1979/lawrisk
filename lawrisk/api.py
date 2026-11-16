@@ -16,6 +16,7 @@ All endpoints are local and deterministic; LLM summarisation is optional
 
 from __future__ import annotations
 
+import base64
 import uuid
 from typing import Dict, List
 
@@ -24,6 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from lawrisk.diff.differ import build_diff_tree, diff_texts
+from lawrisk.diff.docx_report import render_docx
 from lawrisk.diff.markdown_report import render_markdown
 from lawrisk.diff.sidebyside import aligned_rows, to_dict
 from lawrisk.fields import extract_fields
@@ -72,6 +74,7 @@ class CompareResult(BaseModel):
     llm_enabled: bool
     facts_a: list = Field(default_factory=list, description="Extracted key fields (A side)")
     facts_b: list = Field(default_factory=list, description="Extracted key fields (B side)")
+    report_docx: str = Field(default="", description="Base64 .docx diff report")
 
 
 class ParseResult(BaseModel):
@@ -193,6 +196,12 @@ def diff_text(req: DiffTextRequest) -> CompareResult:
             facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
             label_left=req.name_left, label_right=req.name_right,
         ),
+        report_docx=base64.b64encode(render_docx(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+            facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
+            label_left=req.name_left, label_right=req.name_right,
+        )).decode("ascii"),
         llm_enabled=describe_layer()["enabled"],
         facts_a=[f.model_dump() for f in extract_fields(paras_a, req.left)],
         facts_b=[f.model_dump() for f in extract_fields(paras_b, req.right)],
@@ -235,6 +244,12 @@ async def compare(
             facts_right=[f.model_dump() for f in doc_b.fields],
             label_left=name_a, label_right=name_b,
         ),
+        report_docx=base64.b64encode(render_docx(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in doc_a.fields],
+            facts_right=[f.model_dump() for f in doc_b.fields],
+            label_left=name_a, label_right=name_b,
+        )).decode("ascii"),
         llm_enabled=describe_layer()["enabled"],
         facts_a=[f.model_dump() for f in doc_a.fields],
         facts_b=[f.model_dump() for f in doc_b.fields],
@@ -295,6 +310,12 @@ async def compare_template(
             facts_right=[f.model_dump() for f in doc.fields],
             label_left="Template", label_right=name,
         ),
+        report_docx=base64.b64encode(render_docx(
+            report, risk_left=baseline_risk, risk_right=risk,
+            facts_left=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+            facts_right=[f.model_dump() for f in doc.fields],
+            label_left="Template", label_right=name,
+        )).decode("ascii"),
         llm_enabled=describe_layer()["enabled"],
         facts_a=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
         facts_b=[f.model_dump() for f in doc.fields],

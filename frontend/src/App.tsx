@@ -164,6 +164,13 @@ export default function App() {
                     Download .md
                   </a>
                   <a
+                    className="download"
+                    href={`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${result.report_docx ?? ''}`}
+                    download="lawrisk-diff-report.docx"
+                  >
+                    Download .docx
+                  </a>
+                  <a
                     className="download download--ghost"
                     href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(result, null, 2))}`}
                     download="lawrisk-diff-report.json"

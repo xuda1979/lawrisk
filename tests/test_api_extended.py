@@ -271,6 +271,57 @@ async def test_markdown_report_carries_dimension_tables():
     assert "Export compliance" in md
 
 
+async def test_report_docx_export():
+    """CompareResult carries a valid, parseable .docx report (base64)."""
+    from io import BytesIO
+
+    import base64
+
+    from docx import Document
+
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": (
+                    "This Agreement is governed by the laws of England.\n"
+                    "Term of 12 months.\nFees $1000."
+                ),
+                "right": (
+                    "Term of 12 months; this Agreement shall auto-renew automatically.\n"
+                    "Fees $1000."
+                ),
+                "name_left": "Doc A",
+                "name_right": "Doc B",
+            },
+        )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["report_docx"], "report_docx must be populated"
+
+    raw = base64.b64decode(body["report_docx"])
+    assert raw[:2] == b"PK"  # valid zip container
+
+    document = Document(BytesIO(raw))
+    text = "\n".join(p.text for p in document.paragraphs)
+    # The Word report mirrors the Markdown content.
+    for probe in (
+        "Contract Clause Diff Report",
+        "Doc A",
+        "Doc B",
+        "Overall risk:",
+        "Summary",
+        "Contract key facts",
+        "Risk by dimension",
+        "Change ledger",
+        "R-COMM-1",
+    ):
+        assert probe in text, f"missing {probe!r} in docx text"
+    assert "England" in text or any(t.text.count("England") for t in document.tables)
+    # facts tables (2) + dimension tables (2) + ledger (1).
+    assert len(document.tables) >= 5
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

@@ -100,6 +100,7 @@ export interface CompareResult {
   llm_enabled: boolean
   facts_a: FieldRun[]
   facts_b: FieldRun[]
+  report_docx?: string
 }
 
 export interface ClauseTemplate {

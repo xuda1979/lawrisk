@@ -124,7 +124,7 @@ document with `POST /api/templates/msa/compare`. Dump them offline with:
 ## Tests
 
 ```bash
-pytest -q        # 68 tests, all local
+pytest -q        # 69 tests, all local
 cd frontend && npm run build   # verifies the SPA compiles
 ```
 
