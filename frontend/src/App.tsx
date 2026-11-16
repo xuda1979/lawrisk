@@ -134,7 +134,13 @@ export default function App() {
               <span className="stat stat--del">−{stats?.deletions} removed</span>
               <span className="stat stat--mod">~{stats?.modifications} modified</span>
             </div>
-            {tab === 'diff' && <DiffView rows={result.rows} />}
+            {tab === 'diff' && (
+              <DiffView
+                rows={result.rows}
+                left={result.diff.document_left}
+                right={result.diff.document_right}
+              />
+            )}
             {tab === 'tree' && <DiffTree root={result.diff.root} />}
             {tab === 'report' && (
               <div>

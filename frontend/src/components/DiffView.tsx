@@ -33,7 +33,15 @@ function Side({ title, text, mark, op }: { title: string; text: string | null; m
   )
 }
 
-export function DiffView({ rows }: { rows: AlignedRow[] }) {
+export function DiffView({
+  rows,
+  left,
+  right,
+}: {
+  rows: AlignedRow[]
+  left: string
+  right: string
+}) {
   const bySection = useMemo(() => {
     const map = new Map<string, AlignedRow[]>()
     for (const r of rows) {
@@ -79,13 +87,13 @@ export function DiffView({ rows }: { rows: AlignedRow[] }) {
             <div key={idx} className={`diff-row diff-row--${row.op}`}>
               <div className="diff-grid">
                 <Side
-                  title="Template A"
+                  title={left}
                   text={row.op === 'add' ? null : row.leftText}
                   mark={row.leftRemoved}
                   op={row.op}
                 />
                 <Side
-                  title="Template B"
+                  title={right}
                   text={row.op === 'delete' ? null : row.rightText}
                   mark={row.rightAdded}
                   op={row.op}
