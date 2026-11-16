@@ -60,10 +60,14 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-1",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"auto[- ]?renew|renew automatically|automatically renew", re.IGNORECASE),
+        pattern=re.compile(
+            r"auto[- ]?renew(?:s|al)?|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"(?:no auto[- ]?renewal|without auto[- ]?renewal|"
-            r"(?:does|shall|will) not (?:auto[- ]?renew|automatically renew))",
+            r"(?:does|shall|will) not (?:be )?(?:auto[- ]?renew|"
+            r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -283,7 +287,7 @@ RULES: List[Rule] = [
         rule_id="R-DATA-1",
         dimension=Dimension.DATA,
         pattern=re.compile(r"personal (?:data|information)|personally identifiable", re.IGNORECASE),
-        exclusion=re.compile(r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|comply (?:with|ing)|shall only be (?:used|processed)|only for the purpose|purpose of performing)", re.IGNORECASE),
+        exclusion=re.compile(r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|comply (?:with|ing)|(?:shall|will) only be (?:used|processed)|(?:only|solely) for the purpose|purpose of performing)", re.IGNORECASE),
         severity=20,
         reason="Personal data is in scope; GDPR/CCPA obligations arise",
         mitigation="Confirm a lawful basis, a completed DPIA where needed, and a signed DPA annex with the counterparty.",
@@ -293,6 +297,12 @@ RULES: List[Rule] = [
         rule_id="R-DATA-2",
         dimension=Dimension.DATA,
         pattern=re.compile(r"transfer[^.]{0,30}(?:personal )?data[^.]{0,30}(?:outside|abroad|to third|to (?:its|our) (?:affiliates?|subprocessors))", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:shall (?:not|never) (?:be )?transferred?|"
+            r"no (?:transfer|transfers) of (?:personal )?data[^.;]{0,50}shall|"
+            r"shall not (?:occur|take place)|without (?:appropriate|such) safeguards)",
+            re.IGNORECASE,
+        ),
         severity=35,
         reason="Cross-border / third-party data transfer without stated safeguards",
         mitigation="Add standard contractual clauses, adequacy findings, or equivalent transfer safeguards before any transfer.",

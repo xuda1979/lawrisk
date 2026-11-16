@@ -139,6 +139,21 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
 
+    def test_no_renew_automatically_adverb_after_verb_not_detected(self):
+        # Regression: the negated form "does not renew automatically" puts the
+        # adverb after the verb, which must also be excluded.
+        r = score_document(
+            ["This agreement does not renew automatically upon expiration."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_renews_automatically_detected(self):
+        # Regression: present-tense "renews automatically" must fire the rule.
+        r = score_document(
+            ["The contract renews automatically each year unless cancelled."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
     def test_mutual_termination_not_flagged(self):
         r = score_document(
             ["Either party may terminate this agreement for convenience."], "d"
@@ -426,6 +441,19 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
 
+    def test_transfer_prohibition_not_flagged(self):
+        # Regression: prohibition-form clauses ("shall not be transferred",
+        # "No transfer ... shall occur without safeguards") are protective and
+        # must not fire R-DATA-2.
+        r = score_document(
+            [
+                "Customer data shall not be transferred outside the EEA without appropriate safeguards.",
+                "No transfer of personal data outside the EU shall occur without standard contractual clauses.",
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
     def test_unlimited_data_processing_flagged(self):
         r = score_document(
             ["Provider may process Customer data for any purpose."], "d"
@@ -437,6 +465,19 @@ class TestRuleMeshes:
             ["Provider may process Customer data solely for the purpose of providing the Services."], "d"
         )
         assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_purpose_limited_personal_data_processing_not_flagged(self):
+        # Regression: "collected and processed solely for the purpose" and
+        # "will only be processed" are purpose-limited and must not fire
+        # the generic personal-data rule R-DATA-1.
+        r = score_document(
+            [
+                "Personal data is collected and processed solely for the purpose of providing the services.",
+                "Personal data will only be processed to perform the agreement.",
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-1" for p in r.penalties)
 
     def test_reexport_without_authorization_flagged(self):
         # Regression: "re-exported without prior authorization" is a control gap
