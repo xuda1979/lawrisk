@@ -339,6 +339,74 @@ class TestRuleMeshes:
             for p in r.penalties
         )
 
+    def test_broad_liability_disclaimer_flagged(self):
+        r = score_document(
+            ["In no event shall the Provider be liable for consequential damages."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_liability_disclaimer_with_carve_outs_not_flagged(self):
+        r = score_document(
+            ["In no event shall the Provider be liable for consequential damages, except for fraud or gross negligence."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-1" for p in r.penalties)
+
+    def test_mutual_liability_disclaimer_not_flagged(self):
+        r = score_document(
+            ["In no event shall either party be liable for consequential damages."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-1" for p in r.penalties)
+
+    def test_as_is_disclaimer_flagged(self):
+        r = score_document(
+            ["The Services are provided on an as-is basis without warranties of any kind."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-4" for p in r.penalties)
+
+    def test_positive_warranty_not_flagged(self):
+        r = score_document(
+            ["Provider warrants the Services will conform to the specification for 12 months."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-4" for p in r.penalties)
+
+    def test_cross_border_data_transfer_flagged(self):
+        r = score_document(
+            ["Provider may transfer personal data outside the EEA for processing."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_unlimited_data_processing_flagged(self):
+        r = score_document(
+            ["Provider may process Customer data for any purpose."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_purpose_limited_processing_not_flagged(self):
+        r = score_document(
+            ["Provider may process Customer data solely for the purpose of providing the Services."], "d"
+        )
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_reexport_without_authorization_flagged(self):
+        # Regression: "re-exported without prior authorization" is a control gap
+        # and must fire R-EXP-3 even though the word "authorization" is present.
+        r = score_document(
+            ["Deliverables may be re-exported without prior authorization."], "d"
+        )
+        assert any(p.rule_id == "R-EXP-3" for p in r.penalties)
+
+    def test_controlled_reexport_not_flagged(self):
+        r = score_document(
+            ["Deliverables are subject to export controls and screening."], "d"
+        )
+        assert all(p.rule_id != "R-EXP-3" for p in r.penalties)
+
+    def test_authorization_bound_reexport_not_flagged(self):
+        r = score_document(
+            ["Re-export of deliverables requires prior written authorization from Provider."], "d"
+        )
+        assert all(p.rule_id != "R-EXP-3" for p in r.penalties)
+
     def test_absence_rule_excerpt_never_a_heading(self):
         """R-DATA-4 must anchor on a body paragraph, not a section heading.
 

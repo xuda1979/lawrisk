@@ -324,7 +324,13 @@ RULES: List[Rule] = [
         dimension=Dimension.EXPORT,
         condition=re.compile(r"deliver|ship|supply|technology|software", re.IGNORECASE),
         pattern=re.compile(r"(?:re[- ]?export|diversion|end[- ]?use)", re.IGNORECASE),
-        exclusion=re.compile(r"(?:subject to|comply|controls|restrictions|screening|authorization|authorisation)", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:require[sd]?[^.]{0,30}authoriz|obtain[^.]{0,30}authoriz|"
+            r"prior written authoriz|written authoriz(?:ation)? (?:of|from|by)|"
+            r"with (?:the )?(?:prior |written )?authoriz(?:ation)?|"
+            r"subject to|comply|controls|restrictions|screening)",
+            re.IGNORECASE,
+        ),
         severity=30,
         reason="No export/re-export or diversion controls for deliverables",
         mitigation="Add re-export and end-use control language; require end-user screening and any relevant licences.",
