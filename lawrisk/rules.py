@@ -78,7 +78,13 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-2",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"terminate[^.]{0,40}(?:without cause|for any(?: reason| purpose)|at (?:its|our|their|the (?:provider|company)) ?(?:own |sole |absolute )?convenience|for convenience)", re.IGNORECASE),
+        pattern=re.compile(
+            r"(?:terminate|end|cancel)[^.]{0,40}"
+            r"(?:without cause|for any(?: reason| purpose)|"
+            r"at (?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience|"
+            r"for convenience|without assigning any reason)",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
         severity=25,
         reason="One-sided termination-without-cause right for the counterparty",
@@ -88,7 +94,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-3",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"reserves the right to (?:adjust|increase|change|modify) (?:the )?(?:price|prices|fees)|price (?:increase|escalation)", re.IGNORECASE),
+        pattern=re.compile(r"(?:reserves the right to (?:adjust|increase|change|modify)|may (?:adjust|increase|change|modify)|(?:can|may) adjust) (?:the )?(?:price|prices|fees|fee)|price (?:increase|escalation)", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:no price increase|without (?:any )?price increase|"
             r"there (?:shall|will|can|is|be) no|"
@@ -124,12 +130,18 @@ RULES: List[Rule] = [
             r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
             r"[^.]{0,30}"
             r"(?:amend|modify|alter|vary|change|revise)\s+"
-            r"(?:this agreement|these presents|the terms|the terms and conditions|"
+            r"(?:this agreement|these presents|these terms|the terms|the terms and conditions|"
             r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof)"
             r"[^.]{0,35}"
             r"(?:at any time|at (?:its|his|their)? ?(?:own )?(?:sole|absolute) discretion|"
             r"without (?:prior )?(?:notice|consent|approval)|unilaterally)"
-            r")",
+            r")|"
+            r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
+            r"[^.]{0,20}(?:amend|modify|alter|vary|change|revise)\s+"
+            r"(?:this agreement|these presents|these terms|the terms|the terms and conditions|"
+            r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof|"
+            r"such (?:terms|conditions))"
+            r"[^.]{0,15}(?:at (?:its|his|their)? ?(?:own )?(?:sole|absolute) discretion)",
             re.IGNORECASE,
         ),
         exclusion=_MUTUAL,
@@ -145,11 +157,16 @@ RULES: List[Rule] = [
             r"(?:late payment(?:s)?|overdue (?:amounts?|invoices?)|delinquent accounts?|"
             r"late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge))"
             r"[^.;]{0,40}(?:interest|penalty|fee|charge)|"
-            r"(?:interest|penalty|fee|charge)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
+            r"(?:late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge)|"
+            r"finance charge(?:s)?)"
+            r"[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
             r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?|"
             r"(?:interest|penalty|service charge|finance charge)[^.;]{0,45}(?:on|for)"
             r"[^.;]{0,20}(?:overdue|delinquent|late|unpaid)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
             r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%|"
+            r"(?:interest|penalty|fee|charge)[^.;]{0,20}(?:at|of|=)[^.;:]{0,12}"
+            r"(?:a rate of\s*)?\d+(?:\.\d+)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?"
+            r"[^.;]{0,40}(?:on|for)[^.;]{0,20}(?:overdue|delinquent|late|unpaid)|"
             r"(?:late fee(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|overdue (?:fee|charge))"
             r"[^.;]{0,20}(?:of|=|at|:)\s*\$[0-9][0-9,]*(?:\.\d+)?[^.;]{0,25}"
             r"(?:per |for each |for every |each |weekly |daily |monthly |annually|accrues|accruing|accrual)|"
@@ -315,7 +332,10 @@ RULES: List[Rule] = [
             r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|"
             r"comply (?:with|ing)|consent|lawful basis|"
             r"(?:shall|will) only be (?:used|processed)|(?:only|solely) for the purpose|"
-            r"purpose of performing)",
+            r"purpose of performing|"
+            r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
+            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain)\s+"
+            r"personal (?:data|information))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -358,7 +378,10 @@ RULES: List[Rule] = [
             r"(?:shall (?:not|never) (?:be )?transferred?|"
             r"no (?:transfer|transfers) of (?:personal )?data[^.;]{0,50}shall|"
             r"shall not (?:occur|take place)|without (?:appropriate|such) safeguards|"
-            r"(?:with|upon|subject to) (?:adequate|appropriate|standard contractual|sccs?)\b|"
+            r"(?:with|upon|subject to|in accordance with|pursuant to)\s+"
+            r"(?:adequate|appropriate|standard contractual|sccs?|"
+            r"the (?:standard )?(?:contractual clauses|sccs?)|"
+            r"(?:an |the )?(?:eu|e\.?u\.?)? ?adequacy decision)\b|"
             r"adequate[^.;]{0,30}decision|appropriate safeguards)",
             re.IGNORECASE,
         ),
@@ -443,8 +466,17 @@ ABSENCE_RULES: List[Rule] = [
     Rule(
         rule_id="R-DATA-4",
         dimension=Dimension.DATA,
-        condition=re.compile(r"personal (?:data|information)", re.IGNORECASE),
+        condition=re.compile(
+            r"personal (?:data|information)|personally identifiable",
+            re.IGNORECASE,
+        ),
         pattern=re.compile(r"data (?:protection|controller|processor)|GDPR|CCPA|privacy policy|data processing agreement|DPA\b", re.IGNORECASE),
+        exclusion=re.compile(
+            r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
+            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain)\s+"
+            r"personal (?:data|information)",
+            re.IGNORECASE,
+        ),
         severity=20,
         reason="Personal data handled but no data-protection / DPA terms found",
         mitigation="Add data-protection wording and a signed DPA (or flow-down) before any personal-data processing.",
@@ -568,6 +600,8 @@ def _apply_absence_rules(paragraphs: List[str], rules: List[Rule]) -> List[Penal
         # Trigger only when the topic IS present but the protective term is not.
         m = rule.condition.search(full)
         if not m:
+            continue
+        if rule.exclusion and rule.exclusion.search(full):
             continue
         if rule.pattern.search(full):
             continue

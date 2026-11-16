@@ -731,3 +731,97 @@ class TestRuleMeshes:
         assert data4[0].para_index == 1
         assert "personal data" in (data4[0].excerpt or "").casefold()
         assert "1. PERSONAL DATA" != (data4[0].excerpt or "").strip()
+
+    def test_denied_personal_data_processing_not_flagged(self):
+        # Regression: a clause denying that personal data is collected or
+        # processed must not fire R-DATA-1 or the absence rule R-DATA-4.
+        benign = [
+            ["The parties agree that no personal data is collected or processed under this agreement."],
+            ["The Provider does not collect personal data under this agreement."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), paras
+        # A genuine open-ended processing statement still fires R-DATA-1.
+        r = score_document(["The company may use personal data for any purpose."], "d")
+        assert any(p.rule_id == "R-DATA-1" for p in r.penalties)
+
+    def test_safeguard_bound_transfers_not_flagged(self):
+        # Regression: transfers made pursuant to SCCs or an adequacy decision
+        # carry the required safeguards and must not fire R-DATA-2.
+        benign = [
+            ["Any transfer of personal data outside the EEA shall be made pursuant to the Standard Contractual Clauses."],
+            ["Personal data may be transferred to the United States in accordance with an EU adequacy decision."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-DATA-2" for p in r.penalties), paras
+        r = score_document(
+            ["Provider may transfer personal data outside the EEA for processing."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_non_penalty_interest_not_flagged(self):
+        # Regression: interest earned on funds held as security or prepaid fees
+        # is not a late-payment penalty and must not fire R-COMM-6, while a
+        # late-payment context still does.
+        benign = [
+            ["Funds deposited as security shall earn interest at a rate of 2% per annum."],
+            ["Any prepaid fees shall earn interest at 3% per annum credited to the customer."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-COMM-6" for p in r.penalties), paras
+        r = score_document(["Late payments attract interest at 2% per month."], "d")
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_end_without_cause_termination_flagged(self):
+        # Regression: "end the agreement without cause" and "terminate without
+        # assigning any reason" are one-sided termination rights that must fire
+        # R-COMM-2, while mutual forms stay silent.
+        risky = [
+            ["Company may end the agreement without cause on 30 days written notice."],
+            ["The Vendor may terminate the agreement at any time without assigning any reason."],
+        ]
+        for paras in risky:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-COMM-2" for p in r.penalties), paras
+        r = score_document(
+            ["Either party may end this agreement for convenience on 30 days written notice."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_may_increase_fees_flagged(self):
+        # Regression: "may increase the fees at its sole discretion" and "may
+        # adjust prices at will" are unilateral price rights that must fire
+        # R-COMM-3; mutual / indexed adjustments stay silent.
+        risky = [
+            ["Provider may increase the fees at its sole discretion by up to 5% each year."],
+            ["Provider may adjust prices at will during the term."],
+        ]
+        for paras in risky:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-COMM-3" for p in r.penalties), paras
+        benign = [
+            ["The parties may increase the fees by mutual written agreement."],
+            ["Fees may increase annually in accordance with the published CPI."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-COMM-3" for p in r.penalties), paras
+
+    def test_sole_discretion_term_amendment_flagged(self):
+        # Regression: "revise these terms at its sole discretion" is a unilateral
+        # amendment right equivalent to "amend the terms at its sole discretion"
+        # and must fire R-COMM-5; mutual amendment stays silent.
+        risky = [
+            ["Provider may revise these terms at its sole discretion."],
+            ["Provider may amend these terms at any time."],
+        ]
+        for paras in risky:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-COMM-5" for p in r.penalties), paras
+        r = score_document(
+            ["Either party may amend this Agreement by written agreement signed by both parties."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
