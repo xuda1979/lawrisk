@@ -66,8 +66,10 @@ RULES: List[Rule] = [
         ),
         exclusion=re.compile(
             r"(?:no auto[- ]?renewal|without auto[- ]?renewal|"
-            r"(?:does|shall|will) not (?:be )?(?:auto[- ]?renew|"
-            r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?))",
+            r"(?:does|shall|will|may) not (?:be )?(?:auto[- ]?renew|"
+            r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?)|"
+            r"(?:neither party|no party)[^.;]{0,60}"
+            r"(?:auto[- ]?renew|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -308,8 +310,14 @@ RULES: List[Rule] = [
             re.IGNORECASE,
         ),
         exclusion=re.compile(
-            r"(?:no|not|exclude(e?d)?|only|solely|cap(?:ed)?|limited to|"
-            r"genuine pre[- ]?estimate|reasonable estimate|proportionate)",
+            r"(?:no liquidated damages|no penalty|no penalties|"
+            r"not (?:a|be (?:a|the)) penalty|not (?:be )?liquidated damages|"
+            r"exclude(?:e?d)?|only|solely|cap(?:ed)?|limited to|"
+            r"genuine pre[- ]?estimate|reasonable estimate|proportionate|"
+            r"(?:neither party|no party)[^.;]{0,60}"
+            r"(?:penalt|liquidated damage|forfeit|fixed charge)|"
+            r"no (?:late fee|interest|damages)|"
+            r"(?:shall|will|may) not (?:be|accrue|apply|incur))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -323,7 +331,11 @@ RULES: List[Rule] = [
         dimension=Dimension.DATA,
         pattern=re.compile(
             r"(?:data|information)[^.]{0,60}"
-            r"(?:shall (?:be )?(?:retained?|kept)|may (?:be )?(?:retained?|kept))"
+            r"(?:(?:shall|may|will|can) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?)|"
+            r"(?:shall|may|will|can) (?:retain|keep|maintain|store))\b"
+            r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)|"
+            r"(?:shall|may|will|can) (?:retain|keep|maintain|store)\s+"
+            r"(?:any |all |the )?(?:customer |personal )?(?:data|information)"
             r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)",
             re.IGNORECASE,
         ),
@@ -355,6 +367,9 @@ RULES: List[Rule] = [
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
             r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain)\s+"
             r"personal (?:data|information)|"
+            r"personal (?:data|information)[^.;]{0,20}"
+            r"(?:is|are|shall|will|may|cannot?|must) not (?:be )?"
+            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b|"
             r"(?:neither|no (?:party|person))[^.;]{0,40}"
             r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
             r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
@@ -400,12 +415,11 @@ RULES: List[Rule] = [
         exclusion=re.compile(
             r"(?:shall (?:not|never) (?:be )?transferred?|"
             r"no (?:transfer|transfers) of (?:personal )?data[^.;]{0,50}shall|"
-            r"shall not (?:occur|take place)|without (?:appropriate|such) safeguards|"
+            r"shall not (?:occur|take place)|"
             r"(?:with|upon|subject to|in accordance with|pursuant to)\s+"
             r"(?:adequate|appropriate|standard contractual|sccs?|"
             r"the (?:standard )?(?:contractual clauses|sccs?)|"
-            r"(?:an |the )?(?:eu|e\.?u\.?)? ?adequacy decision)\b|"
-            r"adequate[^.;]{0,30}decision|appropriate safeguards)",
+            r"(?:an |the )?(?:eu|e\.?u\.?)? ?adequacy decision)\b)",
             re.IGNORECASE,
         ),
         severity=35,
@@ -511,7 +525,10 @@ ABSENCE_RULES: List[Rule] = [
             r"(?:neither|no (?:party|person))[^.;]{0,40}"
             r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
             r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
-            r"\s+personal (?:data|information)",
+            r"\s+personal (?:data|information)|"
+            r"personal (?:data|information)[^.;]{0,20}"
+            r"(?:is|are|shall|will|may|cannot?|must) not (?:be )?"
+            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b",
             re.IGNORECASE,
         ),
         severity=20,

@@ -162,6 +162,26 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
 
+    def test_neither_party_denies_renewal_not_flagged(self):
+        # Regression: a "neither party" subject denying the renewal is an
+        # opt-out statement and must suppress R-COMM-1.
+        r = score_document(
+            ["Neither party shall cause this agreement to renew automatically at expiration."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_unrelated_neither_party_does_not_mask_autorenewal(self):
+        # Regression: "neither party" in a separate sentence (here about
+        # termination) must NOT suppress a genuine auto-renewal clause.
+        r = score_document(
+            [
+                "This agreement will automatically renew for one-year terms; "
+                "neither party may terminate without cause during the term."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
     def test_mutual_termination_not_flagged(self):
         r = score_document(
             ["Either party may terminate this agreement for convenience."], "d"
@@ -407,6 +427,26 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
 
+    def test_keep_and_store_retention_forms_flagged(self):
+        # Regression: R-DATA-5 must also catch active-verb forms ("will store",
+        # "keep") and "information", not only passive "shall be retained".
+        cases = [
+            ["Provider may keep personal information following termination of this agreement."],
+            ["The company will store customer data upon such termination for audit purposes."],
+            ["Provider may retain customer data after such termination for seven years."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), paras
+
+    def test_delete_on_termination_not_flagged(self):
+        # Regression: a deletion obligation is a protective retention bound and
+        # must not fire R-DATA-5.
+        r = score_document(
+            ["Provider shall delete all customer data upon termination of this agreement."], "d"
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
     def test_extended_rules_keep_clean_footer_text_clean(self):
         """Calibration guard: extended rule set adds no findings to clean fixtures."""
         r = score_document(
@@ -490,6 +530,26 @@ class TestRuleMeshes:
             ["Provider may process Customer data for any purpose."], "d"
         )
         assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_unsafeguarded_transfer_flagged(self):
+        # Regression: "without appropriate safeguards" is the gap itself; a
+        # transfer that names no safeguards must still fire R-DATA-2.
+        r = score_document(
+            ["Customer personal data may be transferred outside the EEA without appropriate safeguards."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_passive_denial_of_processing_not_flagged(self):
+        # Regression: passive denial forms ("shall not be processed",
+        # "are not collected") are protective and must not fire either
+        # R-DATA-1 or the absence check R-DATA-4.
+        for para in [
+            "Personal data shall not be processed under this agreement.",
+            "Personal data are not collected, processed or stored under this agreement.",
+            "Personal data will not be transferred or disclosed to any third party.",
+        ]:
+            r = score_document([para], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), para
 
     def test_purpose_limited_processing_not_flagged(self):
         r = score_document(
@@ -634,6 +694,26 @@ class TestRuleMeshes:
         for paras in benign:
             r = score_document(paras, "d")
             assert all(p.rule_id != "R-LIAB-6" for p in r.penalties), paras
+
+    def test_penalty_fires_despite_unrelated_no_party_sentence(self):
+        # Regression: a genuine per-day penalty must fire even when the same
+        # paragraph separately says "no party" about an unrelated topic.
+        r = score_document(
+            [
+                "The supplier shall pay a penalty of $500 per day for each day "
+                "of delay; no party may terminate this agreement during the term."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-6" for p in r.penalties)
+
+    def test_neither_party_denial_of_penalty_not_flagged(self):
+        # Regression: "neither party" denying liability for a penalty is a
+        # protective statement and must suppress R-LIAB-6.
+        r = score_document(
+            ["Neither party shall be liable for a penalty or liquidated damages for delay."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-6" for p in r.penalties)
 
     def test_international_shipment_triggers_export_controls_absence_check(self):
         # Regression: "shipped internationally" substitutes for the word
