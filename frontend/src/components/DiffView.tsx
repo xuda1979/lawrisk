@@ -66,6 +66,13 @@ function Side({ title, text, mark, op }: { title: string; text: string | null; m
   )
 }
 
+const OPS = ['add', 'delete', 'modify'] as const
+type OpFilter = (typeof OPS)[number] | 'all'
+
+function hasRisk(r: AlignedRow) {
+  return ((r.leftRisks?.length ?? 0) + (r.rightRisks?.length ?? 0)) > 0
+}
+
 export function DiffView({
   rows,
   left,
@@ -86,12 +93,21 @@ export function DiffView({
   }, [rows])
 
   const [active, setActive] = useState<string>('all')
+  const [opType, setOpType] = useState<OpFilter>('all')
+  const [riskyOnly, setRiskyOnly] = useState(false)
 
   if (rows.length === 0) {
     return <div className="empty">No differences detected between the two documents.</div>
   }
 
-  const shown = active === 'all' ? bySection : bySection.filter(([s]) => s === active)
+  const shown = (active === 'all' ? bySection : bySection.filter(([s]) => s === active)).flatMap(
+    ([section, items]) => {
+      const filtered = items.filter(
+        (r) => (opType === 'all' || r.op === opType) && (!riskyOnly || hasRisk(r)),
+      )
+      return filtered.length ? [[section, filtered] as const] : []
+    },
+  )
 
   return (
     <div className="diff-view">
@@ -111,6 +127,31 @@ export function DiffView({
             {section}
           </button>
         ))}
+      </div>
+      <div className="section-filter">
+        <button
+          className={opType === 'all' ? 'active' : ''}
+          onClick={() => setOpType('all')}
+        >
+          All changes
+        </button>
+        {OPS.map((op) => (
+          <button
+            key={op}
+            className={opType === op ? 'active' : ''}
+            onClick={() => setOpType(op)}
+          >
+            {OP_LABEL[op]}
+          </button>
+        ))}
+        <span className="op-filter__spacer" />
+        <button
+          className={riskyOnly ? 'active risky-filter' : 'risky-filter'}
+          onClick={() => setRiskyOnly((v) => !v)}
+          title="Show only changed clauses that carry risk penalties"
+        >
+          ⚠ Risky only
+        </button>
       </div>
       {shown.map(([section, items]) => (
         <section key={section} className="diff-section">

@@ -727,6 +727,21 @@ body {
   color: #fff;
 }
 
+.op-filter__spacer {
+  flex: 1;
+}
+
+.section-filter .risky-filter {
+  border-color: #d8a4a0;
+  color: var(--del-ink);
+}
+
+.section-filter .risky-filter.active {
+  background: var(--del);
+  border-color: var(--del-ink);
+  color: var(--del-ink);
+}
+
 .diff-section {
   margin-bottom: 18px;
 }
