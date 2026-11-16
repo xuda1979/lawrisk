@@ -49,6 +49,13 @@ async def test_template_compare_endpoint():
     assert body["diff"]["document_right"] == "Doc B"
     assert body["rows"]
     assert body["risk_b"]["overall_score"] > 0
+    # Baseline side is a real scored RiskReport, not a stub.
+    baseline = body["risk_a"]
+    assert baseline["document_id"] == "template:msa"
+    assert baseline["overall_level"] == "low"
+    assert baseline["dimensions"]
+    assert baseline["deterministic_hash"]
+    assert "penalties" in baseline
 
 
 async def test_template_compare_unknown_404():

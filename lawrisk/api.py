@@ -32,7 +32,7 @@ from lawrisk.models import DocParse, RiskReport
 from lawrisk.parser import parse_document
 from lawrisk.rules import score_document
 from lawrisk.static import mount_spa_if_available
-from lawrisk.templates import diff_against_template, list_templates
+from lawrisk.templates import diff_against_template, get_template, list_templates
 
 app = FastAPI(
     title="LawRisk",
@@ -211,15 +211,14 @@ async def compare_template(
 
     report = _maybe_llm_summaries(report)
     risk = score_document(doc.paragraphs, doc.document_id)
-    # Risk panel for the baseline template itself (empty doc id marks it as such).
-    baseline_risk = RiskReport(
-        document_id=f"template:{template_id}",
-        overall_score=0,
-        overall_level="low",
-        dimensions=[],
-        penalties=[],
-        summary=f"Baseline template '{template_id}' — reference, not scored.",
-        deterministic_hash="",
+    # Real risk panel for the baseline template itself so both sides of the
+    # comparison are scored and explainable (baselines are curated low-risk).
+    tpl = get_template(template_id)
+    baseline_paragraphs = (
+        split_paragraphs("\n\n".join(tpl.paragraphs)) if tpl else []
+    )
+    baseline_risk = score_document(
+        baseline_paragraphs, document_id=f"template:{template_id}"
     )
     return CompareResult(
         diff=report.model_dump(),

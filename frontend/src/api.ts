@@ -24,3 +24,19 @@ export async function listTemplates(): Promise<TemplateLibrary> {
   if (!res.ok) throw new Error('Template library unavailable')
   return res.json()
 }
+
+export async function compareWithTemplate(
+  templateId: string,
+  document: File,
+  name: string,
+): Promise<CompareResult> {
+  const form = new FormData()
+  form.append('document', document)
+  form.append('name', name || 'Document')
+  const res = await fetch(`${API}/api/templates/${templateId}/compare`, {
+    method: 'POST',
+    body: form,
+  })
+  if (!res.ok) throw new Error(`Template compare failed (${res.status})`)
+  return res.json()
+}

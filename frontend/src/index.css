@@ -444,6 +444,32 @@ body {
   font-size: 10px;
 }
 
+.tpl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--bg);
+}
+
+.tpl-form .drop {
+  width: 100%;
+  background: var(--panel);
+}
+
+.tpl-select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
 /* content */
 .content {
   background: var(--panel);

@@ -107,9 +107,14 @@ export default function App() {
       {result && (
         <div className="layout">
           <aside className="risk">
-            <RiskPanel title="Template A" report={result.risk_a} />
-            <RiskPanel title="Template B" report={result.risk_b} />
-            <TemplatesPanel />
+            <RiskPanel title={result.diff.document_left} report={result.risk_a} />
+            <RiskPanel title={result.diff.document_right} report={result.risk_b} />
+            <TemplatesPanel
+              onCompare={(res) => {
+                setResult(res)
+                setTab('diff')
+              }}
+            />
           </aside>
 
           <main className="content">
