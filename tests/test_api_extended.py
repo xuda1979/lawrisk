@@ -419,6 +419,51 @@ async def test_report_risk_by_section():
     assert [c.text for c in section_table.rows[1].cells] == ["TERMINATION", "0", "40", "40"]
 
 
+async def test_report_html_export():
+    """CompareResult carries a standalone HTML report with escaped content."""
+    async with _client() as c:
+        r = await c.post(
+            "/api/diff-text",
+            json={
+                "left": (
+                    "This Agreement is governed by the laws of England.\n"
+                    "Term of 12 months.\nFees $1000."
+                ),
+                "right": (
+                    "Term of 12 months; this Agreement shall auto-renew automatically.\n"
+                    "Fees $1000. Termination for <cause> is <not> permitted."
+                ),
+                "name_left": "Doc A",
+                "name_right": "Doc B",
+            },
+        )
+    assert r.status_code == 200
+    html = r.json()["report_html"]
+    assert "<!DOCTYPE html>" in html
+    assert "<html" in html
+    assert "<head>" in html and "<style>" in html
+    assert "Contract Clause Diff Report" in html
+    # Mirrors the Markdown report section-for-section.
+    for probe in (
+        "Doc A",
+        "Doc B",
+        "Overall risk:",
+        "Summary",
+        "Contract key facts",
+        "Risk by dimension",
+        "Highest-risk clauses",
+        "Risk by section",
+        "Change ledger",
+        "R-COMM-1",
+    ):
+        assert probe in html, f"missing {probe!r} in html report"
+    # HTML-entity escaping: raw angle brackets in input must never survive.
+    assert "<cause>" not in html
+    assert "&lt;cause&gt;" in html
+    assert "<p class=" in html  # our own structural markup is present
+    assert "</table>" in html
+
+
 def test_spa_served_when_dist_present(monkeypatch):
     # If a dist exists in the checkout, the static module can mount and serve it.
     dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

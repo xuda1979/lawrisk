@@ -101,6 +101,7 @@ export interface CompareResult {
   facts_a: FieldRun[]
   facts_b: FieldRun[]
   report_docx?: string
+  report_html?: string
 }
 
 export interface ClauseTemplate {

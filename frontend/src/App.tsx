@@ -171,6 +171,13 @@ export default function App() {
                     Download .docx
                   </a>
                   <a
+                    className="download"
+                    href={`data:text/html;charset=utf-8,${encodeURIComponent(result.report_html ?? '')}`}
+                    download="lawrisk-diff-report.html"
+                  >
+                    Download .html
+                  </a>
+                  <a
                     className="download download--ghost"
                     href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(result, null, 2))}`}
                     download="lawrisk-diff-report.json"

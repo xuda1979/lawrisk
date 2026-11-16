@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 
 from lawrisk.diff.differ import build_diff_tree, diff_texts
 from lawrisk.diff.docx_report import render_docx
+from lawrisk.diff.html_report import render_html
 from lawrisk.diff.markdown_report import render_markdown
 from lawrisk.diff.sidebyside import aligned_rows, to_dict
 from lawrisk.fields import extract_fields
@@ -75,6 +76,7 @@ class CompareResult(BaseModel):
     facts_a: list = Field(default_factory=list, description="Extracted key fields (A side)")
     facts_b: list = Field(default_factory=list, description="Extracted key fields (B side)")
     report_docx: str = Field(default="", description="Base64 .docx diff report")
+    report_html: str = Field(default="", description="Self-contained HTML diff report")
 
 
 class ParseResult(BaseModel):
@@ -202,6 +204,12 @@ def diff_text(req: DiffTextRequest) -> CompareResult:
             facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
             label_left=req.name_left, label_right=req.name_right,
         )).decode("ascii"),
+        report_html=render_html(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+            facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
+            label_left=req.name_left, label_right=req.name_right,
+        ),
         llm_enabled=describe_layer()["enabled"],
         facts_a=[f.model_dump() for f in extract_fields(paras_a, req.left)],
         facts_b=[f.model_dump() for f in extract_fields(paras_b, req.right)],
@@ -250,6 +258,12 @@ async def compare(
             facts_right=[f.model_dump() for f in doc_b.fields],
             label_left=name_a, label_right=name_b,
         )).decode("ascii"),
+        report_html=render_html(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in doc_a.fields],
+            facts_right=[f.model_dump() for f in doc_b.fields],
+            label_left=name_a, label_right=name_b,
+        ),
         llm_enabled=describe_layer()["enabled"],
         facts_a=[f.model_dump() for f in doc_a.fields],
         facts_b=[f.model_dump() for f in doc_b.fields],
@@ -316,6 +330,12 @@ async def compare_template(
             facts_right=[f.model_dump() for f in doc.fields],
             label_left="Template", label_right=name,
         )).decode("ascii"),
+        report_html=render_html(
+            report, risk_left=baseline_risk, risk_right=risk,
+            facts_left=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+            facts_right=[f.model_dump() for f in doc.fields],
+            label_left="Template", label_right=name,
+        ),
         llm_enabled=describe_layer()["enabled"],
         facts_a=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
         facts_b=[f.model_dump() for f in doc.fields],
