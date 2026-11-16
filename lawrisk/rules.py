@@ -78,7 +78,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-2",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"terminate[^.]{0,40}(?:without cause|for any reason|at (?:its|our|the (?:provider|company)) ?(?:own )?convenience|for convenience)", re.IGNORECASE),
+        pattern=re.compile(r"terminate[^.]{0,40}(?:without cause|for any(?: reason| purpose)|at (?:its|our|their|the (?:provider|company)) ?(?:own |sole |absolute )?convenience|for convenience)", re.IGNORECASE),
         exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
         severity=25,
         reason="One-sided termination-without-cause right for the counterparty",
@@ -208,7 +208,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-2",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,60}(?:limited to|shall not exceed)", re.IGNORECASE),
+        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,60}(?:limited to|shall not exceed|capped? at)", re.IGNORECASE),
         severity=25,
         reason="Aggregate liability cap may be below expected exposure",
         mitigation="Negotiate a cap that covers realistically foreseeable loss; base it on fees for 12 months or more.",
@@ -264,7 +264,10 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"liquidated damages[^.]{0,80}(?:forfeit|penalty|per[ -]?(?:day|week|month|occurrence|event)|"
             r"fixed (?:amount|sum))|"
-            r"liquidated damages\b",
+            r"liquidated damages\b|"
+            r"(?:penalt(?:y|ies)|fixed charge(?:s)?|forfeit(?:ure)?)[^.;]{0,60}"
+            r"(?:\$[^.;]{0,20}(?:per |for each |for every |upon)|"
+            r"forfeit(?:ed|ing)?\b|per[ -]?(?:day|week|month|occurrence|event)\b)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -411,7 +414,9 @@ ABSENCE_RULES: List[Rule] = [
         dimension=Dimension.EXPORT,
         condition=re.compile(
             r"export|sanctions?|embargo|"
-            r"international\s+(?:sale|sales|shipment|shipments|transfer|transfers|trade|transaction)",
+            r"international\s+(?:sale|sales|shipment|shipments|transfer|transfers|trade|transaction)|"
+            r"ship(?:ped|ping|ment|ments)[^.]{0,15}internationally|"
+            r"international(?:ly)?[^.]{0,15}(?:ship(?:ped|ping|ments?|ped)\b|trade\b)",
             re.IGNORECASE,
         ),
         pattern=re.compile(

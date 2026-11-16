@@ -565,6 +565,72 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-EXP-2" for p in r2.penalties)
 
+    def test_termination_for_sole_convenience_flagged(self):
+        # Regression: "sole/own/absolute convenience" is a one-sided for-
+        # convenience termination right that must fire R-COMM-2, while mutual
+        # or consent-bound constructions stay silent.
+        r = score_document(
+            ["Provider may terminate the agreement under this section at its sole convenience."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+        r2 = score_document(
+            [
+                "Either party may terminate this agreement for any reason upon 30 days' written notice.",
+                "The customer may terminate for convenience, provided that it gives the provider 30 days' notice.",
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r2.penalties)
+
+    def test_liability_capped_at_formulation_flagged(self):
+        # Regression: "liability ... capped at <amount>" is an aggregate
+        # liability cap equivalent to "limited to" / "shall not exceed".
+        r = score_document(
+            ["Provider's liability under this agreement is capped at the total fees paid."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-2" for p in r.penalties)
+
+    def test_generic_penalty_and_forfeiture_flagged_as_liquidated_damages(self):
+        # Regression: penalty/forfeiture clauses without the words "liquidated
+        # damages" still concentrate recovery risk and must fire R-LIAB-6,
+        # while penalty-exclusion and pre-estimate-of-loss wording stay silent.
+        cases = [
+            ["Any delay in delivery will incur a penalty of $5,000 per week."],
+            ["A penalty of 10% of the contract value shall be forfeited for each missed milestone."],
+            ["Milestone delays are subject to a fixed charge of $2,000 per day."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-LIAB-6" for p in r.penalties), paras
+        benign = [
+            ["No liquidated damages shall apply for delay caused by the customer."],
+            ["Liquidated damages are a genuine pre-estimate of loss and are not a penalty."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-LIAB-6" for p in r.penalties), paras
+
+    def test_international_shipment_triggers_export_controls_absence_check(self):
+        # Regression: "shipped internationally" substitutes for the word
+        # "export" as the topic gate; with no export-control clause present the
+        # absence rule must fire, and must be suppressed once compliance terms
+        # appear anywhere in the document.
+        r = score_document(
+            ["Goods will be shipped internationally under Incoterms."],
+            "d",
+        )
+        assert any(p.rule_id == "R-EXP-4" for p in r.penalties)
+        r2 = score_document(
+            [
+                "Goods will be shipped internationally under Incoterms.",
+                "Sellers shall comply with all applicable export control laws.",
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-4" for p in r2.penalties)
+
     def test_absence_rule_excerpt_never_a_heading(self):
         """R-DATA-4 must anchor on a body paragraph, not a section heading.
 
