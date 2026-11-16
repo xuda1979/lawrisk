@@ -151,13 +151,23 @@ export default function App() {
             {tab === 'tree' && <DiffTree root={result.diff.root} />}
             {tab === 'report' && (
               <div>
-                <a
-                  className="download"
-                  href={`data:text/markdown;charset=utf-8,${encodeURIComponent(result.markdown)}`}
-                  download="lawrisk-diff-report.md"
-                >
-                  Download .md
-                </a>
+                <p className="report-summary">{result.diff.summary}</p>
+                <div className="report-actions">
+                  <a
+                    className="download"
+                    href={`data:text/markdown;charset=utf-8,${encodeURIComponent(result.markdown)}`}
+                    download="lawrisk-diff-report.md"
+                  >
+                    Download .md
+                  </a>
+                  <a
+                    className="download download--ghost"
+                    href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(result, null, 2))}`}
+                    download="lawrisk-diff-report.json"
+                  >
+                    Download .json
+                  </a>
+                </div>
                 <pre className="markdown">{result.markdown}</pre>
               </div>
             )}
