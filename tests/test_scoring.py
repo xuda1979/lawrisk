@@ -631,6 +631,64 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-EXP-4" for p in r2.penalties)
 
+    def test_consent_based_processing_not_flagged(self):
+        # Regression: consent / lawful-basis constructions resolve the lawful
+        # basis question and must not fire R-DATA-1, while open-ended "any
+        # purpose" processing stays flagged.
+        benign = [
+            ["The provider shall process personal data with the explicit consent of the data subjects."],
+            ["Personal data is collected based on the data subject's consent."],
+            ["We process personal information under a lawful basis set out in the DPA."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-DATA-1" for p in r.penalties), paras
+        r = score_document(["The company may use personal data for any purpose."], "d")
+        assert any(p.rule_id == "R-DATA-1" for p in r.penalties)
+
+    def test_passive_cross_border_transfer_forms_flagged(self):
+        # Regression: passive/verbal phrasings of cross-border data transfer
+        # (data-led verbs, processing/accessing/sharing outbound) must fire
+        # R-DATA-2, while prohibitions with safeguards stay silent.
+        risky = [
+            ["Personal data shall be transferred to the United States."],
+            ["Customer data is transmitted to third-country servers."],
+            ["Personal data shall be transferred abroad."],
+            ["Data may be processed outside the EEA."],
+            ["Personal information may be accessed from subprocessors located outside the EU."],
+            ["All personal data may be shared with the provider's affiliates abroad."],
+        ]
+        for paras in risky:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-DATA-2" for p in r.penalties), paras
+        benign = [
+            ["Personal data shall not be transferred outside the EEA without appropriate safeguards."],
+            ["No transfers of personal data outside the EU shall occur under this agreement."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-DATA-2" for p in r.penalties), paras
+
+    def test_unilateral_assign_at_any_time_flagged(self):
+        # Regression: consent-bound assignment wording must stay silent, but a
+        # bare "may assign this agreement at any time" is an unrestricted
+        # assignment right and must fire R-COMM-4.
+        benign = [
+            ["Neither party may assign the agreement without the prior written consent of the other."],
+            ["Each party may assign this agreement to an affiliate without consent."],
+            ["A party shall not assign this agreement without the other party's consent."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-COMM-4" for p in r.penalties), paras
+        risky = [
+            ["The provider may assign this agreement at any time."],
+            ["This agreement may be assigned to any third party by the provider without the customer's consent."],
+        ]
+        for paras in risky:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-COMM-4" for p in r.penalties), paras
+
     def test_absence_rule_excerpt_never_a_heading(self):
         """R-DATA-4 must anchor on a body paragraph, not a section heading.
 

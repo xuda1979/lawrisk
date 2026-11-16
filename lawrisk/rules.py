@@ -104,7 +104,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-4",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"assign\s*:\s*|assign(?: this agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without", re.IGNORECASE),
+        pattern=re.compile(r"assign\s*:\s*|assign(?: this agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without|(?:may|can)\s+assign this agreement\s+at any time|this agreement (?:may|shall) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? assign|"
             r"(?:may|shall|will) not assign(?: this agreement)?|"
@@ -305,7 +305,13 @@ RULES: List[Rule] = [
         rule_id="R-DATA-1",
         dimension=Dimension.DATA,
         pattern=re.compile(r"personal (?:data|information)|personally identifiable", re.IGNORECASE),
-        exclusion=re.compile(r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|comply (?:with|ing)|(?:shall|will) only be (?:used|processed)|(?:only|solely) for the purpose|purpose of performing)", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|"
+            r"comply (?:with|ing)|consent|lawful basis|"
+            r"(?:shall|will) only be (?:used|processed)|(?:only|solely) for the purpose|"
+            r"purpose of performing)",
+            re.IGNORECASE,
+        ),
         severity=20,
         reason="Personal data is in scope; GDPR/CCPA obligations arise",
         mitigation="Confirm a lawful basis, a completed DPIA where needed, and a signed DPA annex with the counterparty.",
@@ -314,11 +320,40 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-DATA-2",
         dimension=Dimension.DATA,
-        pattern=re.compile(r"transfer[^.]{0,30}(?:personal )?data[^.]{0,30}(?:outside|abroad|to third|to (?:its|our) (?:affiliates?|subprocessors))", re.IGNORECASE),
+        pattern=re.compile(
+            r"(?:"
+            # verb-led: {transfer...} {data} {outbound}
+            r"(?:transfer(?:ring|red|s)?|transmit(?:ting|ted|s)?|process(?:ing|ed|es)?|"
+            r"share(?:ing|d|s)?|store(?:ing|d|s)?|export(?:ing|ed|s)?|send(?:ing)?|"
+            r"access(?:ing|ed)?|move(?:ing|d)?)"
+            r"[^.]{0,20}(?:personal )?(?:data|information)[^.]{0,30}"
+            r"(?:to|outside|abroad|from|in|at|into)"
+            r"[^.]{0,20}(?:the )?"
+            r"(?:united states|u\.?s\.?a?\.?|e\.?u\.?|eea|third[ -]countr(?:y|ies)|"
+            r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
+            r"third[ -]parti(?:es|y)|outside|abroad)"
+            r")|(?:"
+            # data-led: {data} {modal?} {passive verb} {outbound}
+            r"(?:personal )?(?:data|information)[^.]{0,15}"
+            r"(?:(?:is|are|shall|will|may|can|be|being|was|were)[^.]{0,5})?"
+            r"(?:transferred|transmitted|processed|stored|shared|accessed|exported|sent|moved)"
+            r"[^.]{0,30}"
+            r"(?:abroad|outside|"
+            r"(?:to|from|in|at|into|with|outside)"
+            r"[^.]{0,20}(?:the )?"
+            r"(?:united states|u\.?s\.?a?\.?|e\.?u\.?|eea|third[ -]countr(?:y|ies)|"
+            r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
+            r"third[ -]parti(?:es|y)|outside|abroad)"
+            r")"
+            r")",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"(?:shall (?:not|never) (?:be )?transferred?|"
             r"no (?:transfer|transfers) of (?:personal )?data[^.;]{0,50}shall|"
-            r"shall not (?:occur|take place)|without (?:appropriate|such) safeguards)",
+            r"shall not (?:occur|take place)|without (?:appropriate|such) safeguards|"
+            r"(?:with|upon|subject to) (?:adequate|appropriate|standard contractual|sccs?)\b|"
+            r"adequate[^.;]{0,30}decision|appropriate safeguards)",
             re.IGNORECASE,
         ),
         severity=35,
