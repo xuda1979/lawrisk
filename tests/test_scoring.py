@@ -162,6 +162,15 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
 
+    def test_renew_with_separated_automatically_detected(self):
+        # Regression: "will renew for successive one-year terms automatically"
+        # puts the adverb after an intervening object; it still rolls over with
+        # no opt-out and must fire R-COMM-1.
+        r = score_document(
+            ["This agreement will renew for successive one-year terms automatically on each anniversary date."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
     def test_neither_party_denies_renewal_not_flagged(self):
         # Regression: a "neither party" subject denying the renewal is an
         # opt-out statement and must suppress R-COMM-1.
@@ -503,6 +512,23 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
 
+    def test_no_representations_availability_flagged(self):
+        # Regression: "makes no representations or warranties regarding the
+        # availability" (noun forms, no matchable verb or "available"
+        # adjective) must fire R-LIAB-5.
+        r = score_document(
+            ["Provider makes no representations or warranties regarding the availability of the Services."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
+
+    def test_does_not_warrant_reliability_flagged(self):
+        # Regression: "does not warrant the reliability" (availability noun
+        # family beyond the literal "available") must fire R-LIAB-5.
+        r = score_document(
+            ["The Company does not warrant the reliability of the services."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
+
     def test_availability_sla_not_flagged(self):
         r = score_document(
             ["The Services will be available 99.9% of the time; guaranteed response times apply."], "d"
@@ -617,6 +643,15 @@ class TestRuleMeshes:
         for paras in cases:
             r = score_document(paras, "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), paras
+
+    def test_keep_records_of_customer_data_flagged(self):
+        # Regression: "keep records of Customer data following termination"
+        # (retention verb + "records of") must fire R-DATA-5 like copies and
+        # extracts do.
+        r = score_document(
+            ["Provider may keep records of Customer data following termination of this agreement."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
     def test_bounded_retention_then_deletion_not_flagged(self):
         # Regression: retention bounded to a fixed window followed by an explicit
@@ -1177,6 +1212,25 @@ class TestRuleMeshes:
             r = score_document(paras, "d")
             assert all(p.rule_id != "R-COMM-3" for p in r.penalties), paras
 
+    def test_passive_fee_increase_flagged(self):
+        # Regression: "the fees may be increased by Provider upon written
+        # notice" (passive verb, no literal "may increase") is a unilateral
+        # price right and must fire R-COMM-3.
+        risky = [
+            ["The fees may be increased by Provider upon 30 days' prior written notice to Customer."],
+            ["Prices shall be adjusted by the company at any time during the term."],
+        ]
+        for paras in risky:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-COMM-3" for p in r.penalties), paras
+        benign = [
+            ["The fees may be increased by mutual written agreement of the parties."],
+            ["Fees may be adjusted annually in accordance with the CPI index."],
+        ]
+        for paras in benign:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-COMM-3" for p in r.penalties), paras
+
     def test_sole_discretion_term_amendment_flagged(self):
         # Regression: "revise these terms at its sole discretion" is a unilateral
         # amendment right equivalent to "amend the terms at its sole discretion"
@@ -1357,6 +1411,16 @@ class TestRuleMeshes:
         # R-COMM-1 even when the adverb follows the verb phrase.
         r = score_document(
             ["The term shall be extended automatically for one year unless either party delivers written notice of non-renewal at least 60 days prior to expiration."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_automatically_extended_with_notice_not_to_renew_not_flagged(self):
+        # Regression: "shall be automatically extended ... unless either party
+        # gives written notice not to renew" (adverb BEFORE the verb) is a
+        # genuine opt-out and must suppress R-COMM-1.
+        r = score_document(
+            ["The term shall be automatically extended for successive one-year periods unless either party gives written notice not to renew at least 90 days prior to expiration."],
             "d",
         )
         assert all(p.rule_id != "R-COMM-1" for p in r.penalties)

@@ -63,6 +63,7 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"auto[- ]?renew(?:s|al)?|automatic renewal(?:s)?|"
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|"
+            r"renew(?:s|ed|ing)?[^.;]{0,40}automatically|"
             r"(?:is|shall|will|may) be (?:extended|renewed)[^.;]{0,40}automatically|"
             r"automatically extend(?:s|ed|ing)?|automatic(?:al)? extension(?:s)?",
             re.IGNORECASE,
@@ -74,6 +75,8 @@ RULES: List[Rule] = [
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?)|"
             r"(?:does|shall|will|may) not (?:be )?renewed automatically|"
             r"(?:is|shall|will|may) be (?:extended|renewed)[^.;]{0,40}automatically"
+            r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew)|"
+            r"(?:is|shall|will|may) be automatically (?:extended|renewed)"
             r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew)|"
             r"shall be deemed not renewed|"
             r"(?:neither party|no party)[^.;]{0,60}"
@@ -113,7 +116,8 @@ RULES: List[Rule] = [
             r"may (?:adjust|increase|change|modify)|(?:can|may) adjust)"
             r" (?:the )?(?:(?:monthly|annual|yearly|service|platform|subscription|"
             r"license|licence|usage)\s+)?(?:price|prices|fees|fee|pricing)"
-            r"|price (?:increase|escalation)",
+            r"|(?:price|prices|fees|fee)\s+(?:may|shall|will|can) be "
+            r"(?:adjusted|increased|changed|modified)|price (?:increase|escalation)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -334,7 +338,8 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"(?:does not|will not|shall not|makes? no|disclaim(?:s|ing|ed)?)[^.]{0,40}"
             r"(?:warrant(?:y|ies?)?|guarantee|represent)[^.]{0,40}"
-            r"(?:uninterrupted|error[- ]?free|available|fit for|fitness for|merchantab)",
+            r"(?:uninterrupted|error[- ]?free|available|availability|reliab|"
+            r"fit for|fitness for|merchantab)",
             re.IGNORECASE,
         ),
         severity=20,
@@ -380,7 +385,7 @@ RULES: List[Rule] = [
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store))\b"
             r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)|"
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store)\s+"
-            r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?)?\s*(?:of\s+)?"
+            r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?|records?)?\s*(?:of\s+)?"
             r"(?:customer )?(?:personal )?(?:data|information)"
             r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)",
             re.IGNORECASE,
