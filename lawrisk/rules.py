@@ -69,6 +69,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Automatic renewal without an explicit opt-out window",
         mitigation="Require explicit written opt-in for renewal, add a >60 day renewal notice window, or remove auto-renewal.",
+        description="Detects automatic-renewal terms that roll the contract forward with no opt-out window.",
     ),
     Rule(
         rule_id="R-COMM-2",
@@ -78,6 +79,7 @@ RULES: List[Rule] = [
         severity=25,
         reason="One-sided termination-without-cause right for the counterparty",
         mitigation="Make termination rights mutual — require cause, mutual consent, or equal notice/fee windows for both parties.",
+        description="Detects a one-sided right to terminate without cause or for convenience.",
     ),
     Rule(
         rule_id="R-COMM-3",
@@ -86,6 +88,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Unilateral price adjustment clause without consent requirement",
         mitigation="Cap annual fee increases at a fixed percentage with 60+ days written notice, or require mutual written consent.",
+        description="Detects unilateral fee or price increases without agreed consent mechanics.",
     ),
     Rule(
         rule_id="R-COMM-4",
@@ -100,6 +103,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Assignment without the other party's prior written consent",
         mitigation="Add mutual prior-written-consent approval for any assignment, and carve out assignment to an affiliate.",
+        description="Detects assignment of the agreement without the other party's prior consent.",
     ),
     Rule(
         rule_id="R-COMM-5",
@@ -121,6 +125,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Unilateral amendment of the agreement or its terms without mutual written consent",
         mitigation="Require amendments to be agreed in writing by both parties; allow only limited, notice-based administrative changes.",
+        description="Detects unilateral amendment of the agreement or its terms without mutual consent.",
     ),
     Rule(
         rule_id="R-COMM-6",
@@ -133,6 +138,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Late-payment interest/penalty applies to the counterparty above market rates",
         mitigation="Cap late-payment interest at a statutory or market rate and add a grace period before interest accrues.",
+        description="Detects above-market late-payment interest, penalties, fees or service charges.",
     ),
     Rule(
         rule_id="R-COMM-7",
@@ -141,6 +147,7 @@ RULES: List[Rule] = [
         severity=15,
         reason="Fees are non-refundable / non-cancellable, locking the counterparty into payment",
         mitigation="Allow pro-rata refunds or termination credits for unused services and carve out cancellation-for-cause.",
+        description="Detects all-fees non-refundable or non-cancellable terms that lock in payment.",
     ),
     Rule(
         rule_id="R-COMM-8",
@@ -159,6 +166,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Unilateral suspension of services/account by the counterparty without notice or consent",
         mitigation="Require notice, a cure period and cause for any suspension, and credit for service downtime.",
+        description="Detects unilateral suspension of the services or account without notice or consent.",
     ),
     # ----------------------------------------------------------------- liability
     Rule(
@@ -169,6 +177,7 @@ RULES: List[Rule] = [
         severity=25,
         reason="Broad disclaimer covering consequential/indirect damages",
         mitigation="Carve out fraud, death or personal injury, gross negligence and willful misconduct from the exclusion.",
+        description="Flags broad consequential or indirect liability disclaimers with no carve-outs present.",
     ),
     Rule(
         rule_id="R-LIAB-2",
@@ -177,6 +186,7 @@ RULES: List[Rule] = [
         severity=25,
         reason="Aggregate liability cap may be below expected exposure",
         mitigation="Negotiate a cap that covers realistically foreseeable loss; base it on fees for 12 months or more.",
+        description="Flags an aggregate liability cap that may sit below expected exposure.",
     ),
     Rule(
         rule_id="R-LIAB-3",
@@ -189,6 +199,7 @@ RULES: List[Rule] = [
         severity=30,
         reason="Broad indemnification obligation in favour of the counterparty",
         mitigation="Limit indemnity to third-party IP- or breach-specific claims and add mutual caps and carve-outs.",
+        description="Flags a broad indemnification obligation in favour of the counterparty.",
     ),
     Rule(
         rule_id="R-LIAB-4",
@@ -197,6 +208,7 @@ RULES: List[Rule] = [
         severity=30,
         reason='"As-is" delivery with warranties disclaimed',
         mitigation="Restore basic warranties (conformity, availability) and remove absolute as-is disclaimers.",
+        description='Flags "as-is" delivery of the services with warranties disclaimed.',
     ),
     Rule(
         rule_id="R-LIAB-5",
@@ -210,6 +222,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Availability / quality of services is disclaimed (interruption or error-free operation not warranted)",
         mitigation="Add service-level and availability commitments with remedies for sustained downtime.",
+        description="Flags disclaimers of service availability or error-free, uninterrupted operation.",
     ),
     Rule(
         rule_id="R-LIAB-6",
@@ -228,6 +241,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Liquidated-damages / penalty clause may allow disproportionate recovery",
         mitigation="Cap liquidated damages at a genuine pre-estimate of loss; avoid penalty-style per-day accrual without a bound.",
+        description="Flags liquidated-damages or penalty clauses with disproportionate recovery risk.",
     ),
     # ------------------------------------------------------------------- data
     Rule(
@@ -248,6 +262,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Customer data may be retained after termination without a bounded, consent-limited basis",
         mitigation="Bound post-termination data retention to legal requirements, delete or return data within a defined window after term.",
+        description="Flags unbounded post-termination retention of customer data.",
     ),
     Rule(
         rule_id="R-DATA-1",
@@ -257,6 +272,7 @@ RULES: List[Rule] = [
         severity=20,
         reason="Personal data is in scope; GDPR/CCPA obligations arise",
         mitigation="Confirm a lawful basis, a completed DPIA where needed, and a signed DPA annex with the counterparty.",
+        description="Flags open-ended personal-data processing without GDPR/CCPA or DPA safeguards.",
     ),
     Rule(
         rule_id="R-DATA-2",
@@ -265,6 +281,7 @@ RULES: List[Rule] = [
         severity=35,
         reason="Cross-border / third-party data transfer without stated safeguards",
         mitigation="Add standard contractual clauses, adequacy findings, or equivalent transfer safeguards before any transfer.",
+        description="Flags cross-border or third-party data transfers without stated safeguards.",
     ),
     Rule(
         rule_id="R-DATA-3",
@@ -273,6 +290,7 @@ RULES: List[Rule] = [
         severity=25,
         reason="Data processing purpose may be too broad / unlimited",
         mitigation="Restrict processing to documented, purpose-limited activities and add data minimisation wording.",
+        description="Flags overly broad or unlimited data-processing purposes.",
     ),
     # ------------------------------------------------------------------ export
     Rule(
@@ -289,6 +307,7 @@ RULES: List[Rule] = [
         severity=25,
         reason="Export/sanctions obligations appear but supporting controls are not visible in this clause",
         mitigation="Add a dedicated export-compliance clause and confirm which party owns export classification and licensing.",
+        description="Prompts a check of export and sanctions obligations where trade terms appear.",
     ),
     Rule(
         rule_id="R-EXP-2",
@@ -298,6 +317,7 @@ RULES: List[Rule] = [
         severity=50,
         reason="References to a sanctioned jurisdiction without a compliance carve-out",
         mitigation="Remove any sanctioned-destination references or add an explicit sanctions-compliance and export-license carve-out.",
+        description="Flags references to sanctioned jurisdictions without a compliance carve-out.",
     ),
     Rule(
         rule_id="R-EXP-3",
@@ -308,6 +328,7 @@ RULES: List[Rule] = [
         severity=30,
         reason="No export/re-export or diversion controls for deliverables",
         mitigation="Add re-export and end-use control language; require end-user screening and any relevant licences.",
+        description="Flags missing re-export, diversion or end-use controls for deliverables.",
     ),
 ]
 
@@ -322,6 +343,7 @@ ABSENCE_RULES: List[Rule] = [
         severity=20,
         reason="Personal data handled but no data-protection / DPA terms found",
         mitigation="Add data-protection wording and a signed DPA (or flow-down) before any personal-data processing.",
+        description="Flags a missing data-protection clause where personal data is handled.",
     ),
     Rule(
         rule_id="R-EXP-4",
@@ -341,6 +363,7 @@ ABSENCE_RULES: List[Rule] = [
         severity=25,
         reason="Export activities likely, but no export-compliance clause found",
         mitigation="Include an export-control and sanctions-compliance clause and allocate licence responsibility clearly.",
+        description="Flags a missing export-compliance clause where export activity is likely.",
     ),
 ]
 
