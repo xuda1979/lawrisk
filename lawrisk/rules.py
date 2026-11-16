@@ -334,7 +334,8 @@ ABSENCE_RULES: List[Rule] = [
         pattern=re.compile(
             r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance|"
             r"export (?:licens|regulation|law)|sanctions (?:licens|regulation|law)|"
-            r"re[- ]?export|diversion|controls",
+            r"re[- ]?export|diversion|export controls?|"
+            r"(?:comply|compliance)[^.]{0,30}(?:controls?|measures?)",
             re.IGNORECASE,
         ),
         severity=25,
