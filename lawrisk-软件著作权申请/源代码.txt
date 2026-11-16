@@ -1,0 +1,3140 @@
+LawRisk 软件著作权登记申请材料
+程序名：LawRisk（LawRisk合同风险审阅软件）  版本：V1.0
+
+【源代码（核心程序）排版说明】
+1. 本文件为申请材料之二《源代码》。纸质打印时请按以下版式排版：
+   A4 纵向；页眉「LawRisk V1.0」左对齐，宋体五号；正文宋体五号；
+   每页 50 行；页脚标注页码（第 X 页 / 共 60 页）。
+2. 全程序共 60 页：前 30 页（第 1-30 页）与后 30 页（第 31-60 页）
+   为可识别的核心程序片段；中间省略了代表代码 353 行（模块内容见
+   第 30 页下方说明），以接续方式呈现。
+3. 行数统计：源程序总行数＝60 页 × 50 行/页＝3000 行
+   （已剔除注释与空行）。
+4. 以下为程序正文。
+
+······································································
+LawRisk V1.0
+"""Pydantic schemas shared across the LawRisk engine and API."""
+from __future__ import annotations
+from enum import Enum
+from typing import List, Optional
+from pydantic import BaseModel, Field
+class Dimension(str, Enum):
+    COMMERCIAL = "commercial"
+    LIABILITY = "liability"
+    DATA = "data"
+    EXPORT = "export"
+class RiskLevel(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+class Penalty(BaseModel):
+    """A single interpretable risk finding: reason + supporting source excerpt."""
+    dimension: Dimension
+    reason: str
+    rule_id: str
+    severity: int = Field(description="Raw penalty points before scaling (0-100)")
+    excerpt: Optional[str] = Field(
+        default=None, description="Verbatim source text the finding is based on"
+    )
+    para_index: Optional[int] = Field(
+        default=None, description="0-based paragraph index in the input document"
+    )
+    keyword: Optional[str] = Field(
+        default=None, description="Offending keyword/token that matched the rule"
+    )
+    mitigation: Optional[str] = Field(
+        default=None,
+        description="Concrete, deterministic remediation suggestion for the finding",
+    )
+class DimensionScore(BaseModel):
+    dimension: Dimension
+    risk_level: RiskLevel
+    raw_penalty: int = Field(description="Unnormalised gathered penalty points")
+    normalized: float = Field(
+        ge=0.0, le=100.0, description="0-100 score for this dimension"
+    )
+    confidence: float = Field(ge=0.0, le=1.0)
+    reasons: List[str] = Field(default_factory=list)
+class RiskReport(BaseModel):
+    document_id: str
+    overall_score: int = Field(ge=0, le=100, description="Explainable risk 0-100")
+    overall_level: RiskLevel
+    dimensions: List[DimensionScore]
+    penalties: List[Penalty]
+    summary: str
+    deterministic_hash: str = Field(
+第 1 页 / 共 60 页
+LawRisk V1.0
+        description="Hash of inputs + engine version; used to verify determinism"
+    )
+class DiffOp(str, Enum):
+    ADD = "add"
+    DELETE = "delete"
+    MODIFY = "modify"
+class DiffItem(BaseModel):
+    """A leaf diff node: one marked change between the two documents."""
+    op: DiffOp
+    section: str = Field(description="Parent heading path, e.g. 'Article 3. Payment'")
+    para_index_left: Optional[int] = Field(
+        default=None, description="0-based index in left (template A) doc"
+    )
+    para_index_right: Optional[int] = Field(
+        default=None, description="0-based index in right (template B) doc"
+    )
+    text_left: Optional[str] = Field(default=None, description="Original text (A side)")
+    text_right: Optional[str] = Field(default=None, description="New text (B side)")
+    summary: str = Field(description="Human-readable semantic summary of the change")
+class DiffNode(BaseModel):
+    """Recursive diff-tree node: section heading + children (sub-sections/items)."""
+    label: str
+    children: List["DiffNode"] = Field(default_factory=list)
+    items: List[DiffItem] = Field(default_factory=list)
+class DiffStats(BaseModel):
+    additions: int
+    deletions: int
+    modifications: int
+class DiffReport(BaseModel):
+    """Full paragraph-level clause diff tree between two documents."""
+    document_left: str
+    document_right: str
+    root: DiffNode
+    stats: DiffStats
+    summary: str
+class FieldRun(BaseModel):
+    """Result of extracting a key business field from a document."""
+    name: str
+    value: Optional[str] = None
+    source: Optional[str] = None
+    para_index: Optional[int] = None
+    found: bool = False
+class DocParse(BaseModel):
+    document_id: str
+    paragraphs: List[str]
+    headings: List[int] = Field(
+        default_factory=list, description="Indices into paragraphs that look like headings"
+    )
+    fields: List[FieldRun] = Field(default_factory=list)
+    word_count: int = 0
+第 2 页 / 共 60 页
+LawRisk V1.0
+"""Shared text utilities: paragraph extraction, normalisation, heading detection."""
+from __future__ import annotations
+import re
+from typing import List
+_WS_RE = re.compile(r"\s+")
+HEADING_RE = re.compile(
+    r"^\s*"
+    r"(?:"
+    r"ARTICLE[.\-\s]+[0-9IVXLC]+|"
+    r"SECTION[.\-\s]+[0-9IVXLC]+|"
+    r"\d+\.\d*\s+[A-Z]|"
+    r"第\s*[一二三四五六七八九十百\d]+\s*(?:条|章)"
+    r")",
+    re.IGNORECASE,
+)
+def normalize(text: str) -> str:
+    """Canonical normalisation used for deterministic compare tokens."""
+    if text is None:
+        return ""
+    t = text.casefold()
+    t = _WS_RE.sub(" ", t)
+    return t.strip()
+def split_paragraphs(text: str) -> List[str]:
+    """Split raw document text into non-empty paragraphs."""
+    paras = [p.strip() for p in re.split(r"\n\s*\n|\r\n\r\n", text)]
+    return [p for p in paras if p]
+def looks_like_heading(text: str, prev: str | None = None) -> bool:
+    """Heuristics: numbered section/title patterns, or short lines before a blank."""
+    t = text.strip()
+    if not t:
+        return False
+    if len(t) > 80:
+        return False
+    if HEADING_RE.match(t):
+        return True
+    if re.match(r"^[A-Z0-9][A-Z0-9 _/:&-]{1,40}$", t) and len(t) <= 60:
+        return True
+    return False
+"""Document ingestion: DOCX / PDF / TXT to a structured DocParse."""
+from __future__ import annotations
+import io
+import tempfile
+from pathlib import Path
+from typing import List
+from lawrisk.fields import extract_fields
+from lawrisk.models import DocParse
+from lawrisk.textutil import looks_like_heading, split_paragraphs
+def _read_text_from_pdf(data: bytes) -> str:
+    try:
+        import pypdf
+第 3 页 / 共 60 页
+LawRisk V1.0
+        reader = pypdf.PdfReader(io.BytesIO(data))
+        pages = [page.extract_text() or "" for page in reader.pages]
+        return "\n\n".join(pages)
+    except Exception:  # pragma: no cover - defensive fallback
+        return ""
+def _read_text_from_docx(data: bytes) -> str:
+    import docx
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+        tmp.write(data)
+        tmp_path = tmp.name
+    try:
+        document = docx.Document(tmp_path)
+        blocks: List[str] = []
+        last_empty = True
+        for para in document.paragraphs:
+            t = para.text.strip()
+            if t:
+                blocks.append(t)
+                last_empty = False
+            elif not last_empty:
+                blocks.append("")
+                last_empty = True
+        text = "\n\n".join(blocks)
+        for table in document.tables:
+            for row in table.rows:
+                row_txt = " | ".join(c.text.strip() for c in row.cells if c.text.strip())
+                if row_txt:
+                    text += "\n\n" + row_txt
+        return text
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+def parse_document(data: bytes, document_id: str, filename: str = "") -> DocParse:
+    suffix = Path(filename).suffix.lower() if filename else ""
+    if suffix == ".pdf":
+        raw = _read_text_from_pdf(data)
+    elif suffix == ".docx":
+        raw = _read_text_from_docx(data)
+    else:
+        raw = data.decode("utf-8", errors="replace")
+    paragraphs = split_paragraphs(raw)
+    headings = [
+        i
+        for i, p in enumerate(paragraphs)
+        if looks_like_heading(p)
+    ]
+    full = "\n".join(paragraphs)
+    fields = extract_fields(paragraphs, full)
+    return DocParse(
+        document_id=document_id,
+        paragraphs=paragraphs,
+第 4 页 / 共 60 页
+LawRisk V1.0
+        headings=headings,
+        fields=fields,
+        word_count=len(full.split()),
+    )
+"""Key-biz-field extraction from paragraphs (the 'module 06' slice for this project).
+Each detector runs over (index, text) pairs and returns FieldRun rows with the
+verbatim source excerpt so findings stay explainable and traceable.
+"""
+from __future__ import annotations
+import re
+from typing import Callable, List, Pattern
+from lawrisk.models import DocParse, FieldRun
+def _find(pattern: Pattern[str], text: str) -> str | None:
+    m = pattern.search(text)
+    return m.group(0) if m else None
+CurrencyDetector: Pattern[str] = re.compile(
+    r"\$\s?[\d,]+(?:\.\d{2})?|\d[\d,]*\.?\d*\s*(?:USD|EUR|RMB|HKD|GBP)\b",
+    re.IGNORECASE,
+)
+TermYearsDetector: Pattern[str] = re.compile(
+    r"(?:term\s+of|for\s+a\s+term|initial\s+term)[^\n\d]{0,20}(\d+)\s*(?:year|month)s?",
+    re.IGNORECASE,
+)
+GoverningLawDetector: Pattern[str] = re.compile(
+    r"govern(?:ed|ing)?\s+(?:by|under)\s+(?:the\s+)?(?:laws?\s+of\s+)?"
+    r"([A-Za-z]{2,}(?:\s+[A-Za-z]{2,}){0,3})",
+    re.IGNORECASE,
+)
+ArbitrationDetector: Pattern[str] = re.compile(
+    r"arbitrat(?:ion|e)\s+(?:shall\s+)?(?:be\s+)?(?:conducted\s+)?(?:at|in|under)"
+    r"([^\.,;]{0,40})",
+    re.IGNORECASE,
+)
+def _extract(paras: List[str], text: str) -> List[FieldRun]:
+    runs: List[FieldRun] = []
+    has_currency = bool(re.search(CurrencyDetector, text))
+    has_term = "term" in text.casefold()
+    has_govern = "govern" in text.casefold()
+    has_arbitr = "arbitr" in text.casefold()
+    for i, p in enumerate(paras):
+        if has_currency:
+            if m := CurrencyDetector.search(p):
+                runs.append(FieldRun(name="currency", value=m.group(0)[:60], source=p[:300], para_index=i, found=True))
+        if has_term:
+            if m := TermYearsDetector.search(p):
+                runs.append(FieldRun(name="term", value=m.group(1), source=p[:300], para_index=i, found=True))
+        if has_govern:
+            if m := GoverningLawDetector.search(p):
+                runs.append(FieldRun(name="governing_law", value=m.group(1)[:60], source=p[:300], para_index=i, found=True))
+        if has_arbitr:
+第 5 页 / 共 60 页
+LawRisk V1.0
+            if m := ArbitrationDetector.search(p):
+                runs.append(FieldRun(name="arbitration", value=m.group(1).strip()[:60], source=p[:300], para_index=i, found=True))
+    return runs
+def extract_fields(paras: List[str], text: str) -> List[FieldRun]:
+    """Run all field detectors; returns found fields (empty list if none)."""
+    runs = _extract(paras, text)
+    return [r for r in runs if r.found]
+"""Deterministic, keyword/rule-based risk scoring engine.
+Design rules ("低算力守则"): everything is compiled regex over the already
+extracted paragraphs + extracted fields. No randomness, no external calls, so
+identical input always yields the identical score (AC1). Every penalty carries a
+human-readable reason and a verbatim source excerpt (AC2).
+"""
+from __future__ import annotations
+import hashlib
+import re
+from dataclasses import dataclass, field
+from typing import List
+from lawrisk.models import (
+    Dimension,
+    DimensionScore,
+    Penalty,
+    RiskLevel,
+    RiskReport,
+)
+from lawrisk.textutil import looks_like_heading
+ENGINE_VERSION = "lawrisk-engine-v1"
+MAX_CITES_PER_RULE = 3
+DIM_WEIGHTS = {
+    Dimension.COMMERCIAL: 0.35,
+    Dimension.LIABILITY: 0.30,
+    Dimension.DATA: 0.20,
+    Dimension.EXPORT: 0.15,
+}
+@dataclass(frozen=True)
+class Rule:
+    rule_id: str
+    dimension: Dimension
+    pattern: re.Pattern[str]
+    severity: int
+    reason: str
+    condition: re.Pattern[str] | None = None
+    exclusion: re.Pattern[str] | None = None
+    description: str = ""
+    mitigation: str = ""
+_CARVEOUT = re.compile(
+    r"(?:unless|except|provided that|provided it gives|if[^.]{0,25}(?:notice|consent|object))",
+    re.IGNORECASE,
+)
+_MUTUAL = re.compile(r"(?:either|each|both|any)\s+(?:party|parties)", re.IGNORECASE)
+第 6 页 / 共 60 页
+LawRisk V1.0
+RULES: List[Rule] = [
+    Rule(
+        rule_id="R-COMM-1",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(r"auto[- ]?renew|renew automatically|automatically renew", re.IGNORECASE),
+        exclusion=re.compile(r"(?:no auto[- ]?renewal|without auto[- ]?renewal|does not auto[- ]?renew)", re.IGNORECASE),
+        severity=20,
+        reason="Automatic renewal without an explicit opt-out window",
+        mitigation="Require explicit written opt-in for renewal, add a >60 day renewal notice window, or remove auto-renewal.",
+    ),
+    Rule(
+        rule_id="R-COMM-2",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(r"terminate[^.]{0,40}(?:without cause|for any reason|at (?:its|our|the (?:provider|company)) ?(?:own )?convenience|for convenience)", re.IGNORECASE),
+        exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
+        severity=25,
+        reason="One-sided termination-without-cause right for the counterparty",
+        mitigation="Make termination rights mutual — require cause, mutual consent, or equal notice/fee windows for both parties.",
+    ),
+    Rule(
+        rule_id="R-COMM-3",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(r"reserves the right to (?:adjust|increase|change|modify) (?:the )?(?:price|prices|fees)|price (?:increase|escalation)", re.IGNORECASE),
+        severity=20,
+        reason="Unilateral price adjustment clause without consent requirement",
+        mitigation="Cap annual fee increases at a fixed percentage with 60+ days written notice, or require mutual written consent.",
+    ),
+    Rule(
+        rule_id="R-COMM-4",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(r"assign\s*:\s*|assign(?: this agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without", re.IGNORECASE),
+        severity=20,
+        reason="Assignment without the other party's prior written consent",
+        mitigation="Add mutual prior-written-consent approval for any assignment, and carve out assignment to an affiliate.",
+    ),
+    Rule(
+        rule_id="R-COMM-5",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(
+            r"(?:"
+            r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
+            r"[^.]{0,30}"
+            r"(?:amend|modify|alter|vary|change|revise)\s+"
+            r"(?:this agreement|these presents|the terms|the terms and conditions|"
+            r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof)"
+            r"[^.]{0,35}"
+            r"(?:at any time|at (?:its|his|their)? ?(?:own )?(?:sole|absolute) discretion|"
+            r"without (?:prior )?(?:notice|consent|approval)|unilaterally)"
+            r")",
+            re.IGNORECASE,
+第 7 页 / 共 60 页
+LawRisk V1.0
+        ),
+        exclusion=_MUTUAL,
+        severity=20,
+        reason="Unilateral amendment of the agreement or its terms without mutual written consent",
+        mitigation="Require amendments to be agreed in writing by both parties; allow only limited, notice-based administrative changes.",
+    ),
+    Rule(
+        rule_id="R-COMM-6",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(
+            r"late payment(?:s)?[^.]{0,40}(?:interest|penalty|fee)|"
+            r"interest[^.]{0,20}(?:at|of|=)[^.]{0,25}(?:per month|per annum|%|percent)",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Late-payment interest/penalty applies to the counterparty above market rates",
+        mitigation="Cap late-payment interest at a statutory or market rate and add a grace period before interest accrues.",
+    ),
+    Rule(
+        rule_id="R-COMM-7",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(r"non[ -]?refundable(?: and non[ -]?cancellable)?|non[ -]?cancellable", re.IGNORECASE),
+        severity=15,
+        reason="Fees are non-refundable / non-cancellable, locking the counterparty into payment",
+        mitigation="Allow pro-rata refunds or termination credits for unused services and carve out cancellation-for-cause.",
+    ),
+    Rule(
+        rule_id="R-COMM-8",
+        dimension=Dimension.COMMERCIAL,
+        pattern=re.compile(
+            r"(?:suspend|deactivate)[^.]{0,60}"
+            r"(?:the services|services|access|the account|any account)"
+            r"[^.]{0,50}"
+            r"(?:without (?:prior )?(?:notice|consent|warning)|"
+            r"at any time|"
+            r"at (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute)[^.]{0,15}(?:discretion)|"
+            r"with immediate effect)",
+            re.IGNORECASE,
+        ),
+        exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
+        severity=20,
+        reason="Unilateral suspension of services/account by the counterparty without notice or consent",
+        mitigation="Require notice, a cure period and cause for any suspension, and credit for service downtime.",
+    ),
+    Rule(
+        rule_id="R-LIAB-1",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(r"((?:in no event|under no circumstances)) (?:shall|will) (?:the )?(provider|company)|(?:provider|company) shall not (?:be liable|have any liability) for", re.IGNORECASE),
+        exclusion=re.compile(r"(?:fraud|death|personal injury|gross negligence|wilful misconduct|willful misconduct|neither party|both parties|each party|either party)", re.IGNORECASE),
+        severity=25,
+第 8 页 / 共 60 页
+LawRisk V1.0
+        reason="Broad disclaimer covering consequential/indirect damages",
+        mitigation="Carve out fraud, death or personal injury, gross negligence and willful misconduct from the exclusion.",
+    ),
+    Rule(
+        rule_id="R-LIAB-2",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,40}limited to", re.IGNORECASE),
+        severity=25,
+        reason="Aggregate liability cap may be below expected exposure",
+        mitigation="Negotiate a cap that covers realistically foreseeable loss; base it on fees for 12 months or more.",
+    ),
+    Rule(
+        rule_id="R-LIAB-3",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(r"indemnif(?:y|ies)[^.]{0,20}(?:against|from)[^.]{0,40}(?:all|any|third[ -]party|losses|damages|claims)", re.IGNORECASE),
+        severity=30,
+        reason="Broad indemnification obligation in favour of the counterparty",
+        mitigation="Limit indemnity to third-party IP- or breach-specific claims and add mutual caps and carve-outs.",
+    ),
+    Rule(
+        rule_id="R-LIAB-4",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(r"(?:as[ -]is|without (?:any )?warrant(?:y|ies))", re.IGNORECASE),
+        severity=30,
+        reason='"As-is" delivery with warranties disclaimed',
+        mitigation="Restore basic warranties (conformity, availability) and remove absolute as-is disclaimers.",
+    ),
+    Rule(
+        rule_id="R-LIAB-5",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(
+            r"(?:does not|will not|shall not|makes? no)[^.]{0,40}"
+            r"(?:warrant(?:y|ies?)?|guarantee|represent)[^.]{0,40}"
+            r"(?:uninterrupted|error[- ]?free|available|fit for)",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Availability / quality of services is disclaimed (interruption or error-free operation not warranted)",
+        mitigation="Add service-level and availability commitments with remedies for sustained downtime.",
+    ),
+    Rule(
+        rule_id="R-LIAB-6",
+        dimension=Dimension.LIABILITY,
+        pattern=re.compile(
+            r"liquidated damages[^.]{0,80}(?:forfeit|penalty|per[ -]?(?:day|week|month|occurrence|event)|"
+            r"fixed (?:amount|sum))|"
+            r"liquidated damages\b",
+            re.IGNORECASE,
+        ),
+        exclusion=re.compile(
+第 9 页 / 共 60 页
+LawRisk V1.0
+            r"(?:no|not|exclude(e?d)?|only|solely|cap(?:ed)?|limited to|"
+            r"genuine pre[- ]?estimate|reasonable estimate|proportionate)",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Liquidated-damages / penalty clause may allow disproportionate recovery",
+        mitigation="Cap liquidated damages at a genuine pre-estimate of loss; avoid penalty-style per-day accrual without a bound.",
+    ),
+    Rule(
+        rule_id="R-DATA-5",
+        dimension=Dimension.DATA,
+        pattern=re.compile(
+            r"(?:data|information)[^.]{0,60}"
+            r"(?:shall (?:be )?(?:retained?|kept)|may (?:be )?(?:retained?|kept))"
+            r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)",
+            re.IGNORECASE,
+        ),
+        exclusion=re.compile(
+            r"(?:require|required|obligat|as (?:required|needed)|in accordance with|"
+            r"only for|solely|necessary to (?:comply|fulfil|fulfill)|legal obligation|"
+            r"not (?:be )?(?:retained|kept))",
+            re.IGNORECASE,
+        ),
+        severity=20,
+        reason="Customer data may be retained after termination without a bounded, consent-limited basis",
+        mitigation="Bound post-termination data retention to legal requirements, delete or return data within a defined window after term.",
+    ),
+    Rule(
+        rule_id="R-DATA-1",
+        dimension=Dimension.DATA,
+        pattern=re.compile(r"personal (?:data|information)|personally identifiable", re.IGNORECASE),
+        exclusion=re.compile(r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|comply (?:with|ing)|shall only be (?:used|processed)|only for the purpose|purpose of performing)", re.IGNORECASE),
+        severity=20,
+        reason="Personal data is in scope; GDPR/CCPA obligations arise",
+        mitigation="Confirm a lawful basis, a completed DPIA where needed, and a signed DPA annex with the counterparty.",
+    ),
+    Rule(
+        rule_id="R-DATA-2",
+        dimension=Dimension.DATA,
+        pattern=re.compile(r"transfer[^.]{0,30}(?:personal )?data[^.]{0,30}(?:outside|abroad|to third|to (?:its|our) (?:affiliates?|subprocessors))", re.IGNORECASE),
+        severity=35,
+        reason="Cross-border / third-party data transfer without stated safeguards",
+        mitigation="Add standard contractual clauses, adequacy findings, or equivalent transfer safeguards before any transfer.",
+    ),
+    Rule(
+        rule_id="R-DATA-3",
+        dimension=Dimension.DATA,
+        pattern=re.compile(r"process[^.]{0,30}data[^.]{0,20}(?:for any purpose|for (?:its|our) own(?: independent)? purposes|unlimited)", re.IGNORECASE),
+        severity=25,
+        reason="Data processing purpose may be too broad / unlimited",
+第 10 页 / 共 60 页
+LawRisk V1.0
+        mitigation="Restrict processing to documented, purpose-limited activities and add data minimisation wording.",
+    ),
+    Rule(
+        rule_id="R-EXP-1",
+        dimension=Dimension.EXPORT,
+        pattern=re.compile(r"\b(?:exports?|sanctions?|embargoes?|bribery|anti[- ]corruption|itar|deemed exports?)\b", re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:comply (?:with|ing)|in compliance|subject to (?:applicable )?(?:export|sanction)|responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|applicable (?:export control|sanctions) laws)",
+            re.IGNORECASE,
+        ),
+        severity=25,
+        reason="Export/sanctions obligations appear but supporting controls are not visible in this clause",
+        mitigation="Add a dedicated export-compliance clause and confirm which party owns export classification and licensing.",
+    ),
+    Rule(
+        rule_id="R-EXP-2",
+        dimension=Dimension.EXPORT,
+        condition=re.compile(r"export|sanctions|embargo", re.IGNORECASE),
+        pattern=re.compile(r"\b(cuba|iran|syria|north korea|crimea)\b", re.IGNORECASE),
+        severity=50,
+        reason="References to a sanctioned jurisdiction without a compliance carve-out",
+        mitigation="Remove any sanctioned-destination references or add an explicit sanctions-compliance and export-license carve-out.",
+    ),
+    Rule(
+        rule_id="R-EXP-3",
+        dimension=Dimension.EXPORT,
+        condition=re.compile(r"deliver|ship|supply|technology|software", re.IGNORECASE),
+        pattern=re.compile(r"(?:re[- ]?export|diversion|end[- ]?use)", re.IGNORECASE),
+        exclusion=re.compile(r"(?:subject to|comply|controls|restrictions|screening|authorization|authorisation)", re.IGNORECASE),
+        severity=30,
+        reason="No export/re-export or diversion controls for deliverables",
+        mitigation="Add re-export and end-use control language; require end-user screening and any relevant licences.",
+    ),
+]
+ABSENCE_RULES: List[Rule] = [
+    Rule(
+        rule_id="R-DATA-4",
+        dimension=Dimension.DATA,
+        condition=re.compile(r"personal (?:data|information)", re.IGNORECASE),
+        pattern=re.compile(r"data (?:protection|controller|processor)|GDPR|CCPA|privacy policy|data processing agreement|DPA\b", re.IGNORECASE),
+        severity=20,
+        reason="Personal data handled but no data-protection / DPA terms found",
+        mitigation="Add data-protection wording and a signed DPA (or flow-down) before any personal-data processing.",
+    ),
+    Rule(
+        rule_id="R-EXP-4",
+        dimension=Dimension.EXPORT,
+        condition=re.compile(r"export|international|deliverables", re.IGNORECASE),
+        pattern=re.compile(r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance", re.IGNORECASE),
+        severity=25,
+第 11 页 / 共 60 页
+LawRisk V1.0
+        reason="Export activities likely, but no export-compliance clause found",
+        mitigation="Include an export-control and sanctions-compliance clause and allocate licence responsibility clearly.",
+    ),
+]
+_DIMENSION_NAMES = {
+    Dimension.COMMERCIAL: "Commercial risk",
+    Dimension.LIABILITY: "Liability / legal risk",
+    Dimension.DATA: "Data protection",
+    Dimension.EXPORT: "Export compliance",
+}
+KIND_PARAGRAPH = "paragraph"
+KIND_ABSENCE = "absence"
+def rule_catalog() -> list[dict]:
+    """Serialise the full rule set for the /api/rules handbook endpoint.
+    Each entry is a plain dict (no compiled regex survives serialisation):
+    id, dimension, severity, reason, mitigation, description and kind
+    (paragraph vs document-level absence check). Pattern fragments are exposed
+    as-is (source is public) so the handbook can explain what triggers a rule.
+    """
+    catalog: list[dict] = []
+    for kind, rules in ((KIND_PARAGRAPH, RULES), (KIND_ABSENCE, ABSENCE_RULES)):
+        for rule in rules:
+            entry = {
+                "rule_id": rule.rule_id,
+                "dimension": rule.dimension.value,
+                "dimension_label": _DIMENSION_NAMES[rule.dimension],
+                "severity": rule.severity,
+                "reason": rule.reason,
+                "mitigation": rule.mitigation,
+                "description": rule.description,
+                "kind": kind,
+                "has_condition": rule.condition is not None,
+                "has_exclusion": rule.exclusion is not None,
+            }
+            if rule.pattern is not None:
+                entry["pattern"] = rule.pattern.pattern
+            if rule.condition is not None:
+                entry["condition"] = rule.condition.pattern
+            catalog.append(entry)
+    return catalog
+def _trim(text: str, limit: int = 240) -> str:
+    t = re.sub(r"\s+", " ", text or "").strip()
+    return t if len(t) <= limit else t[: limit - 1] + "…"
+def _pick(candidates: List[Penalty]) -> List[Penalty]:
+    """Deterministically cap citations so a rule contributes <= N exemplars."""
+    return candidates[:MAX_CITES_PER_RULE]
+def _apply_paragraph_rules(
+    paragraphs: List[str], rules: List[Rule]
+) -> List[Penalty]:
+    penalties: List[Penalty] = []
+第 12 页 / 共 60 页
+LawRisk V1.0
+    for rule in rules:
+        hits: List[Penalty] = []
+        for i, para in enumerate(paragraphs):
+            if looks_like_heading(para):
+                continue
+            normalized = para.casefold()
+            if rule.condition is not None and not rule.condition.search(normalized):
+                continue
+            m = rule.pattern.search(normalized)
+            if m and rule.exclusion and rule.exclusion.search(normalized):
+                continue
+            if m:
+                hits.append(
+                    Penalty(
+                        dimension=rule.dimension,
+                        reason=rule.reason,
+                        rule_id=rule.rule_id,
+                        severity=rule.severity,
+                        excerpt=_trim(para),
+                        para_index=i,
+                        keyword=m.group(0)[:80],
+                        mitigation=rule.mitigation,
+                    )
+                )
+        penalties.extend(_pick(hits))
+    return penalties
+def _apply_absence_rules(paragraphs: List[str], rules: List[Rule]) -> List[Penalty]:
+    full = "\n".join(paragraphs).casefold()
+    penalties: List[Penalty] = []
+    for rule in rules:
+        m = rule.condition.search(full)
+        if not m:
+            continue
+        if rule.pattern.search(full):
+            continue
+        body_hit = next(
+            (
+                i
+                for i, p in enumerate(paragraphs)
+                if not looks_like_heading(p) and rule.condition.search(p.casefold())
+            ),
+            None,
+        )
+        if body_hit is None:
+            body_hit = next(
+                (i for i, p in enumerate(paragraphs) if rule.condition.search(p.casefold())),
+                None,
+            )
+        if body_hit is None:
+            continue
+第 13 页 / 共 60 页
+LawRisk V1.0
+        penalties.append(
+            Penalty(
+                dimension=rule.dimension,
+                reason=rule.reason,
+                rule_id=rule.rule_id,
+                severity=rule.severity,
+                excerpt=_trim(paragraphs[body_hit]),
+                para_index=body_hit,
+                keyword=None,
+                mitigation=rule.mitigation,
+            )
+        )
+    return penalties
+def _level(score: int) -> RiskLevel:
+    if score >= 66:
+        return RiskLevel.HIGH
+    if score >= 33:
+        return RiskLevel.MEDIUM
+    return RiskLevel.LOW
+def _confidence(n_exemplars: int) -> float:
+    """Deterministic confidence derived purely from evidence volume."""
+    return round(min(0.95, 0.30 + 0.10 * n_exemplars), 2)
+def score_document(paragraphs: List[str], document_id: str) -> RiskReport:
+    """Compute a fully deterministic, explainable risk report."""
+    penalties = _apply_paragraph_rules(paragraphs, RULES)
+    penalties += _apply_absence_rules(paragraphs, ABSENCE_RULES)
+    per_dim: dict[Dimension, int] = {}
+    for dim in Dimension:
+        per_dim[dim] = min(
+            100, sum(p.severity for p in penalties if p.dimension is dim)
+        )
+    dimensions: List[DimensionScore] = []
+    for dim in Dimension:
+        raw = per_dim[dim]
+        n_ex = sum(1 for p in penalties if p.dimension is dim)
+        score = min(100.0, round(raw))
+        dims = DimensionScore(
+            dimension=dim,
+            risk_level=_level(int(score)),
+            raw_penalty=raw,
+            normalized=score,
+            confidence=_confidence(n_ex),
+            reasons=[f"{p.reason} (excerpt #{p.para_index + 1})" for p in penalties if p.dimension is dim][:8]
+            or [f"No material {_DIMENSION_NAMES[dim].lower()} concerns identified."],
+        )
+        dimensions.append(dims)
+    weighted = sum(DIM_WEIGHTS[d.dimension] * d.normalized for d in dimensions)
+    overall = int(round(weighted))
+    digest = hashlib.sha256(
+        "\n".join(paragraphs).encode("utf-8") + f"\nINCLUDES:{ENGINE_VERSION}".encode("utf-8")
+第 14 页 / 共 60 页
+LawRisk V1.0
+    ).hexdigest()
+    high = sum(1 for d in dimensions if d.risk_level is RiskLevel.HIGH)
+    mid = sum(1 for d in dimensions if d.risk_level is RiskLevel.MEDIUM)
+    n_pen = len(penalties)
+    if high >= 3 or overall >= 66:
+        summary = (
+            f"High-risk agreement: {overall}/100 overall. {n_pen} findings across "
+            f"{high} high-risk dimension(s) ({', '.join(_DIMENSION_NAMES[d.dimension] for d in dimensions if d.risk_level is RiskLevel.HIGH)}). "
+            "Review termination, indemnity and data clauses together with the counterparty."
+        )
+    elif overall >= 33:
+        summary = (
+            f"Medium-risk agreement: {overall}/100 overall. {n_pen} findings; {mid} "
+            "dimension(s) show moderate exposure. Targeted review recommended before signature."
+        )
+    else:
+        summary = (
+            f"Low-risk agreement: {overall}/100 overall. {n_pen} minor findings; "
+            "standard protective wording appears to be in place."
+        )
+    return RiskReport(
+        document_id=document_id,
+        overall_score=overall,
+        overall_level=_level(overall),
+        dimensions=dimensions,
+        penalties=penalties,
+        summary=summary,
+        deterministic_hash=digest,
+    )
+"""FastAPI application: upload two docs -> diff tree + risk panel.
+Design:
+  POST /api/compare  (multipart) two files: template_a, template_b
+      -> CompareResult { diff: DiffReport, risk_a, risk_b, rows, markdown }
+  GET  /api/health
+  POST /api/parse     single file -> parsed paragraphs + fields (debug)
+  POST /api/score     JSON {paragraphs: [...]} -> RiskReport
+  POST /api/diff-text JSON {left, right, name_left, name_right} -> CompareResult
+  GET  /api/templates         -> bundled clause-template library (P3)
+  POST /api/templates/{tid}/compare  one file -> diff doc vs template + risk
+All endpoints are local and deterministic; LLM summarisation is optional
+(off by default). Uploaded files are size-limited (413) to keep memory bounded.
+"""
+from __future__ import annotations
+import base64
+import uuid
+from typing import Dict, List
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from lawrisk.diff.differ import build_diff_tree, diff_texts
+第 15 页 / 共 60 页
+LawRisk V1.0
+from lawrisk.diff.docx_report import render_docx
+from lawrisk.diff.html_report import render_html
+from lawrisk.diff.markdown_report import render_markdown
+from lawrisk.diff.sidebyside import aligned_rows, to_dict
+from lawrisk.diff.single_report import (
+    render_docx_review,
+    render_html_review,
+    render_markdown_review,
+)
+from lawrisk.fields import extract_fields
+from lawrisk.textutil import split_paragraphs
+from lawrisk.llm import describe_layer, summarize_clause
+from lawrisk.models import DocParse, RiskReport
+from lawrisk.parser import parse_document
+from lawrisk.rules import ENGINE_VERSION, rule_catalog, score_document
+from lawrisk.static import mount_spa_if_available
+from lawrisk.templates import diff_against_template, get_template, list_templates
+app = FastAPI(
+    title="LawRisk",
+    description="Law-firm contract risk scoring + clause diff tree",
+    version="0.3.0",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # local SPA
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+class ScoreRequest(BaseModel):
+    paragraphs: List[str]
+class DiffTextRequest(BaseModel):
+    left: str
+    right: str
+    name_left: str = "left"
+    name_right: str = "right"
+class CompareResult(BaseModel):
+    diff: object
+    risk_a: RiskReport
+    risk_b: RiskReport
+    rows: list
+    markdown: str
+    llm_enabled: bool
+    facts_a: list = Field(default_factory=list, description="Extracted key fields (A side)")
+    facts_b: list = Field(default_factory=list, description="Extracted key fields (B side)")
+    report_docx: str = Field(default="", description="Base64 .docx diff report")
+    report_html: str = Field(default="", description="Self-contained HTML diff report")
+class ParseResult(BaseModel):
+    doc: DocParse
+    llm_enabled: bool
+第 16 页 / 共 60 页
+LawRisk V1.0
+class ReviewResult(BaseModel):
+    """Single-document risk review: score + section-grouped findings + reports."""
+    document_name: str
+    risk: RiskReport
+    facts: list = Field(default_factory=list, description="Extracted key fields")
+    sections: list = Field(
+        default_factory=list,
+        description="Findings grouped by contract section: [{heading, total_risk, findings}]",
+    )
+    markdown: str = Field(default="", description="Markdown review report")
+    report_docx: str = Field(default="", description="Base64 .docx review report")
+    report_html: str = Field(default="", description="Self-contained HTML review report")
+    llm_enabled: bool = False
+class TemplateListResult(BaseModel):
+    templates: list
+    llm: dict
+class RuleCatalogResult(BaseModel):
+    engine: str = Field(default=ENGINE_VERSION, description="Risk engine version string")
+    source: str = Field(
+        default="lawrisk.rules", description="Python module the catalog is generated from"
+    )
+    rules: list = Field(
+        default_factory=list,
+        description="Full rule catalog: {rule_id, dimension, severity, reason, mitigation, kind, ...}",
+    )
+@app.get("/api/health")
+def health() -> dict:
+    return {
+        "status": "ok",
+        "llm_enabled": describe_layer()["enabled"],
+        "engine": ENGINE_VERSION,
+        "llm": describe_layer(),
+    }
+async def _read_limited(file: UploadFile) -> bytes:
+    """Read an upload, rejecting anything over the hard size cap."""
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"{file.filename or 'file'} exceeds the {MAX_UPLOAD_BYTES // (1024 * 1024)} MiB upload limit",
+        )
+    return data
+@app.post("/api/parse", response_model=ParseResult)
+async def parse_file(file: UploadFile = File(...)) -> ParseResult:
+    data = await _read_limited(file)
+    try:
+        dp = parse_document(data, uuid.uuid4().hex[:8], file.filename or "")
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=422, detail=f"could not parse {file.filename}: {exc}")
+    return ParseResult(doc=dp, llm_enabled=describe_layer()["enabled"])
+第 17 页 / 共 60 页
+LawRisk V1.0
+@app.post("/api/score", response_model=RiskReport)
+def score_paragraphs(req: ScoreRequest) -> RiskReport:
+    if not req.paragraphs:
+        raise HTTPException(status_code=422, detail="paragraphs must be non-empty")
+    if len(req.paragraphs) > 5000:
+        raise HTTPException(status_code=413, detail="too many paragraphs")
+    if sum(len(p) for p in req.paragraphs) > 1_000_000:
+        raise HTTPException(status_code=413, detail="request text too large")
+    return score_document(req.paragraphs, document_id=uuid.uuid4().hex[:8])
+def _risk_panel(name: str, paragraphs: List[str]) -> RiskReport:
+    return score_document(paragraphs, document_id=f"{name}-{uuid.uuid4().hex[:8]}")
+def _risk_by_para(report: RiskReport) -> Dict[int, List[dict]]:
+    """Map global paragraph index -> penalties that fired on that paragraph."""
+    out: Dict[int, List[dict]] = {}
+    for p in report.penalties:
+        if p.para_index is None:
+            continue
+        out.setdefault(p.para_index, []).append(
+            {
+                "rule_id": p.rule_id,
+                "dimension": p.dimension,
+                "severity": p.severity,
+                "reason": p.reason,
+                "mitigation": p.mitigation,
+            }
+        )
+    return out
+def _attach_row_risks(rows: List[dict], risk_a: RiskReport, risk_b: RiskReport) -> List[dict]:
+    """Attribute risk penalties to diff rows.
+    Diff rows and the risk engine index the same global paragraph arrays, so a
+    penalty's para_index tells us exactly which changed clause carried the
+    points. Each row gains per-side lists (leftRisks/rightRisks) plus the
+    summed severity so the web diff can flag risky changed clauses.
+    """
+    left_map = _risk_by_para(risk_a)
+    right_map = _risk_by_para(risk_b)
+    for r in rows:
+        lk = r.get("leftIdx")
+        rk = r.get("rightIdx")
+        left = left_map.get(lk, []) if lk is not None else []
+        right = right_map.get(rk, []) if rk is not None else []
+        r["leftRisks"] = left
+        r["rightRisks"] = right
+        r["leftRiskSum"] = sum(p["severity"] for p in left)
+        r["rightRiskSum"] = sum(p["severity"] for p in right)
+    return rows
+@app.post("/api/diff-text", response_model=CompareResult)
+def diff_text(req: DiffTextRequest) -> CompareResult:
+    if not req.left.strip() or not req.right.strip():
+        raise HTTPException(status_code=422, detail="left/right must be non-empty")
+第 18 页 / 共 60 页
+LawRisk V1.0
+    report = diff_texts(req.left, req.right, req.name_left, req.name_right)
+    report = _maybe_llm_summaries(report)
+    paras_a = list(split_paragraphs(req.left))
+    paras_b = list(split_paragraphs(req.right))
+    risk_a = _risk_panel(req.name_left, paras_a)
+    risk_b = _risk_panel(req.name_right, paras_b)
+    rows = _attach_row_risks([to_dict(r) for r in aligned_rows(report)], risk_a, risk_b)
+    return CompareResult(
+        diff=report.model_dump(),
+        risk_a=risk_a,
+        risk_b=risk_b,
+        rows=rows,
+        markdown=render_markdown(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+            facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
+            label_left=req.name_left, label_right=req.name_right,
+        ),
+        report_docx=base64.b64encode(render_docx(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+            facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
+            label_left=req.name_left, label_right=req.name_right,
+        )).decode("ascii"),
+        report_html=render_html(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+            facts_right=[f.model_dump() for f in extract_fields(paras_b, req.right)],
+            label_left=req.name_left, label_right=req.name_right,
+        ),
+        llm_enabled=describe_layer()["enabled"],
+        facts_a=[f.model_dump() for f in extract_fields(paras_a, req.left)],
+        facts_b=[f.model_dump() for f in extract_fields(paras_b, req.right)],
+    )
+@app.post("/api/compare", response_model=CompareResult)
+async def compare(
+    template_a: UploadFile = File(...),
+    template_b: UploadFile = File(...),
+    name_a: str = Form(default="Template A"),
+    name_b: str = Form(default="Template B"),
+) -> CompareResult:
+    """Compare two uploaded documents: diff tree + risk panels."""
+    data_a = await _read_limited(template_a)
+    data_b = await _read_limited(template_b)
+    try:
+        doc_a = parse_document(data_a, uuid.uuid4().hex[:8], template_a.filename or "")
+        doc_b = parse_document(data_b, uuid.uuid4().hex[:8], template_b.filename or "")
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=422, detail=f"parse failed: {exc}")
+    if not doc_a.paragraphs or not doc_b.paragraphs:
+第 19 页 / 共 60 页
+LawRisk V1.0
+        raise HTTPException(status_code=422, detail="both documents must yield paragraphs")
+    report = build_diff_tree(doc_a.paragraphs, doc_b.paragraphs, name_a, name_b)
+    risk_a = score_document(doc_a.paragraphs, doc_a.document_id)
+    risk_b = score_document(doc_b.paragraphs, doc_b.document_id)
+    report = _maybe_llm_summaries(report)
+    rows = _attach_row_risks([to_dict(r) for r in aligned_rows(report)], risk_a, risk_b)
+    return CompareResult(
+        diff=report.model_dump(),
+        risk_a=risk_a,
+        risk_b=risk_b,
+        rows=rows,
+        markdown=render_markdown(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in doc_a.fields],
+            facts_right=[f.model_dump() for f in doc_b.fields],
+            label_left=name_a, label_right=name_b,
+        ),
+        report_docx=base64.b64encode(render_docx(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in doc_a.fields],
+            facts_right=[f.model_dump() for f in doc_b.fields],
+            label_left=name_a, label_right=name_b,
+        )).decode("ascii"),
+        report_html=render_html(
+            report, risk_left=risk_a, risk_right=risk_b,
+            facts_left=[f.model_dump() for f in doc_a.fields],
+            facts_right=[f.model_dump() for f in doc_b.fields],
+            label_left=name_a, label_right=name_b,
+        ),
+        llm_enabled=describe_layer()["enabled"],
+        facts_a=[f.model_dump() for f in doc_a.fields],
+        facts_b=[f.model_dump() for f in doc_b.fields],
+    )
+@app.get("/api/templates", response_model=TemplateListResult)
+def template_library() -> TemplateListResult:
+    """List the bundled clause-template library (P3)."""
+    return TemplateListResult(
+        templates=[t.to_dict() for t in list_templates()],
+        llm=describe_layer(),
+    )
+@app.get("/api/rules", response_model=RuleCatalogResult)
+def rules_catalog() -> RuleCatalogResult:
+    """Return the full, deterministic risk rule catalog (handbook)."""
+    return RuleCatalogResult(engine=ENGINE_VERSION, rules=rule_catalog())
+@app.post("/api/templates/{template_id}/compare", response_model=CompareResult)
+async def compare_template(
+    template_id: str,
+    document: UploadFile = File(...),
+    name: str = Form(default="Document"),
+) -> CompareResult:
+第 20 页 / 共 60 页
+LawRisk V1.0
+    """Diff an uploaded document against a bundled baseline template."""
+    data = await _read_limited(document)
+    try:
+        doc = parse_document(data, uuid.uuid4().hex[:8], document.filename or "")
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=422, detail=f"parse failed: {exc}")
+    if not doc.paragraphs:
+        raise HTTPException(status_code=422, detail="document must yield paragraphs")
+    try:
+        report = diff_against_template(doc.paragraphs, template_id, document_name=name)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"unknown template: {template_id}")
+    report = _maybe_llm_summaries(report)
+    risk = score_document(doc.paragraphs, doc.document_id)
+    tpl = get_template(template_id)
+    baseline_paragraphs = (
+        split_paragraphs("\n\n".join(tpl.paragraphs)) if tpl else []
+    )
+    baseline_risk = score_document(
+        baseline_paragraphs, document_id=f"template:{template_id}"
+    )
+    baseline_full = "\n\n".join(baseline_paragraphs)
+    doc_full = "\n\n".join(doc.paragraphs)
+    rows = _attach_row_risks([to_dict(r) for r in aligned_rows(report)], baseline_risk, risk)
+    return CompareResult(
+        diff=report.model_dump(),
+        risk_a=baseline_risk,
+        risk_b=risk,
+        rows=rows,
+        markdown=render_markdown(
+            report, risk_left=baseline_risk, risk_right=risk,
+            facts_left=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+            facts_right=[f.model_dump() for f in doc.fields],
+            label_left="Template", label_right=name,
+        ),
+        report_docx=base64.b64encode(render_docx(
+            report, risk_left=baseline_risk, risk_right=risk,
+            facts_left=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+            facts_right=[f.model_dump() for f in doc.fields],
+            label_left="Template", label_right=name,
+        )).decode("ascii"),
+        report_html=render_html(
+            report, risk_left=baseline_risk, risk_right=risk,
+            facts_left=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+            facts_right=[f.model_dump() for f in doc.fields],
+            label_left="Template", label_right=name,
+        ),
+        llm_enabled=describe_layer()["enabled"],
+        facts_a=[f.model_dump() for f in extract_fields(baseline_paragraphs, baseline_full)],
+        facts_b=[f.model_dump() for f in doc.fields],
+第 21 页 / 共 60 页
+LawRisk V1.0
+    )
+@app.post("/api/review", response_model=ReviewResult)
+async def review_document(
+    file: UploadFile = File(...),
+    name: str = Form(default="Document"),
+) -> ReviewResult:
+    """Score a single uploaded document and group findings by contract section."""
+    data = await _read_limited(file)
+    try:
+        doc = parse_document(data, uuid.uuid4().hex[:8], file.filename or "")
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=422, detail=f"could not parse {file.filename}: {exc}")
+    if not doc.paragraphs:
+        raise HTTPException(status_code=422, detail="document must yield paragraphs")
+    risk = score_document(doc.paragraphs, doc.document_id)
+    facts = [f.model_dump() for f in doc.fields]
+    return ReviewResult(
+        document_name=name,
+        risk=risk,
+        facts=facts,
+        sections=_review_sections(doc.paragraphs, risk),
+        markdown=render_markdown_review(name, doc.paragraphs, risk, facts),
+        report_docx=base64.b64encode(
+            render_docx_review(name, doc.paragraphs, risk, facts)
+        ).decode("ascii"),
+        report_html=render_html_review(name, doc.paragraphs, risk, facts),
+        llm_enabled=describe_layer()["enabled"],
+    )
+def _review_sections(paragraphs: List[str], report: RiskReport) -> List[dict]:
+    """Group fired penalties under the contract section they fall in (for JSON)."""
+    from lawrisk.diff.single_report import _group_by_section
+    return _group_by_section(paragraphs, report)
+def _maybe_llm_summaries(report):
+    if describe_layer()["enabled"]:
+        for node in report.root.children:
+            for it in node.items:
+                it.summary = summarize_clause(it.text_left, it.text_right, it.op.value)
+    return report
+mount_spa_if_available(app)
+"""Offline command-line interface: score / review / diff from the terminal.
+The web API uploads documents over HTTP; this module does the same work
+directly on local files, so the whole pipeline (parse -> rules -> diff) stays
+usable without a running server. Everything is deterministic and LLM-free.
+Usage:
+    lawrisk-cli score FILE [--json] [--name NAME]
+    lawrisk-cli review FILE [--json] [--name NAME]
+    lawrisk-cli diff FILE_A FILE_B [--json] [--name-a NAME] [--name-b NAME]
+    lawrisk-cli rules [--json]
+`python -m lawrisk.cli ...` works the same way.
+"""
+第 22 页 / 共 60 页
+LawRisk V1.0
+from __future__ import annotations
+import argparse
+import json
+import sys
+import uuid
+from pathlib import Path
+from lawrisk.diff.differ import build_diff_tree
+from lawrisk.diff.markdown_report import render_markdown
+from lawrisk.diff.single_report import render_markdown_review
+from lawrisk.parser import parse_document
+from lawrisk.rules import ENGINE_VERSION, rule_catalog, score_document
+def _load_doc(path: str, name: str) -> tuple:
+    """Parse a local file into (paragraphs, fields, full_text), regardless of suffix."""
+    data = Path(path).read_bytes()
+    doc = parse_document(data, uuid.uuid4().hex[:8], name or path)
+    full = "\n".join(doc.paragraphs)
+    fields = [f.model_dump() for f in doc.fields]
+    return doc.paragraphs, fields, full
+def cmd_score(args: argparse.Namespace) -> int:
+    paragraphs, _, _ = _load_doc(args.file, args.name)
+    if not paragraphs:
+        print(f"error: {args.file} yielded no paragraphs", file=sys.stderr)
+        return 2
+    report = score_document(paragraphs, document_id=args.name)
+    if args.json:
+        print(json.dumps(json.loads(report.model_dump_json()), indent=2))
+        return 0
+    print(
+        f"{args.name or args.file}: {report.overall_score}/100 "
+        f"({report.overall_level.value}) · {len(report.penalties)} findings "
+        f"· hash {report.deterministic_hash[:12]}"
+    )
+    for p in report.penalties:
+        print(f"  - [{p.rule_id}] {p.dimension}: {p.reason}")
+    return 0
+def cmd_review(args: argparse.Namespace) -> int:
+    paragraphs, fields, full = _load_doc(args.file, args.name)
+    if not paragraphs:
+        print(f"error: {args.file} yielded no paragraphs", file=sys.stderr)
+        return 2
+    risk = score_document(paragraphs, document_id=args.name)
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "document_name": args.name or args.file,
+                    "risk": json.loads(risk.model_dump_json()),
+                    "facts": fields,
+                    "llm_enabled": False,
+                },
+第 23 页 / 共 60 页
+LawRisk V1.0
+                indent=2,
+            )
+        )
+        return 0
+    print(render_markdown_review(args.name or args.file, paragraphs, risk, fields))
+    return 0
+def cmd_diff(args: argparse.Namespace) -> int:
+    paras_a, facts_a, _ = _load_doc(args.file_a, args.name_a)
+    paras_b, facts_b, _ = _load_doc(args.file_b, args.name_b)
+    if not paras_a or not paras_b:
+        print("error: both files must yield paragraphs", file=sys.stderr)
+        return 2
+    label_a = args.name_a or args.file_a
+    label_b = args.name_b or args.file_b
+    report = build_diff_tree(paras_a, paras_b, label_a, label_b)
+    risk_a = score_document(paras_a, document_id=f"{label_a}-{uuid.uuid4().hex[:8]}")
+    risk_b = score_document(paras_b, document_id=f"{label_b}-{uuid.uuid4().hex[:8]}")
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "diff": report.model_dump(),
+                    "risk_a": json.loads(risk_a.model_dump_json()),
+                    "risk_b": json.loads(risk_b.model_dump_json()),
+                    "llm_enabled": False,
+                },
+                indent=2,
+            )
+        )
+        return 0
+    print(
+        render_markdown(
+            report,
+            risk_left=risk_a,
+            risk_right=risk_b,
+            facts_left=facts_a,
+            facts_right=facts_b,
+            label_left=label_a,
+            label_right=label_b,
+        )
+    )
+    return 0
+def cmd_rules(args: argparse.Namespace) -> int:
+    catalog = rule_catalog()
+    if args.json:
+        print(json.dumps({"engine": ENGINE_VERSION, "rules": catalog}, indent=2))
+        return 0
+    print(f"LawRisk risk engine: {ENGINE_VERSION} ({len(catalog)} rules)")
+    for r in catalog:
+        kind = "absence" if r["kind"] == "absence" else "paragraph"
+第 24 页 / 共 60 页
+LawRisk V1.0
+        cond = f"  condition: {r['condition']}" if r.get("condition") else ""
+        print(f"  {r['rule_id']} [{r['dimension']} sv={r['severity']} {kind}] {r['reason']}{cond}")
+    return 0
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        prog="lawrisk-cli",
+        description="Offline LawRisk: deterministic contract risk scoring, review and clause diff.",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+    p_score = sub.add_parser("score", help="score a single document")
+    p_score.add_argument("file")
+    p_score.add_argument("--name", default="", help="label stored as the document id")
+    p_score.add_argument("--json", action="store_true", help="emit the RiskReport as JSON")
+    p_score.set_defaults(func=cmd_score)
+    p_review = sub.add_parser("review", help="score a document and render the Markdown review report")
+    p_review.add_argument("file")
+    p_review.add_argument("--name", default="", help="display name of the document")
+    p_review.add_argument("--json", action="store_true", help="emit findings JSON instead of Markdown")
+    p_review.set_defaults(func=cmd_review)
+    p_diff = sub.add_parser("diff", help="diff two documents and render the Markdown diff report")
+    p_diff.add_argument("file_a")
+    p_diff.add_argument("file_b")
+    p_diff.add_argument("--name-a", default="", help="label for the left document")
+    p_diff.add_argument("--name-b", default="", help="label for the right document")
+    p_diff.add_argument("--json", action="store_true", help="emit the diff and risk panels as JSON")
+    p_diff.set_defaults(func=cmd_diff)
+    p_rules = sub.add_parser("rules", help="print the rule handbook (catalog)")
+    p_rules.add_argument("--json", action="store_true", help="emit the catalog as JSON")
+    p_rules.set_defaults(func=cmd_rules)
+    args = parser.parse_args(argv)
+    raise SystemExit(args.func(args))
+if __name__ == "__main__":
+    main()
+"""Production launcher: serve API + SPA on a single port.
+Usage:
+    python -m lawrisk.serve [--host 0.0.0.0] [--port 8000]
+Build the frontend first (`cd frontend && npm run build`) so the SPA is served
+from the same process; the API otherwise serves /api/* with no UI.
+"""
+from __future__ import annotations
+import argparse
+import os
+import sys
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--host", default=os.environ.get("LAWRISK_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("LAWRISK_PORT", "8000")))
+    args = parser.parse_args(argv)
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import uvicorn
+第 25 页 / 共 60 页
+LawRisk V1.0
+    uvicorn.run("lawrisk.api:app", host=args.host, port=args.port, reload=False)
+if __name__ == "__main__":
+    main()
+"""Single-port production serving: serve the built SPA from FastAPI.
+The Vite build writes to ``frontend/dist``. When that directory exists we
+mount it as static assets and redirect any unknown (non-/api) path to
+``index.html`` so client-side navigation keeps working.
+Dev mode (``vite dev`` on :5173) is unaffected: the API stays CORS-open and
+the SPA talks to it directly.
+"""
+from __future__ import annotations
+import os
+from pathlib import Path
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+def dist_dir() -> Path | None:
+    """Locate the built frontend, preferring the repo checkout layout."""
+    here = Path(__file__).resolve().parent
+    candidates = [
+        here.parent / "frontend" / "dist",  # repo checkout
+        here.parent / "dist",               # installed/single-dir layout
+    ]
+    for c in candidates:
+        if (c / "index.html").is_file():
+            return c
+    return None
+def mount_spa(app: FastAPI) -> bool:
+    """Mount the built SPA (if present) on the API app; returns whether mounted."""
+    dist = dist_dir()
+    if dist is None:
+        return False
+    index = dist / "index.html"
+    @app.get("/", include_in_schema=False)
+    def spa_index() -> FileResponse:
+        return FileResponse(index)
+    assets = dist / "assets"
+    if assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets), name="assets")
+    for name in ("favicon.svg", "icons.svg"):
+        f = dist / name
+        if f.is_file():
+            app.get(f"/{name}", include_in_schema=False)(
+                lambda f=f: FileResponse(f)
+            )
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa_fallback(full_path: str) -> FileResponse:
+        if full_path.startswith("api/"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="unknown API route")
+第 26 页 / 共 60 页
+LawRisk V1.0
+        return FileResponse(index)
+    return True
+def _enabled() -> bool:
+    return os.environ.get("LAWRISK_SERVE_SPA", "1").lower() not in {"0", "false", "no"}
+def mount_spa_if_available(app: FastAPI) -> None:
+    if _enabled():
+        mount_spa(app)
+"""Clause diff tree: section-aware paragraph diff between two documents.
+Algorithm (all local, deterministic):
+  1. Split each document into sections at heading paragraphs.
+  2. Align sections by label (difflib.SequenceMatcher).
+  3. Within aligned sections, align paragraphs; mark add/delete/modify.
+  4. Summarise each change with keyword-driven, deterministic semantic captions.
+AC3/AC4: fixtures with 30+ changes produce marked add/remove/modify items each
+with a readable summary.
+"""
+from __future__ import annotations
+import difflib
+import re
+from dataclasses import dataclass
+from typing import List, Sequence, Tuple
+from lawrisk.models import (
+    DiffItem,
+    DiffNode,
+    DiffOp,
+    DiffReport,
+    DiffStats,
+)
+from lawrisk.textutil import looks_like_heading, normalize
+_WORD_RE = re.compile(r"\S+")
+@dataclass
+class _Section:
+    heading: str = ""
+    head_level: int = 0
+    paras: List[str] = None  # type: ignore[assignment]
+    start: int = 0  # global index (into the doc's paragraph array) of paras[0]
+    def __post_init__(self) -> None:
+        if self.paras is None:
+            self.paras = []
+def _heading_level(text: str) -> int:
+    t = text.strip()
+    m = re.match(r"^(\d+)(?:\.(\d+))*\s*", t)
+    if m:
+        depth = len(m.group(0).strip(" .")) + 1  # rough: more digits → deeper
+        return depth
+    if re.match(r"^(?:ARTICLE|SECTION)\b", t, re.IGNORECASE):
+        return 1
+    if re.match(r"^第", t):
+        return 1
+    return 1
+第 27 页 / 共 60 页
+LawRisk V1.0
+def split_sections(paragraphs: Sequence[str]) -> List[_Section]:
+    sections: List[_Section] = []
+    current = _Section()
+    start = 0
+    for idx, p in enumerate(paragraphs):
+        if looks_like_heading(p):
+            sections.append(current if current.paras or current.heading else _Section())
+            current = _Section(heading=p, head_level=_heading_level(p), start=idx + 1)
+            start = idx + 1
+        else:
+            if not current.paras and not current.heading:
+                current.start = idx
+            current.paras.append(p)
+    if current.heading or current.paras:
+        sections.append(current)
+    return [s for s in sections if s.heading or s.paras]
+_SUMMARY_FACTS: List[Tuple[re.Pattern[str], str]] = [
+    (re.compile(r"auto[- ]?renew", re.IGNORECASE), "renewal mechanics"),
+    (re.compile(r"terminat", re.IGNORECASE), "termination"),
+    (re.compile(r"notice", re.IGNORECASE), "notice period"),
+    (re.compile(r"indemnif", re.IGNORECASE), "indemnification"),
+    (re.compile(r"liab\w+", re.IGNORECASE), "liability"),
+    (re.compile(r"warrant", re.IGNORECASE), "warranties"),
+    (re.compile(r"personal (?:data|information)", re.IGNORECASE), "data protection"),
+    (re.compile(r"transfer", re.IGNORECASE), "data transfer"),
+    (re.compile(r"confidential", re.IGNORECASE), "confidentiality"),
+    (re.compile(r"intellectual property|copyright|patent|proprietary", re.IGNORECASE), "IP ownership"),
+    (re.compile(r"govern", re.IGNORECASE), "governing law"),
+    (re.compile(r"arbitrat|court", re.IGNORECASE), "dispute resolution"),
+    (re.compile(r"export|sanctions?|embargo", re.IGNORECASE), "export compliance"),
+    (re.compile(r"\$[\d,]+(?:\.\d+)?|\d[\d,]*\s*(?:USD|EUR|RMB)", re.IGNORECASE), "financial terms"),
+]
+def _topics(text: str) -> List[str]:
+    found: List[str] = []
+    for pat, label in _SUMMARY_FACTS:
+        if pat.search(text) and label not in found:
+            found.append(label)
+    return found[:3]
+def _changed_topics(left: str, right: str) -> Tuple[List[str], List[str]]:
+    ll, rr = _topics(left), _topics(right)
+    added = [t for t in rr if t not in ll]
+    removed = [t for t in ll if t not in rr]
+    return added, removed
+def _build_summary(op: DiffOp, left: str, right: str) -> str:
+    if op is DiffOp.ADD:
+        if not right.strip():
+            return "Blank/separator line added."
+        added, _ = _changed_topics("", right)
+        topics = ", ".join(added) or "terms"
+        return f"New paragraph added addressing {topics}."
+第 28 页 / 共 60 页
+LawRisk V1.0
+    if op is DiffOp.DELETE:
+        if not left.strip():
+            return "Blank/separator line removed."
+        _, removed = _changed_topics(left, "")
+        topics = ", ".join(removed) or "terms"
+        return f"Paragraph covering {topics} was removed."
+    added_topics, removed_topics = _changed_topics(left, right)
+    parts = []
+    if removed_topics:
+        parts.append(f"dropped {', '.join(removed_topics)}")
+    if added_topics:
+        parts.append(f"added {', '.join(added_topics)}")
+    if parts:
+        return "Modification " + ("; ".join(parts)) + "."
+    ll = left.split()
+    rl = right.split()
+    forced = (len(ll) + len(rl)) // 2 if ll or rl else 0
+    return (
+        f"Wording revised; the new text {'expands' if len(rl) > len(ll) else 'tightens' if rl else ''} "
+        f"the original ({len(ll)}→{len(rl)} words)."
+    ).replace("  ", " ")
+def word_diff(left: str, right: str) -> Tuple[List[str], List[str]]:
+    """Token-level diff for inline highlight; returns (removed, added)."""
+    l_tokens = _WORD_RE.findall(left) if left else []
+    r_tokens = _WORD_RE.findall(right) if right else []
+    sm = difflib.SequenceMatcher(a=l_tokens, b=r_tokens, autojunk=False)
+    removed: List[str] = []
+    added: List[str] = []
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag in ("delete", "replace"):
+            removed.extend(l_tokens[i1:i2])
+        if tag in ("insert", "replace"):
+            added.extend(r_tokens[j1:j2])
+    return removed, added
+def _pair_replace(
+    left: Sequence[str], right: Sequence[str],
+) -> Tuple[List[Tuple[str, str]], List[str], List[str]]:
+    """Align a replace block pair-wise; returns (pairs, extra_left, extra_right)."""
+    pairs: List[Tuple[str, str]] = []
+    for i, j in zip(range(len(left)), range(len(right))):
+        pairs.append((left[i], right[j]))
+    extra_left = list(left[len(right):]) if len(left) > len(right) else []
+    extra_right = list(right[len(left):]) if len(right) > len(left) else []
+    return pairs, extra_left, extra_right
+def diff_paragraphs(
+    left_paras: Sequence[str],
+    right_paras: Sequence[str],
+    section_path: str,
+    left_start: int = 0,
+    right_start: int = 0,
+第 29 页 / 共 60 页
+LawRisk V1.0
+) -> Tuple[List[DiffItem], List[int], List[int]]:
+    """Compute paragraph-level diff of two section bodies.
+    `left_start` / `right_start` are the global paragraph offsets of each
+    section so para_index_left/right reference the full document array.
+    Returns (items, matched_left_idx, matched_right_idx) where the index lists
+    hold the original paragraph indices aligned 1:1 with each DiffItem.
+    """
+    items: List[DiffItem] = []
+    left_idx: List[int] = []
+    right_idx: List[int] = []
+    l_norm = [normalize(p) for p in left_paras]
+    r_norm = [normalize(p) for p in right_paras]
+    sm = difflib.SequenceMatcher(a=l_norm, b=r_norm, autojunk=False)
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            continue  # unchanged
+        if tag == "delete":
+            for k in range(i1, i2):
+                text = left_paras[k]
+                items.append(
+                    DiffItem(
+                        op=DiffOp.DELETE,
+                        section=section_path,
+                        para_index_left=left_start + k,
+                        text_left=text,
+                        text_right=None,
+                        summary=_build_summary(DiffOp.DELETE, text, ""),
+                    )
+                )
+                left_idx.append(left_start + k)
+                right_idx.append(None)  # type: ignore[arg-type]
+        elif tag == "insert":
+            for k in range(j1, j2):
+                text = right_paras[k]
+                items.append(
+                    DiffItem(
+                        op=DiffOp.ADD,
+                        section=section_path,
+                        para_index_left=None,
+                        para_index_right=right_start + k,
+                        text_left=None,
+                        text_right=text,
+                        summary=_build_summary(DiffOp.ADD, "", text),
+                    )
+                )
+                left_idx.append(None)  # type: ignore[arg-type]
+                right_idx.append(right_start + k)
+        else:  # replace
+            pairs, extra_left, extra_right = _pair_replace(
+                left_paras[i1:i2], right_paras[j1:j2]
+第 30 页 / 共 60 页
+······································································
+（中间省略代表代码 353 行，包括 diff/differ.py 的后段与 diff/sidebyside.py 的全部，以及 diff/markdown_report.py 的起始段；
+ 以上模块的程序代码与此处同源、逻辑一致，为保证前后各 30 页的取材
+ 完整此处不重复编排。以下为后 30 页（第 31-60 页）程序代码。）
+······································································
+LawRisk V1.0
+            }
+        else:
+            row = raw
+        if not row.get("found", True):
+            continue
+        label = FACT_LABEL.get(str(row.get("name")), str(row.get("name")))
+        if label in seen:
+            continue
+        seen[label] = dict(row)
+    if not seen:
+        return ""
+    lines = ["| Field | Value | Source |", "|-------|-------|--------|"]
+    for label, row in seen.items():
+        value = (row.get("value") or "—").replace("|", "\\|")
+        source = (row.get("source") or "").replace("|", "\\|")
+        if len(source) > 120:
+            source = source[:117] + "…"
+        lines.append(f"| {label} | {value} | “{source}” |")
+    return "\n".join(lines)
+def _dimensions_table(risk: RiskReport, label: str) -> str:
+    """Render one document's per-dimension scores as a Markdown table."""
+    lines = [f"### {label or 'Document'}", "", "| Dimension | Score | Level | Findings |", "|-----------|-------|-------|----------|"]
+    for d in risk.dimensions:
+        dim = getattr(d.dimension, "value", d.dimension)
+        name = DIM_LABEL.get(str(dim), str(dim))
+        n = sum(1 for p in risk.penalties if p.dimension is d.dimension)
+        lines.append(
+            f"| {name} | {d.normalized:.0f}/100 | {d.risk_level.value} | {n} |"
+        )
+    return "\n".join(lines)
+def render_markdown(
+    report: DiffReport,
+    risk_left: Optional[RiskReport] = None,
+    risk_right: Optional[RiskReport] = None,
+    facts_left: Optional[List] = None,
+    facts_right: Optional[List] = None,
+    label_left: str = "Document A",
+    label_right: str = "Document B",
+) -> str:
+    lines: List[str] = []
+    lines.append(f"# Contract Clause Diff Report")
+    lines.append("")
+    lines.append(f"- **Document A:** {report.document_left or '(unnamed)'}")
+    lines.append(f"- **Document B:** {report.document_right or '(unnamed)'}")
+    lines.append("- **Engine:** local paragraph-level diff (difflib / Myers-style), LLM-free")
+    if risk_left is not None and risk_right is not None:
+        lines.append(
+            f"- **Overall risk:** A {risk_left.overall_score}/100 vs "
+            f"B {risk_right.overall_score}/100 — changed clauses are annotated "
+            "with the penalties that fired on them."
+第 31 页 / 共 60 页
+LawRisk V1.0
+        )
+    lines.append("")
+    lines.append(f"## Summary")
+    lines.append("")
+    lines.append(report.summary)
+    lines.append("")
+    if facts_left is not None and facts_right is not None:
+        left_table = _facts_table(facts_left)
+        right_table = _facts_table(facts_right)
+        if left_table or right_table:
+            lines.append(f"## Contract key facts")
+            lines.append("")
+            lines.append(f"### {label_left or 'Document A'}")
+            lines.append("")
+            lines.append(left_table or "_No key fields detected._")
+            lines.append("")
+            lines.append(f"### {label_right or 'Document B'}")
+            lines.append("")
+            lines.append(right_table or "_No key fields detected._")
+            lines.append("")
+    if risk_left is not None and risk_right is not None:
+        lines.append("## Risk by dimension")
+        lines.append("")
+        lines.append(_dimensions_table(risk_left, label_left or "Document A"))
+        lines.append("")
+        lines.append(_dimensions_table(risk_right, label_right or "Document B"))
+        lines.append("")
+    left_map = _risk_by_para(risk_left) if risk_left is not None else {}
+    right_map = _risk_by_para(risk_right) if risk_right is not None else {}
+    has_risk = risk_left is not None or risk_right is not None
+    sections = [(n.label, n.items) for n in report.root.children if n.items]
+    for label, items in sections:
+        lines.append(f"## {label}")
+        lines.append("")
+        for it in items:
+            lines.append(_bullet(it, max_excerpt=220))
+            if has_risk:
+                note = _risk_note(it, left_map, right_map, label_left, label_right)
+                if note:
+                    lines.append("")
+                    lines.append(note)
+            lines.append("")
+    if has_risk:
+        top = _top_risky_clauses(sections, left_map, right_map, n=5)
+        if top:
+            lines.append("## Highest-risk clauses")
+            lines.append("")
+            lines.append(
+                "The changed clauses that accumulated the most risk points "
+                "(A + B combined), ranked — review these first."
+第 32 页 / 共 60 页
+LawRisk V1.0
+            )
+            lines.append("")
+            for label, it, total in top:
+                lines.append(f"#### {it.summary[:90]}")
+                lines.append("")
+                lines.append(f"`{label}` · {total} risk pts")
+                lines.append("")
+                note = _risk_note(it, left_map, right_map, label_left, label_right)
+                if note:
+                    lines.append(note)
+                    lines.append("")
+                else:
+                    lines.append("")
+    if has_risk:
+        by_section = _risk_by_section(sections, left_map, right_map)
+        if by_section:
+            lines.append("## Risk by section")
+            lines.append("")
+            lines.append("Where the changed-clause risk points concentrate — combined A + B severity.")
+            lines.append("")
+            lines.append("| Section | Left (A) | Right (B) | Total |")
+            lines.append("|---------|----------|-----------|-------|")
+            for label, left_pts, right_pts, total in by_section:
+                lines.append(f"| `{label[:50]}` | {left_pts} | {right_pts} | {total} |")
+            lines.append("")
+    lines.append("---")
+    lines.append("## Change ledger")
+    lines.append("")
+    lines.append("| # | Op | Section | Left¶ | Right¶ | Risk |")
+    lines.append("|---|----|---------|-------|--------|------|")
+    n = 0
+    for label, items in sections:
+        for it in items:
+            n += 1
+            lp = "" if it.para_index_left is None else it.para_index_left + 1
+            rp = "" if it.para_index_right is None else it.para_index_right + 1
+            op = {"add": "add", "delete": "del", "modify": "mod"}[it.op.value]
+            if has_risk:
+                left, right = _item_risks(it, left_map, right_map)
+                cell_parts = []
+                if left:
+                    cell_parts.append("A:" + ",".join(f"{r['rule_id']}+{r['severity']}" for r in left))
+                if right:
+                    cell_parts.append("B:" + ",".join(f"{r['rule_id']}+{r['severity']}" for r in right))
+                risk_cell = " · ".join(cell_parts) if cell_parts else "—"
+            else:
+                risk_cell = "—"
+            lines.append(
+                f"| {n} | {op} | `{label[:40]}` | {lp} | {rp} | {risk_cell} |"
+            )
+第 33 页 / 共 60 页
+LawRisk V1.0
+    lines.append("")
+    lines.append(
+        f"_Generated by LawRisk diff engine — {report.stats.additions} additions, "
+        f"{report.stats.deletions} deletions, {report.stats.modifications} modifications._"
+    )
+    return "\n".join(lines)
+"""Self-contained HTML diff report generation.
+Mirrors ``lawrisk.diff.markdown_report.render_markdown`` section-for-section
+(the doc names + overall-risk header, summary, contract key facts, risk by
+dimension, per-section change list with risk notes, highest-risk clauses,
+risk by section, change ledger and footer stats) but rendered as a single
+standalone HTML document with inline CSS. Everything is HTML-entity escaped
+and there is zero external dependency, so the file opens in any browser and
+is safe to email or archive.
+The document content is escaped with ``html.escape``; the only markup we
+emit ourselves are the structural tags (headings, tables, blockquotes) and
+the diff glyphs, so the output is always well-formed and can never execute
+scripts from the input documents.
+"""
+from __future__ import annotations
+from html import escape
+from typing import Dict, List, Mapping, Optional
+from lawrisk.diff.differ import DiffOp, DiffReport
+from lawrisk.models import FieldRun, RiskReport
+FACT_LABEL: Dict[str, str] = {
+    "currency": "Currency",
+    "term": "Term",
+    "governing_law": "Governing law",
+    "arbitration": "Arbitration seat",
+}
+DIM_LABEL: Dict[str, str] = {
+    "commercial": "Commercial risk",
+    "liability": "Liability / legal risk",
+    "data": "Data protection",
+    "export": "Export compliance",
+}
+_CSS = """
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  margin:0;background:#f7f7f9;color:#1c2330;line-height:1.55;font-size:14px}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 24px 72px}
+h1{font-size:24px;margin:0 0 4px}
+h2{font-size:18px;margin:26px 0 8px;padding-bottom:4px;border-bottom:2px solid #e2e5ea}
+h3{font-size:15px;margin:16px 0 6px} h4{font-size:13.5px;margin:14px 0 4px}
+.docmeta{color:#5c6470;font-size:13px;margin:0 0 2px}
+.riskline{font-weight:600;color:#1c2330;margin:8px 0 0}
+.summary{margin:8px 0 0;color:#1c2330}
+table{border-collapse:collapse;width:100%;margin:8px 0 14px;font-size:13px}
+th,td{border:1px solid #e2e5ea;padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#eef1f6;font-weight:600}
+tr:nth-child(even) td{background:#fafbfd}
+第 34 页 / 共 60 页
+LawRisk V1.0
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+.section{margin:18px 0 0}
+.clause{border:1px solid #e2e5ea;border-radius:8px;padding:10px 12px;margin:0 0 10px;font-size:13px;background:#fff}
+.clause .head{font-weight:600;margin:0 0 6px}
+.clause .excerpt{margin:4px 0 0;color:#3a4252;white-space:pre-wrap;word-break:break-word}
+.clause .excerpt.removed{color:#a3312a;text-decoration:line-through}
+.clause .excerpt.added{color:#17693a}
+.risks{margin:8px 0 0;border-left:3px solid #e0b34a;background:#fff8e8;padding:6px 9px;border-radius:0 6px 6px 0;font-size:12.5px}
+.risks .side{margin:2px 0}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:700;text-transform:uppercase}
+.pill.add{background:#e3f4e8;color:#17693a}.pill.del{background:#fbe5e2;color:#a3312a}.pill.mod{background:#fff2cc;color:#8a6d00}
+.note{color:#5c6470;font-size:13px;margin:4px 0}
+.ranked{margin:4px 0 12px}
+.ranked .clause{background:#fdfaf2}
+.footer{margin-top:30px;padding-top:10px;border-top:1px solid #e2e5ea;color:#5c6470;font-size:12px}
+""".strip()
+def _h(text: str) -> str:
+    return escape(text, quote=False)
+def _bullet(it, max_excerpt: int = 220) -> str:
+    """HTML block for one changed clause."""
+    if it.op is DiffOp.ADD:
+        excerpt = (it.text_right or "")[:max_excerpt]
+        glyph = "add"
+        label = "[+] added"
+        excerpt_html = f'<p class="excerpt added">{_h(excerpt)}</p>' if excerpt else ""
+    elif it.op is DiffOp.DELETE:
+        excerpt = (it.text_left or "")[:max_excerpt]
+        glyph = "del"
+        label = "[&minus;] removed"
+        excerpt_html = f'<p class="excerpt removed">{_h(excerpt)}</p>' if excerpt else ""
+    else:
+        lhs = (it.text_left or "")[:max_excerpt]
+        rhs = (it.text_right or "")[:max_excerpt]
+        glyph = "mod"
+        label = "[~] modified"
+        excerpt_parts = []
+        if lhs:
+            excerpt_parts.append(f'<p class="excerpt removed">{_h(lhs)}</p>')
+        if rhs:
+            excerpt_parts.append(f'<p class="excerpt added">{_h(rhs)}</p>')
+        excerpt_html = "".join(excerpt_parts)
+    return (
+        f'<div class="clause"><p class="head">'
+        f'<span class="pill {glyph}">{label}</span> {_h(it.summary)}</p>{excerpt_html}'
+    )
+def _risk_by_para(report: RiskReport) -> Dict[int, List[dict]]:
+    out: Dict[int, List[dict]] = {}
+    for p in report.penalties:
+        if p.para_index is None:
+            continue
+第 35 页 / 共 60 页
+LawRisk V1.0
+        out.setdefault(p.para_index, []).append(
+            {
+                "rule_id": p.rule_id,
+                "dimension": p.dimension,
+                "severity": p.severity,
+                "reason": p.reason,
+                "mitigation": p.mitigation,
+            }
+        )
+    return out
+def _format_risks(risks: List[dict]) -> str:
+    """Compact single-line rendering of one penalty list."""
+    parts = []
+    for r in risks:
+        dim = r["dimension"]
+        dim = getattr(dim, "value", dim)
+        line = f"{r['rule_id']} (+{r['severity']}, {dim}): {r['reason']}"
+        if r.get("mitigation"):
+            line += f" — Fix: {r['mitigation']}"
+        parts.append(line)
+    return _h("; ".join(parts))
+def _item_risks(it, left_map, right_map):
+    left = left_map.get(it.para_index_left, []) if it.para_index_left is not None else []
+    right = right_map.get(it.para_index_right, []) if it.para_index_right is not None else []
+    return left, right
+def _risk_note(it, left_map, right_map, label_left: str, label_right: str) -> str:
+    """HTML blockquote attaching risk penalties to a changed clause, if any."""
+    left, right = _item_risks(it, left_map, right_map)
+    parts = []
+    if left:
+        parts.append(
+            f'<div class="side"><b>A ({_h(label_left or "left")}) risk:</b> '
+            f"{_format_risks(left)}</div>"
+        )
+    if right:
+        parts.append(
+            f'<div class="side"><b>B ({_h(label_right or "right")}) risk:</b> '
+            f"{_format_risks(right)}</div>"
+        )
+    if not parts:
+        return ""
+    return '<div class="risks">' + "".join(parts) + "</div>"
+def _top_risky_clauses(sections, left_map, right_map, n: int = 5):
+    ranked = []
+    for label, items in sections:
+        for it in items:
+            left, right = _item_risks(it, left_map, right_map)
+            total = sum(r["severity"] for r in left) + sum(r["severity"] for r in right)
+            if total:
+                ranked.append((label, it, total))
+第 36 页 / 共 60 页
+LawRisk V1.0
+    ranked.sort(key=lambda t: t[2], reverse=True)
+    return ranked[:n]
+def _risk_by_section(sections, left_map, right_map):
+    rows = []
+    for label, items in sections:
+        left_pts = right_pts = 0
+        for it in items:
+            left, right = _item_risks(it, left_map, right_map)
+            left_pts += sum(r["severity"] for r in left)
+            right_pts += sum(r["severity"] for r in right)
+        if left_pts or right_pts:
+            rows.append((label, left_pts, right_pts, left_pts + right_pts))
+    rows.sort(key=lambda t: t[3], reverse=True)
+    return rows
+def _facts_table(facts: List[Mapping]) -> str:
+    """HTML table of found contract key facts, deduped by label."""
+    seen: Dict[str, dict] = {}
+    for raw in facts:
+        if isinstance(raw, FieldRun):
+            row: Mapping = {
+                "name": raw.name,
+                "value": raw.value,
+                "source": raw.source,
+                "found": raw.found,
+            }
+        else:
+            row = raw
+        if not row.get("found", True):
+            continue
+        label = FACT_LABEL.get(str(row.get("name")), str(row.get("name")))
+        if label in seen:
+            continue
+        seen[label] = dict(row)
+    if not seen:
+        return ""
+    cells = ["<table><thead><tr><th>Field</th><th>Value</th><th>Source</th></tr></thead><tbody>"]
+    for label, row in seen.items():
+        value = (row.get("value") or "—")
+        source = (row.get("source") or "")
+        if len(source) > 120:
+            source = source[:117] + "…"
+        cells.append(
+            f"<tr><td>{_h(label)}</td><td>{_h(value)}</td>"
+            f"<td><em>&ldquo;{_h(source)}&rdquo;</em></td></tr>"
+        )
+    cells.append("</tbody></table>")
+    return "".join(cells)
+def _dimensions_table(risk: RiskReport, label: str) -> str:
+    """HTML table of one document's per-dimension scores."""
+    head = f"<h3>{_h(label or 'Document')}</h3>"
+第 37 页 / 共 60 页
+LawRisk V1.0
+    rows = ["<table><thead><tr><th>Dimension</th><th>Score</th>"
+            "<th>Level</th><th>Findings</th></tr></thead><tbody>"]
+    for d in risk.dimensions:
+        dim = getattr(d.dimension, "value", d.dimension)
+        name = DIM_LABEL.get(str(dim), str(dim))
+        n = sum(1 for p in risk.penalties if p.dimension is d.dimension)
+        rows.append(
+            f"<tr><td>{_h(name)}</td><td>{d.normalized:.0f}/100</td>"
+            f"<td>{_h(d.risk_level.value)}</td><td>{n}</td></tr>"
+        )
+    rows.append("</tbody></table>")
+    return head + "".join(rows)
+def render_html(
+    report: DiffReport,
+    risk_left: Optional[RiskReport] = None,
+    risk_right: Optional[RiskReport] = None,
+    facts_left: Optional[List] = None,
+    facts_right: Optional[List] = None,
+    label_left: str = "Document A",
+    label_right: str = "Document B",
+) -> str:
+    """Render a complete, self-contained HTML diff report.
+    Mirrors ``render_markdown``: same sections, same data, all escaped.
+    """
+    meta = [
+        f'<p class="docmeta"><b>Document A:</b> {_h(report.document_left or "(unnamed)")}</p>',
+        f'<p class="docmeta"><b>Document B:</b> {_h(report.document_right or "(unnamed)")}</p>',
+        '<p class="docmeta"><b>Engine:</b> local paragraph-level diff '
+        "(difflib / Myers-style), LLM-free</p>",
+    ]
+    if risk_left is not None and risk_right is not None:
+        meta.append(
+            f'<p class="riskline">Overall risk: A {risk_left.overall_score}/100 vs '
+            f"B {risk_right.overall_score}/100 &mdash; changed clauses are annotated "
+            "with the penalties that fired on them.</p>"
+        )
+    body = ["<div class=\"wrap\">", "<h1>Contract Clause Diff Report</h1>"]
+    body.extend(meta)
+    body.append(f'<h2>Summary</h2><p class="summary">{_h(report.summary)}</p>')
+    if facts_left is not None and facts_right is not None:
+        left_table = _facts_table(facts_left)
+        right_table = _facts_table(facts_right)
+        if left_table or right_table:
+            body.append("<h2>Contract key facts</h2>")
+            body.append(f"<h3>{_h(label_left or 'Document A')}</h3>")
+            body.append(left_table or '<p class="note">No key fields detected.</p>')
+            body.append(f"<h3>{_h(label_right or 'Document B')}</h3>")
+            body.append(right_table or '<p class="note">No key fields detected.</p>')
+    if risk_left is not None and risk_right is not None:
+        body.append("<h2>Risk by dimension</h2>")
+第 38 页 / 共 60 页
+LawRisk V1.0
+        body.append(_dimensions_table(risk_left, label_left or "Document A"))
+        body.append(_dimensions_table(risk_right, label_right or "Document B"))
+    left_map = _risk_by_para(risk_left) if risk_left is not None else {}
+    right_map = _risk_by_para(risk_right) if risk_right is not None else {}
+    has_risk = risk_left is not None or risk_right is not None
+    sections = [(n.label, n.items) for n in report.root.children if n.items]
+    for label, items in sections:
+        body.append(f'<h2 class="section">{_h(label)}</h2>')
+        for it in items:
+            note = ""
+            if has_risk:
+                note = _risk_note(it, left_map, right_map, label_left, label_right)
+            body.append(_bullet(it) + note + "</div>")
+    if has_risk:
+        top = _top_risky_clauses(sections, left_map, right_map, n=5)
+        if top:
+            body.append("<h2>Highest-risk clauses</h2>")
+            body.append(
+                '<p class="note">The changed clauses that accumulated the most '
+                "risk points (A + B combined), ranked &mdash; review these first.</p>"
+            )
+            for label, it, total in top:
+                body.append('<div class="ranked">')
+                body.append(
+                    f"<h4>{_h(it.summary[:90])}</h4>"
+                    f'<p><code>{_h(label)}</code> &middot; {total} risk pts</p>'
+                )
+                note = _risk_note(it, left_map, right_map, label_left, label_right)
+                if note:
+                    body.append(note)
+                body.append("</div>")
+    if has_risk:
+        by_section = _risk_by_section(sections, left_map, right_map)
+        if by_section:
+            body.append("<h2>Risk by section</h2>")
+            body.append(
+                '<p class="note">Where the changed-clause risk points '
+                "concentrate &mdash; combined A + B severity.</p>"
+            )
+            rows = ["<table><thead><tr><th>Section</th><th>Left (A)</th>"
+                    "<th>Right (B)</th><th>Total</th></tr></thead><tbody>"]
+            for label, left_pts, right_pts, total in by_section:
+                rows.append(
+                    f"<tr><td><code>{_h(label[:50])}</code></td>"
+                    f"<td>{left_pts}</td><td>{right_pts}</td><td>{total}</td></tr>"
+                )
+            rows.append("</tbody></table>")
+            body.append("".join(rows))
+    body.append("<h2>Change ledger</h2>")
+    rows = ["<table><thead><tr><th>#</th><th>Op</th><th>Section</th>"
+第 39 页 / 共 60 页
+LawRisk V1.0
+            "<th>Left&para;</th><th>Right&para;</th><th>Risk</th></tr></thead><tbody>"]
+    n = 0
+    for label, items in sections:
+        for it in items:
+            n += 1
+            lp = "" if it.para_index_left is None else it.para_index_left + 1
+            rp = "" if it.para_index_right is None else it.para_index_right + 1
+            op = {"add": "add", "delete": "del", "modify": "mod"}[it.op.value]
+            if has_risk:
+                left, right = _item_risks(it, left_map, right_map)
+                cell_parts = []
+                if left:
+                    cell_parts.append("A:" + ",".join(f"{r['rule_id']}+{r['severity']}" for r in left))
+                if right:
+                    cell_parts.append("B:" + ",".join(f"{r['rule_id']}+{r['severity']}" for r in right))
+                risk_cell = " &middot; ".join(cell_parts) if cell_parts else "—"
+            else:
+                risk_cell = "—"
+            rows.append(
+                f"<tr><td>{n}</td><td>{op}</td><td><code>{_h(label[:40])}</code></td>"
+                f"<td>{lp}</td><td>{rp}</td><td>{_h(risk_cell)}</td></tr>"
+            )
+    rows.append("</tbody></table>")
+    body.append("".join(rows))
+    body.append(
+        '<p class="footer">Generated by LawRisk diff engine &mdash; '
+        f"{report.stats.additions} additions, {report.stats.deletions} deletions, "
+        f"{report.stats.modifications} modifications.</p>"
+    )
+    body.append("</div>")
+    return (
+        "<!DOCTYPE html>\n"
+        '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        "<title>Contract Clause Diff Report</title>\n"
+        f"<style>{_CSS}</style>\n"
+        "</head>\n<body>\n"
+        + "\n".join(body)
+        + "\n</body>\n</html>"
+    )
+"""Word (.docx) diff report generation from a DiffReport.
+Renders the same content as the Markdown report — title, document names,
+overall risk line, summary, contract key-facts tables, risk-by-dimension
+tables, per-clause change bullets with risk notes and the change ledger —
+as a real .docx document via python-docx, returned as raw bytes. Mirrors
+`render_markdown`'s signature so the API can produce both formats from one
+call site.
+"""
+from __future__ import annotations
+from io import BytesIO
+第 40 页 / 共 60 页
+LawRisk V1.0
+from typing import Dict, List, Mapping, Optional
+from docx import Document
+from docx.shared import Inches, RGBColor
+from lawrisk.diff.differ import DiffOp, DiffReport
+from lawrisk.diff.markdown_report import DIM_LABEL, FACT_LABEL
+from lawrisk.models import FieldRun, RiskReport
+GREEN = RGBColor(0x2E, 0x7D, 0x32)
+RED = RGBColor(0xC0, 0x39, 0x2B)
+AMBER = RGBColor(0xB8, 0x86, 0x0B)
+GREY = RGBColor(0x55, 0x55, 0x55)
+_OPS = {"add": "add", "delete": "del", "modify": "mod"}
+def _risk_by_para(report: RiskReport) -> Dict[int, List[dict]]:
+    """Map a risk report's global paragraph indices to its fired penalties."""
+    out: Dict[int, List[dict]] = {}
+    for p in report.penalties:
+        if p.para_index is None:
+            continue
+        out.setdefault(p.para_index, []).append(
+            {
+                "rule_id": p.rule_id,
+                "dimension": getattr(p.dimension, "value", str(p.dimension)),
+                "severity": p.severity,
+                "reason": p.reason,
+                "mitigation": p.mitigation,
+            }
+        )
+    return out
+def _format_risks(risks: List[dict]) -> str:
+    """One compact line per penalty:
+    `R-COMM-1 (+20, commercial): reason — Fix: mitigation`.
+    """
+    parts = []
+    for r in risks:
+        line = f"{r['rule_id']} (+{r['severity']}, {r['dimension']}): {r['reason']}"
+        if r.get("mitigation"):
+            line += f" — Fix: {r['mitigation']}"
+        parts.append(line)
+    return "; ".join(parts)
+def _excerpt_para(doc, text: str) -> None:
+    """Indented italic excerpt paragraph (the verbatim source clause)."""
+    p = doc.add_paragraph()
+    p.paragraph_format.left_indent = Inches(0.4)
+    p.paragraph_format.first_line_indent = None
+    p.add_run(text).italic = True
+def _risk_note_para(doc, text: str) -> None:
+    """Indented amber note carrying the penalties that fired on a clause."""
+    p = doc.add_paragraph()
+    p.paragraph_format.left_indent = Inches(0.4)
+    run = p.add_run(text)
+    run.font.color.rgb = AMBER
+第 41 页 / 共 60 页
+LawRisk V1.0
+    run.italic = True
+def _add_change(doc, it, left_map, right_map, label_left, label_right) -> None:
+    """One clause-change bullet: op marker + summary + verbatim excerpt(s)."""
+    p = doc.add_paragraph(style="List Bullet")
+    if it.op is DiffOp.ADD:
+        run = p.add_run("[+] added")
+        run.bold = True
+        run.font.color.rgb = GREEN
+        p.add_run("  " + (it.summary or ""))
+        excerpt = (it.text_right or "").replace("\n", " ")
+        if excerpt:
+            _excerpt_para(doc, excerpt)
+        return
+    if it.op is DiffOp.DELETE:
+        run = p.add_run("[-] removed")
+        run.bold = True
+        run.font.color.rgb = RED
+        p.add_run("  " + (it.summary or ""))
+        excerpt = (it.text_left or "").replace("\n", " ")
+        if excerpt:
+            p_ = doc.add_paragraph()
+            p_.paragraph_format.left_indent = Inches(0.4)
+            del_run = p_.add_run(excerpt)
+            del_run.italic = True
+            try:
+                del_run.font.strike = True
+            except Exception:  # pragma: no cover - older python-docx
+                pass
+        return
+    run = p.add_run("[~] modified")
+    run.bold = True
+    run.font.color.rgb = AMBER
+    p.add_run("  " + (it.summary or ""))
+    lhs = (it.text_left or "").replace("\n", " ")
+    rhs = (it.text_right or "").replace("\n", " ")
+    if lhs:
+        _excerpt_para(doc, "Before: " + lhs)
+    if rhs:
+        p_ = doc.add_paragraph()
+        p_.paragraph_format.left_indent = Inches(0.4)
+        p_.add_run("After: ").bold = True
+        p_.add_run(rhs).bold = True
+def _add_risk_note(doc, it, left_map, right_map, label_left, label_right) -> None:
+    """Attach a risk note to a changed clause if any penalties fired on it."""
+    left = left_map.get(it.para_index_left, []) if it.para_index_left is not None else []
+    right = right_map.get(it.para_index_right, []) if it.para_index_right is not None else []
+    if left:
+        _risk_note_para(doc, f"⚠ A ({label_left or 'left'}) risk: {_format_risks(left)}")
+    if right:
+        _risk_note_para(doc, f"⚠ B ({label_right or 'right'}) risk: {_format_risks(right)}")
+第 42 页 / 共 60 页
+LawRisk V1.0
+def _top_risky_clauses(sections, left_map, right_map, n: int = 5):
+    """Rank changed clauses by combined A/B risk severity; return top n.
+    Each entry is ``(section_label, DiffItem, total_severity)`` ordered by
+    descending total points. Clauses with no fired penalties are excluded.
+    """
+    ranked = []
+    for label, items in sections:
+        for it in items:
+            left = left_map.get(it.para_index_left, []) if it.para_index_left is not None else []
+            right = right_map.get(it.para_index_right, []) if it.para_index_right is not None else []
+            total = sum(r["severity"] for r in left) + sum(r["severity"] for r in right)
+            if total:
+                ranked.append((label, it, total))
+    ranked.sort(key=lambda t: t[2], reverse=True)
+    return ranked[:n]
+def _risk_by_section(sections, left_map, right_map):
+    """Per-section A/B combined risk points, for the review-triage table.
+    Returns ``(label, left_pts, right_pts, combined)`` for sections that carry
+    at least one fired penalty, ordered by descending combined points.
+    """
+    rows = []
+    for label, items in sections:
+        left_pts = right_pts = 0
+        for it in items:
+            left = left_map.get(it.para_index_left, []) if it.para_index_left is not None else []
+            right = right_map.get(it.para_index_right, []) if it.para_index_right is not None else []
+            left_pts += sum(r["severity"] for r in left)
+            right_pts += sum(r["severity"] for r in right)
+        if left_pts or right_pts:
+            rows.append((label, left_pts, right_pts, left_pts + right_pts))
+    rows.sort(key=lambda t: t[3], reverse=True)
+    return rows
+def _facts_rows(facts: List[Mapping]) -> List[tuple]:
+    """Extract found key facts as (label, value, source), deduped by label.
+    Accepts dictified FieldRun rows (model_dump()) or FieldRun models.
+    Repeated detectors on the same field collapse to the first row so each
+    label appears once (matches the Markdown renderer).
+    """
+    seen: Dict[str, tuple] = {}
+    for raw in facts:
+        if isinstance(raw, FieldRun):
+            row = {
+                "name": raw.name,
+                "value": raw.value,
+                "source": raw.source,
+                "found": raw.found,
+            }
+        else:
+            row = raw
+        if not row.get("found", True):
+第 43 页 / 共 60 页
+LawRisk V1.0
+            continue
+        label = FACT_LABEL.get(str(row.get("name")), str(row.get("name")))
+        if label in seen:
+            continue
+        source = (row.get("source") or "").replace("|", "\\|")
+        if len(source) > 120:
+            source = source[:117] + "…"
+        seen[label] = (label, str(row.get("value") or "—"), source)
+    return list(seen.values())
+def _write_facts_table(doc, rows: List[tuple]) -> None:
+    table = doc.add_table(rows=1, cols=3)
+    table.style = "Table Grid"
+    for i, h in enumerate(("Field", "Value", "Source")):
+        table.rows[0].cells[i].text = h
+    for label, value, source in rows:
+        cells = table.add_row().cells
+        cells[0].text = label
+        cells[1].text = value
+        cells[2].text = source
+def _dimensions_table(doc, risk: RiskReport, label: str) -> None:
+    doc.add_heading(label or "Document", level=3)
+    table = doc.add_table(rows=1, cols=4)
+    table.style = "Table Grid"
+    for i, h in enumerate(("Dimension", "Score", "Level", "Findings")):
+        table.rows[0].cells[i].text = h
+    for d in risk.dimensions:
+        dim = getattr(d.dimension, "value", d.dimension)
+        name = DIM_LABEL.get(str(dim), str(dim))
+        n = sum(1 for p in risk.penalties if p.dimension is d.dimension)
+        cells = table.add_row().cells
+        cells[0].text = name
+        cells[1].text = f"{d.normalized:.0f}/100"
+        cells[2].text = d.risk_level.value
+        cells[3].text = str(n)
+def _ledger_table(doc, sections, left_map, right_map, has_risk: bool) -> None:
+    doc.add_heading("Change ledger", level=2)
+    table = doc.add_table(rows=1, cols=6)
+    table.style = "Table Grid"
+    for i, h in enumerate(("#", "Op", "Section", "Left¶", "Right¶", "Risk")):
+        table.rows[0].cells[i].text = h
+    n = 0
+    for label, items in sections:
+        for it in items:
+            n += 1
+            left = left_map.get(it.para_index_left, []) if it.para_index_left is not None else []
+            right = right_map.get(it.para_index_right, []) if it.para_index_right is not None else []
+            cells = table.add_row().cells
+            cells[0].text = str(n)
+            cells[1].text = _OPS[it.op.value]
+            cells[2].text = label[:40]
+第 44 页 / 共 60 页
+LawRisk V1.0
+            cells[3].text = "" if it.para_index_left is None else str(it.para_index_left + 1)
+            cells[4].text = "" if it.para_index_right is None else str(it.para_index_right + 1)
+            if has_risk:
+                cell_parts = []
+                if left:
+                    cell_parts.append("A:" + ",".join(f"{r['rule_id']}+{r['severity']}" for r in left))
+                if right:
+                    cell_parts.append("B:" + ",".join(f"{r['rule_id']}+{r['severity']}" for r in right))
+                cells[5].text = " · ".join(cell_parts) if cell_parts else "—"
+            else:
+                cells[5].text = "—"
+def render_docx(
+    report: DiffReport,
+    risk_left: Optional[RiskReport] = None,
+    risk_right: Optional[RiskReport] = None,
+    facts_left: Optional[List] = None,
+    facts_right: Optional[List] = None,
+    label_left: str = "Document A",
+    label_right: str = "Document B",
+) -> bytes:
+    """Build the .docx diff report and return it as raw bytes."""
+    doc = Document()
+    doc.add_heading("Contract Clause Diff Report", level=0)
+    doc.add_paragraph(f"Document A: {report.document_left or '(unnamed)'}")
+    doc.add_paragraph(f"Document B: {report.document_right or '(unnamed)'}")
+    doc.add_paragraph("Engine: local paragraph-level diff (difflib / Myers-style), LLM-free")
+    if risk_left is not None and risk_right is not None:
+        p = doc.add_paragraph()
+        p.add_run("Overall risk: ").bold = True
+        p.add_run(
+            f"A {risk_left.overall_score}/100 vs B {risk_right.overall_score}/100 — "
+            "changed clauses are annotated with the penalties that fired on them."
+        )
+    doc.add_heading("Summary", level=2)
+    doc.add_paragraph(report.summary)
+    if facts_left is not None and facts_right is not None:
+        left_rows = _facts_rows(facts_left)
+        right_rows = _facts_rows(facts_right)
+        if left_rows or right_rows:
+            doc.add_heading("Contract key facts", level=2)
+            doc.add_heading(label_left or "Document A", level=3)
+            if left_rows:
+                _write_facts_table(doc, left_rows)
+            else:
+                doc.add_paragraph("No key fields detected.").italic = True
+            doc.add_heading(label_right or "Document B", level=3)
+            if right_rows:
+                _write_facts_table(doc, right_rows)
+            else:
+                doc.add_paragraph("No key fields detected.").italic = True
+第 45 页 / 共 60 页
+LawRisk V1.0
+    if risk_left is not None and risk_right is not None:
+        doc.add_heading("Risk by dimension", level=2)
+        _dimensions_table(doc, risk_left, label_left or "Document A")
+        _dimensions_table(doc, risk_right, label_right or "Document B")
+    left_map = _risk_by_para(risk_left) if risk_left is not None else {}
+    right_map = _risk_by_para(risk_right) if risk_right is not None else {}
+    has_risk = risk_left is not None or risk_right is not None
+    sections = [(n.label, n.items) for n in report.root.children if n.items]
+    for label, items in sections:
+        doc.add_heading(label, level=2)
+        for it in items:
+            _add_change(doc, it, left_map, right_map, label_left, label_right)
+            if has_risk:
+                _add_risk_note(doc, it, left_map, right_map, label_left, label_right)
+        doc.add_paragraph()
+    if has_risk:
+        top = _top_risky_clauses(sections, left_map, right_map, n=5)
+        if top:
+            doc.add_heading("Highest-risk clauses", level=2)
+            intro = doc.add_paragraph()
+            intro_run = intro.add_run(
+                "The changed clauses that accumulated the most risk points "
+                "(A + B combined), ranked — review these first."
+            )
+            intro_run.italic = True
+            for label, it, total in top:
+                p = doc.add_paragraph(style="List Bullet")
+                p.add_run(f"{it.summary[:90]}  ").bold = True
+                p.add_run(f"· {label} · {total} risk pts")
+                _add_risk_note(doc, it, left_map, right_map, label_left, label_right)
+    if has_risk:
+        by_section = _risk_by_section(sections, left_map, right_map)
+        if by_section:
+            doc.add_heading("Risk by section", level=2)
+            intro = doc.add_paragraph()
+            intro_run = intro.add_run(
+                "Where the changed-clause risk points concentrate — combined A + B severity."
+            )
+            intro_run.italic = True
+            table = doc.add_table(rows=1, cols=4)
+            table.style = "Table Grid"
+            for i, h in enumerate(("Section", "Left (A)", "Right (B)", "Total")):
+                table.rows[0].cells[i].text = h
+            for label, left_pts, right_pts, total in by_section:
+                cells = table.add_row().cells
+                cells[0].text = label[:50]
+                cells[1].text = str(left_pts)
+                cells[2].text = str(right_pts)
+                cells[3].text = str(total)
+    if sections:
+第 46 页 / 共 60 页
+LawRisk V1.0
+        _ledger_table(doc, sections, left_map, right_map, has_risk)
+    footnote = doc.add_paragraph()
+    run = footnote.add_run(
+        f"Generated by LawRisk diff engine — {report.stats.additions} additions, "
+        f"{report.stats.deletions} deletions, {report.stats.modifications} modifications."
+    )
+    run.italic = True
+    run.font.color.rgb = GREY
+    buf = BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+"""Single-document risk review reports (Markdown / .docx / HTML).
+Every other flow (compare, diff-text, template-compare) needs two documents.
+The core SPEC workflow is a lawyer reviewing ONE contract: score a single
+document with the deterministic risk engine and render the findings grouped by
+contract section, so you can see at a glance which parts of the agreement
+concentrate the risk.
+The three renderers mirror each other section-for-section:
+  * Document name + overall risk score/level header
+  * Contract key facts (currency / term / governing law / arbitration)
+  * Risk by dimension (per-dimension score, level, finding count)
+  * Per-section finding lists — each finding shows the rule id, severity,
+    dimension, the readable reason, the verbatim source paragraph and any
+    mitigation
+  * A severity-ranked "highest-risk clauses" shortlist and a per-section
+    risk-triage table
+All three reuse the shared helpers from the diff report modules so the
+output stays visually consistent with the two-document reports. As with the
+HTML diff report, every document byte passes through an HTML escaper so raw
+markup in the contract can never execute in the rendered page.
+"""
+from __future__ import annotations
+from typing import Dict, List, Mapping, Sequence
+from lawrisk.diff.differ import split_sections
+from lawrisk.diff.html_report import _CSS, _h, _facts_table as _facts_table_html
+from lawrisk.diff.markdown_report import (
+    DIM_LABEL,
+    _dimensions_table as _dimensions_table_md,
+    _facts_table as _facts_table_md,
+)
+_PREAMBLE_LABEL = "Preamble"
+_FALLBACK_LABEL = "Preamble / unlocated"
+def _penalties_by_para(risk) -> Dict[int, List[dict]]:
+    """Map global paragraph indices to their fired penalties (skips None)."""
+    out: Dict[int, List[dict]] = {}
+    for p in risk.penalties:
+        if p.para_index is None:
+            continue
+        out.setdefault(p.para_index, []).append(
+            {
+第 47 页 / 共 60 页
+LawRisk V1.0
+                "rule_id": p.rule_id,
+                "dimension": getattr(p.dimension, "value", str(p.dimension)),
+                "severity": p.severity,
+                "reason": p.reason,
+                "excerpt": p.excerpt,
+                "mitigation": p.mitigation,
+            }
+        )
+    return out
+def _group_by_section(paragraphs: Sequence[str], risk) -> List[dict]:
+    """Group fired penalties under the contract section they fall in.
+    Reuses the diff engine's ``split_sections`` so the grouping matches the
+    sectioning the diff tree uses. A penalty belongs to a section when its
+    ``para_index`` satisfies ``sec.start <= para_index < next.start``; sections
+    are compared by their display heading ("" -> "Preamble"); penalties with no
+    paragraph index land in a fallback bucket. Sections with no findings are
+    omitted. Returns ``[{heading, total_risk, findings: [...] }]``.
+    """
+    sections = split_sections(paragraphs)
+    by_para = _penalties_by_para(risk)
+    buckets: List[Dict[str, object]] = []
+    for i, sec in enumerate(sections):
+        upper_bound = sections[i + 1].start if i + 1 < len(sections) else len(paragraphs)
+        findings = []
+        for para_index in range(sec.start, upper_bound):
+            findings.extend(by_para.get(para_index, []))
+        if not findings:
+            continue
+        heading = sec.heading or _PREAMBLE_LABEL
+        total = sum(f["severity"] for f in findings)
+        buckets.append(
+            {
+                "heading": heading,
+                "total_risk": total,
+                "findings": findings,
+            }
+        )
+    unlocated = [p for p in risk.penalties if p.para_index is None]
+    if unlocated:
+        rows = []
+        for p in unlocated:
+            rows.append(
+                {
+                    "rule_id": p.rule_id,
+                    "dimension": getattr(p.dimension, "value", str(p.dimension)),
+                    "severity": p.severity,
+                    "reason": p.reason,
+                    "excerpt": p.excerpt,
+                    "mitigation": p.mitigation,
+                }
+第 48 页 / 共 60 页
+LawRisk V1.0
+            )
+        buckets.append(
+            {
+                "heading": _FALLBACK_LABEL,
+                "total_risk": sum(p.severity for p in unlocated),
+                "findings": rows,
+            }
+        )
+    return buckets
+def _ranked_findings(buckets: List[dict], n: int = 5) -> List[tuple]:
+    """Top-n individual findings by severity (heading, finding) for triage."""
+    ranked = []
+    for bucket in buckets:
+        for f in bucket["findings"]:
+            ranked.append((bucket["heading"], f, f["severity"]))
+    ranked.sort(key=lambda t: t[2], reverse=True)
+    return ranked[:n]
+def render_markdown_review(
+    name: str, paragraphs: Sequence[str], risk, facts: List[Mapping]
+) -> str:
+    """Render a single-document risk review as a self-contained Markdown report."""
+    buckets = _group_by_section(paragraphs, risk)
+    lines: List[str] = []
+    lines.append("# Contract Risk Review")
+    lines.append("")
+    lines.append(f"- **Document:** {name or '(unnamed)'}")
+    lines.append("- **Engine:** deterministic rule-based scoring (LLM-free)")
+    lines.append(
+        f"- **Overall risk:** {risk.overall_score}/100 ({risk.overall_level.value})"
+    )
+    lines.append("")
+    lines.append(f"## Summary")
+    lines.append("")
+    lines.append(risk.summary)
+    lines.append("")
+    facts_table = _facts_table_md(facts)
+    if facts_table:
+        lines.append("## Contract key facts")
+        lines.append("")
+        lines.append(facts_table)
+        lines.append("")
+    lines.append("## Risk by dimension")
+    lines.append("")
+    lines.append(_dimensions_table_md(risk, name or "Document"))
+    lines.append("")
+    if not buckets and not risk.penalties:
+        lines.append("## Findings")
+        lines.append("")
+        lines.append("_No risk findings — this document scored clean._")
+        lines.append("")
+第 49 页 / 共 60 页
+LawRisk V1.0
+        return "\n".join(lines)
+    for bucket in buckets:
+        heading = bucket["heading"]
+        lines.append(f"## {heading}")
+        lines.append("")
+        lines.append(
+            f"{len(bucket['findings'])} finding"
+            f"{'' if len(bucket['findings']) == 1 else 's'} · "
+            f"{bucket['total_risk']} risk pts"
+        )
+        lines.append("")
+        for f in bucket["findings"]:
+            lines.append(f"**{f['rule_id']}** (+{f['severity']}, {f['dimension']}): {f['reason']}")
+            if f.get("mitigation"):
+                lines.append(f"  - Fix: {f['mitigation']}")
+            if f.get("excerpt"):
+                excerpt = (f["excerpt"] or "").replace("\n", " ").strip()
+                if excerpt:
+                    lines.append(f"  - Source: “{excerpt[:220]}”")
+            lines.append("")
+    top = _ranked_findings(buckets, n=5)
+    if top:
+        lines.append("## Highest-risk findings")
+        lines.append("")
+        lines.append("The individual findings that carry the most points — review these first.")
+        lines.append("")
+        for heading, f, severity in top:
+            lines.append(f"**{f['rule_id']}** (+{severity}, {f['dimension']}): {f['reason']}")
+            lines.append("")
+            lines.append(f"`{heading[:60]}`")
+            if f.get("excerpt"):
+                excerpt = (f["excerpt"] or "").replace("\n", " ").strip()
+                if excerpt:
+                    lines.append(f"Source: “{excerpt[:180]}”")
+            lines.append("")
+    risk_sections = [
+        (b["heading"], b["total_risk"], len(b["findings"])) for b in buckets
+    ]
+    risk_sections.sort(key=lambda t: t[1], reverse=True)
+    if risk_sections:
+        lines.append("## Risk by section")
+        lines.append("")
+        lines.append("Where the findings concentrate — section-level severity.")
+        lines.append("")
+        lines.append("| Section | Risk pts | Findings |")
+        lines.append("|---------|----------|----------|")
+        for heading, total, count in risk_sections:
+            lines.append(f"| `{heading[:50]}` | {total} | {count} |")
+        lines.append("")
+    lines.append("---")
+第 50 页 / 共 60 页
+LawRisk V1.0
+    lines.append(
+        f"_Generated by LawRisk risk engine — deterministic hash "
+        f"{risk.deterministic_hash[:12]}._"
+    )
+    return "\n".join(lines)
+def render_docx_review(
+    name: str, paragraphs: Sequence[str], risk, facts: List[Mapping]
+) -> bytes:
+    """Render the single-document review as a .docx document (raw bytes)."""
+    from io import BytesIO
+    from docx import Document
+    from docx.shared import Inches, RGBColor
+    from lawrisk.diff.docx_report import (
+        _facts_rows,
+        _write_facts_table,
+    )
+    AMBER = RGBColor(0xB8, 0x86, 0x0B)
+    GREY = RGBColor(0x55, 0x55, 0x55)
+    buckets = _group_by_section(paragraphs, risk)
+    doc = Document()
+    doc.add_heading("Contract Risk Review", level=0)
+    doc.add_paragraph(f"Document: {name or '(unnamed)'}")
+    doc.add_paragraph("Engine: deterministic rule-based scoring (LLM-free)")
+    p = doc.add_paragraph()
+    p.add_run("Overall risk: ").bold = True
+    p.add_run(f"{risk.overall_score}/100 ({risk.overall_level.value})")
+    doc.add_heading("Summary", level=2)
+    doc.add_paragraph(risk.summary)
+    facts_rows = _facts_rows(facts)
+    if facts_rows:
+        doc.add_heading("Contract key facts", level=2)
+        _write_facts_table(doc, facts_rows)
+    doc.add_heading("Risk by dimension", level=2)
+    _dimensions_table(doc, risk, name or "Document")
+    if not buckets and not risk.penalties:
+        doc.add_heading("Findings", level=2)
+        doc.add_paragraph("No risk findings — this document scored clean.").italic = True
+    for bucket in buckets:
+        heading = bucket["heading"]
+        doc.add_heading(heading, level=2)
+        sub = doc.add_paragraph()
+        sub_run = sub.add_run(
+            f"{len(bucket['findings'])} finding"
+            f"{'' if len(bucket['findings']) == 1 else 's'} · "
+            f"{bucket['total_risk']} risk pts"
+        )
+        sub_run.italic = True
+        for f in bucket["findings"]:
+            pf = doc.add_paragraph(style="List Bullet")
+            run = pf.add_run(f"{f['rule_id']} (+{f['severity']}, {f['dimension']}): {f['reason']}")
+第 51 页 / 共 60 页
+LawRisk V1.0
+            if f.get("mitigation"):
+                run.add_break()
+                run.add_text(f"Fix: {f['mitigation']}")
+            if f.get("excerpt"):
+                excerpt = (f["excerpt"] or "").replace("\n", " ").strip()
+                if excerpt:
+                    ep = doc.add_paragraph()
+                    ep.paragraph_format.left_indent = Inches(0.4)
+                    ep.add_run(f"Source: “{excerpt[:220]}”").italic = True
+    top = _ranked_findings(buckets, n=5)
+    if top:
+        doc.add_heading("Highest-risk findings", level=2)
+        intro = doc.add_paragraph()
+        intro_run = intro.add_run(
+            "The individual findings that carry the most points — review these first."
+        )
+        intro_run.italic = True
+        for heading, f, severity in top:
+            pf = doc.add_paragraph(style="List Bullet")
+            pf.add_run(f"{f['rule_id']} (+{severity}, {f['dimension']}): {f['reason']}  ").bold = True
+            pf.add_run(f"· {heading[:60]}")
+            if f.get("excerpt"):
+                excerpt = (f["excerpt"] or "").replace("\n", " ").strip()
+                if excerpt:
+                    ep = doc.add_paragraph()
+                    ep.paragraph_format.left_indent = Inches(0.4)
+                    ep.add_run(f"Source: “{excerpt[:180]}”").italic = True
+    risk_sections = [
+        (b["heading"], b["total_risk"], len(b["findings"])) for b in buckets
+    ]
+    risk_sections.sort(key=lambda t: t[1], reverse=True)
+    if risk_sections:
+        doc.add_heading("Risk by section", level=2)
+        intro = doc.add_paragraph()
+        intro_run = intro.add_run("Where the findings concentrate — section-level severity.")
+        intro_run.italic = True
+        table = doc.add_table(rows=1, cols=3)
+        table.style = "Table Grid"
+        for i, h in enumerate(("Section", "Risk pts", "Findings")):
+            table.rows[0].cells[i].text = h
+        for heading, total, count in risk_sections:
+            cells = table.add_row().cells
+            cells[0].text = heading[:50]
+            cells[1].text = str(total)
+            cells[2].text = str(count)
+    footnote = doc.add_paragraph()
+    run = footnote.add_run(
+        f"Generated by LawRisk risk engine — deterministic hash {risk.deterministic_hash[:12]}."
+    )
+    run.italic = True
+第 52 页 / 共 60 页
+LawRisk V1.0
+    run.font.color.rgb = GREY
+    buf = BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+def render_html_review(
+    name: str, paragraphs: Sequence[str], risk, facts: List[Mapping]
+) -> str:
+    """Render the single-document review as a standalone, self-contained HTML doc."""
+    buckets = _group_by_section(paragraphs, risk)
+    meta = [
+        f'<p class="docmeta"><b>Document:</b> {_h(name or "(unnamed)")}</p>',
+        '<p class="docmeta"><b>Engine:</b> deterministic rule-based scoring (LLM-free)</p>',
+        f'<p class="riskline">Overall risk: {risk.overall_score}/100 '
+        f"({_h(risk.overall_level.value)})</p>",
+    ]
+    body = ['<div class="wrap">', "<h1>Contract Risk Review</h1>"]
+    body.extend(meta)
+    body.append(f'<h2>Summary</h2><p class="summary">{_h(risk.summary)}</p>')
+    facts_table = _facts_table_html(facts)
+    if facts_table:
+        body.append("<h2>Contract key facts</h2>")
+        body.append(facts_table)
+    body.append("<h2>Risk by dimension</h2>")
+    body.append(_dimensions_table_html_review(risk, name or "Document"))
+    if not buckets and not risk.penalties:
+        body.append('<h2>Findings</h2><p class="note">No risk findings — '
+                    "this document scored clean.</p>")
+    for bucket in buckets:
+        heading = bucket["heading"]
+        body.append(f'<h2 class="section">{_h(heading)}</h2>')
+        body.append(
+            f'<p class="note">{len(bucket["findings"])} finding'
+            f"{'' if len(bucket['findings']) == 1 else 's'} &middot; "
+            f"{bucket['total_risk']} risk pts</p>"
+        )
+        for f in bucket["findings"]:
+            parts = [
+                f'<span class="pill mod">{_h(f["rule_id"])}</span> '
+                f'<b>+{f["severity"]}, {_h(f["dimension"])}</b> &mdash; {_h(f["reason"])}'
+            ]
+            if f.get("mitigation"):
+                parts.append(f'<p class="clause-detail">Fix: {_h(f["mitigation"])}</p>')
+            if f.get("excerpt"):
+                excerpt = (f["excerpt"] or "").replace("\n", " ").strip()
+                if excerpt:
+                    parts.append(
+                        '<p class="excerpt">&ldquo;{0}&rdquo;</p>'.format(
+                            _h(excerpt[:220])
+                        )
+                    )
+第 53 页 / 共 60 页
+LawRisk V1.0
+            body.append('<div class="clause">' + "".join(parts) + "</div>")
+    top = _ranked_findings(buckets, n=5)
+    if top:
+        body.append("<h2>Highest-risk findings</h2>")
+        body.append(
+            '<p class="note">The individual findings that carry the most points '
+            "&mdash; review these first.</p>"
+        )
+        for heading, f, severity in top:
+            parts = [
+                f'<h4><span class="pill mod">{_h(f["rule_id"])}</span> '
+                f'+{severity}, {_h(f["dimension"])} &mdash; {_h(f["reason"])}</h4>',
+                f'<p><code>{_h(heading[:60])}</code></p>',
+            ]
+            if f.get("excerpt"):
+                excerpt = (f["excerpt"] or "").replace("\n", " ").strip()
+                if excerpt:
+                    parts.append(
+                        '<p class="excerpt">&ldquo;{0}&rdquo;</p>'.format(
+                            _h(excerpt[:180])
+                        )
+                    )
+            body.append('<div class="ranked">' + "".join(parts) + "</div>")
+    risk_sections = [
+        (b["heading"], b["total_risk"], len(b["findings"])) for b in buckets
+    ]
+    risk_sections.sort(key=lambda t: t[1], reverse=True)
+    if risk_sections:
+        body.append("<h2>Risk by section</h2>")
+        body.append(
+            '<p class="note">Where the findings concentrate &mdash; '
+            "section-level severity.</p>"
+        )
+        rows = ["<table><thead><tr><th>Section</th><th>Risk pts</th>"
+                "<th>Findings</th></tr></thead><tbody>"]
+        for heading, total, count in risk_sections:
+            rows.append(
+                f"<tr><td><code>{_h(heading[:50])}</code></td>"
+                f"<td>{total}</td><td>{count}</td></tr>"
+            )
+        rows.append("</tbody></table>")
+        body.append("".join(rows))
+    body.append(
+        '<p class="footer">Generated by LawRisk risk engine &mdash; deterministic '
+        f"hash {_h(risk.deterministic_hash[:12])}.</p>"
+    )
+    body.append("</div>")
+    return (
+        "<!DOCTYPE html>\n"
+        '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+第 54 页 / 共 60 页
+LawRisk V1.0
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        "<title>Contract Risk Review</title>\n"
+        f"<style>{_CSS}</style>\n"
+        "</head>\n<body>\n"
+        + "\n".join(body)
+        + "\n</body>\n</html>"
+    )
+def _dimensions_table_html_review(risk, label: str) -> str:
+    """HTML per-dimension score table (mirrors the diff report's version)."""
+    head = f"<h3>{_h(label or 'Document')}</h3>"
+    rows = ["<table><thead><tr><th>Dimension</th><th>Score</th>"
+            "<th>Level</th><th>Findings</th></tr></thead><tbody>"]
+    for d in risk.dimensions:
+        dim = getattr(d.dimension, "value", d.dimension)
+        name = DIM_LABEL.get(str(dim), str(dim))
+        n = sum(1 for p in risk.penalties if p.dimension is d.dimension)
+        rows.append(
+            f"<tr><td>{_h(name)}</td><td>{d.normalized:.0f}/100</td>"
+            f"<td>{_h(d.risk_level.value)}</td><td>{n}</td></tr>"
+        )
+    rows.append("</tbody></table>")
+    return head + "".join(rows)
+def _dimensions_table(doc, risk, label: str) -> None:
+    """docx per-dimension score table; local import keeps python-docx optional."""
+    from lawrisk.diff.docx_report import _dimensions_table as _docx_dimensions
+    _docx_dimensions(doc, risk, label)
+"""P3: reusable clause-template library.
+A small registry of clause templates a law firm can diff their incoming
+agreement against. Templates are plain-text definitions (kept here so they are
+versioned with the codebase and reproducible offline), wrapped by a REST API
+and a CLI dump script.
+Design (低算力守则): pure data + deterministic lookups; no network, no LLM.
+"""
+from __future__ import annotations
+import hashlib
+from dataclasses import dataclass, field
+from typing import List
+from lawrisk.diff.differ import build_diff_tree
+from lawrisk.models import DiffReport
+from lawrisk.textutil import split_paragraphs
+@dataclass(frozen=True)
+class ClauseTemplate:
+    """A named, curated clause set used as a comparison baseline."""
+    id: str
+    name: str
+    description: str = ""
+    sections: List[str] = field(default_factory=list)
+    paragraphs: List[str] = field(default_factory=list)
+    def to_dict(self) -> dict[str, object]:
+        return {
+第 55 页 / 共 60 页
+LawRisk V1.0
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "sections": self.sections,
+            "paragraph_count": len(self.paragraphs),
+            "content_hash": self.content_hash,
+        }
+    @property
+    def content_hash(self) -> str:
+        payload = "\n".join(self.paragraphs).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+def _tpl(
+    id: str,
+    name: str,
+    description: str,
+    sections: List[str],
+    paragraphs: List[str],
+) -> ClauseTemplate:
+    return ClauseTemplate(
+        id=id,
+        name=name,
+        description=description,
+        sections=sections,
+        paragraphs=paragraphs,
+    )
+DEFAULT_TEMPLATES: List[ClauseTemplate] = [
+    _tpl(
+        id="msa",
+        name="Master Services Agreement (baseline)",
+        description=(
+            "Balanced MSA baseline: mutual termination, capped mutual liability, "
+            "GDPR-aware data handling and export-compliance affirmations."
+        ),
+        sections=[
+            "Term and Termination",
+            "Payments",
+            "Intellectual Property",
+            "Confidentiality",
+            "Limitation of Liability",
+            "Data Protection",
+            "Export Compliance",
+        ],
+        paragraphs=[
+            "1. Term. The initial term of this Agreement is 12 months and renews "
+            "for successive terms only where both parties agree in writing.",
+            "1.1 Either party may terminate this Agreement for convenience upon "
+            "30 days prior written notice to the other party.",
+            "2. Payments. Fees are fixed for the initial term and may only be "
+            "changed by written amendment signed by both parties.",
+            "2.1 All invoices are payable within 30 days of the invoice date.",
+第 56 页 / 共 60 页
+LawRisk V1.0
+            "3. Intellectual Property. Each party retains ownership of its own "
+            "pre-existing intellectual property.",
+            "4. Confidentiality. Each party shall hold the other's confidential "
+            "information in confidence for 5 years after termination.",
+            "5. Limitation of Liability. In no event shall either party be liable "
+            "for indirect, consequential or special damages, and each party's "
+            "aggregate liability shall not exceed the fees paid in the last 12 "
+            "months.",
+            "5.1 Nothing in this Agreement excludes liability for fraud, death or "
+            "personal injury caused by negligence.",
+            "6. Data Protection. Each party shall process personal data in "
+            "accordance with applicable data protection law and the Data Processing "
+            "Agreement.",
+            "7. Export Compliance. Each party shall comply with all applicable "
+            "export control and sanctions laws.",
+        ],
+    ),
+    _tpl(
+        id="sps",
+        name="Software & SaaS subscription (baseline)",
+        description=(
+            "SaaS-friendly baseline: subscription term, guaranteed uptime "
+            "warranties, service-level credits and a clean data exit path."
+        ),
+        sections=[
+            "Subscription Term",
+            "Service Levels",
+            "Data",
+        ],
+        paragraphs=[
+            "1. Subscription. The subscription term is 12 months and does not "
+            "auto-renew without the Customer's prior written consent.",
+            "2. Service Levels. Provider shall maintain an uptime of at least "
+            "99.5% measured monthly.",
+            "2.1 If uptime falls below the commitment, Customer is entitled to a "
+            "service credit against the next invoice.",
+            "3. Data. Customer owns all data it uploads to the services.",
+            "3.1 On termination, Provider shall return or delete Customer data "
+            "within 30 days at Customer's election.",
+        ],
+    ),
+    _tpl(
+        id="nda",
+        name="Mutual Non-Disclosure Agreement (baseline)",
+        description=(
+            "Short mutual NDA baseline with a clear obligations window and no "
+            "open-ended confidentiality duties."
+        ),
+        sections=[
+            "Confidential Information",
+第 57 页 / 共 60 页
+LawRisk V1.0
+            "Survival",
+        ],
+        paragraphs=[
+            "1. Confidential Information means information disclosed in writing "
+            "and marked confidential by the disclosing party.",
+            "2. Each party shall use the same care to protect Confidential "
+            "Information as it uses for its own similar information.",
+            "3. These confidentiality obligations survive for 3 years after "
+            "termination of this agreement.",
+        ],
+    ),
+    _tpl(
+        id="saas-dpa",
+        name="Data Processing Agreement (baseline)",
+        description=(
+            "DPA baseline following the GDPR Article 28 skeleton: processor "
+            "obligations, sub-processor notice, assistance and deletion duties."
+        ),
+        sections=[
+            "Processing",
+            "Sub-processors",
+            "Security",
+        ],
+        paragraphs=[
+            "1. The Processor shall process personal data only on documented "
+            "instructions from the Controller.",
+            "2. The Processor shall not engage a sub-processor without the "
+            "Controller's prior written authorisation.",
+            "3. The Processor shall implement appropriate technical and "
+            "organisational measures to ensure a level of security appropriate "
+            "to the risk.",
+            "4. The Processor shall assist the Controller with data subject "
+            "requests and shall delete or return all personal data on termination.",
+        ],
+    ),
+]
+_TEMPLATES_BY_ID = {t.id: t for t in DEFAULT_TEMPLATES}
+def list_templates() -> List[ClauseTemplate]:
+    return list(DEFAULT_TEMPLATES)
+def get_template(template_id: str) -> ClauseTemplate | None:
+    return _TEMPLATES_BY_ID.get(template_id)
+def diff_against_template(
+    paragraphs: List[str],
+    template_id: str,
+    document_name: str = "Document",
+) -> DiffReport:
+    """Diff a parsed document against a named baseline template."""
+    tpl = get_template(template_id)
+    if tpl is None:
+        raise KeyError(f"unknown template id: {template_id!r}")
+第 58 页 / 共 60 页
+LawRisk V1.0
+    return build_diff_tree(
+        split_paragraphs("\n\n".join(tpl.paragraphs)),
+        paragraphs,
+        f"Template {template_id} ({tpl.name})",
+        document_name,
+    )
+"""Optional LLM enhancement layer (P3).
+Design
+------
+* OFF by default. Unless the environment variable ``LAWRISK_LLM=1`` is set, all
+  summarisation routes use the deterministic :class:`MockSummarizer` so the
+  whole pipeline stays local, offline and reproducible.
+* When enabled, :func:`get_provider` returns a pluggable provider built via the
+  ``LAWRISK_LLM_PROVIDER`` env var (built-ins: ``mock``; extend by subclassing
+  :class:`Summarizer`). A real implementation would call an HTTP endpoint; the
+  interface stays a pure function of ``(left, right, op)`` so callers never
+  touch the network themselves.
+Both providers are deterministic for identical inputs, preserving AC1.
+"""
+from __future__ import annotations
+import os
+import re
+from typing import List
+ENABLED = os.environ.get("LAWRISK_LLM", "0").lower() in {"1", "true", "yes"}
+PROVIDER_NAME = os.environ.get("LAWRISK_LLM_PROVIDER", "mock").lower()
+class Summarizer:
+    """Pluggable summarisation provider interface."""
+    name = "base"
+    def summarize_clause(
+        self, text_left: str | None, text_right: str | None, op: str
+    ) -> str:
+        """Return a one-line semantic summary for one diff item."""
+        raise NotImplementedError
+    def summarize_report(self, stats, counts: List[str]) -> str:
+        """Return a paragraph-level summary for the whole report."""
+        raise NotImplementedError
+def _preview(t: str | None, n: int = 90) -> str:
+    if not t:
+        return ""
+    clean = re.sub(r"\s+", " ", t).strip()
+    return clean if len(clean) <= n else clean[: n - 1] + "…"
+class MockSummarizer(Summarizer):
+    """Deterministic mock: template sentences phrased from op + preview."""
+    name = "mock"
+    def summarize_clause(
+        self, text_left: str | None, text_right: str | None, op: str
+    ) -> str:
+        left, right = _preview(text_left), _preview(text_right)
+        if op == "add":
+            return f"Added {right or 'a new clause'} (LLM mock summary)."
+第 59 页 / 共 60 页
+LawRisk V1.0
+        if op == "delete":
+            return f"Removed {left or 'a clause'} (LLM mock summary)."
+        if right and left:
+            return f"Revised a clause from '{left}' to '{right}' (LLM mock summary)."
+        return "Clause changed (LLM mock summary)."
+    def summarize_report(self, stats, _counts: List[str]) -> str:
+        total = stats.additions + stats.deletions + stats.modifications
+        return (
+            f"{total} paragraph-level change(s) detected: {stats.additions} added, "
+            f"{stats.deletions} removed, {stats.modifications} modified."
+        )
+class _ProviderRegistry:
+    def __init__(self) -> None:
+        self._providers: dict[str, type[Summarizer]] = {
+            MockSummarizer.name: MockSummarizer,
+        }
+    def register(self, cls: type[Summarizer]) -> None:
+        self._providers[cls.name] = cls
+    def build(self, name: str) -> Summarizer:
+        cls = self._providers.get(name or "mock")
+        if cls is None:
+            raise ValueError(f"unknown LLM provider: {name!r}")
+        return cls()
+registry = _ProviderRegistry()
+def get_provider(name: str | None = None) -> Summarizer:
+    """Build the active summariser from the registry.
+    An explicit ``name`` always wins (used by tests to force a provider). With
+    no explicit name, the ``LAWRISK_LLM_PROVIDER`` env var is used only when
+    LLM mode is enabled; otherwise the deterministic mock is returned so output
+    stays stable when the layer is off.
+    """
+    if name is not None:
+        return registry.build(name)
+    requested = PROVIDER_NAME if ENABLED else "mock"
+    return registry.build(requested)
+ACTIVE = get_provider()
+def register_provider(cls: type[Summarizer]) -> type[Summarizer]:
+    """Decorator to register a custom provider at import time."""
+    registry.register(cls)
+    return cls
+def summarize_clause(text_left: str | None, text_right: str | None, op: str) -> str:
+    return ACTIVE.summarize_clause(text_left, text_right, op)
+def summarize_report(stats, counts: List[str]) -> str:
+    return ACTIVE.summarize_report(stats, counts)
+def describe_layer() -> dict[str, object]:
+    return {
+        "enabled": ENABLED,
+        "provider": ACTIVE.name,
+        "deterministic": ACTIVE.name == "mock",
+    }
+第 60 页 / 共 60 页
