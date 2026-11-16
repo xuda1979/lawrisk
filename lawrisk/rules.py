@@ -229,7 +229,9 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"non[ -]?refundable(?: and non[ -]?cancellable)?|non[ -]?cancellable|"
             r"no refunds? (?:shall|will|may|can|cannot?|may not) (?:be )?(?:made|given|paid|issued)|"
-            r"refunds? (?:will|shall) not (?:be )?(?:made|given|paid|issued)",
+            r"refunds? (?:will|shall) not (?:be )?(?:made|given|paid|issued)|"
+            r"(?:payments?|fees?)[^.;]{0,35}(?:are|shall be|will be)? final[^.;]{0,40}"
+            r"(?:shall|will) not (?:be )?refunded",
             re.IGNORECASE,
         ),
         severity=15,
@@ -260,7 +262,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-1",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"((?:in no event|under no circumstances)) (?:shall|will) (?:the )?(provider|company)|(?:provider|company) shall not (?:be liable|have any liability) for", re.IGNORECASE),
+        pattern=re.compile(r"((?:in no event|under no circumstances)) (?:shall|will) (?:the )?(?:provider|company|vendor|supplier|licensor)|(?:provider|company|vendor|supplier|licensor) shall not (?:be liable|have any liability) for", re.IGNORECASE),
         exclusion=re.compile(r"(?:fraud|death|personal injury|gross negligence|wilful misconduct|willful misconduct|neither party|both parties|each party|either party)", re.IGNORECASE),
         severity=25,
         reason="Broad disclaimer covering consequential/indirect damages",
@@ -278,7 +280,10 @@ RULES: List[Rule] = [
             r"no (?:limitation|cap) (?:of|on) liability|"
             r"nothing in (?:this|any) (?:clause|section|agreement)[^.;]{0,40}(?:limits?|caps?|excludes?)|"
             r"without limitation of liability|"
-            r"not subject to any (?:limitation|cap)",
+            r"not subject to any (?:limitation|cap)|"
+            r"(?:total |aggregate )?liability[^.;]{0,30}(?:of|for) "
+            r"(?:each party|either party|both parties)[^.;]{0,60}"
+            r"(?:paid (?:or|and) received|received (?:or|and) paid)",
             re.IGNORECASE,
         ),
         severity=25,
@@ -375,7 +380,8 @@ RULES: List[Rule] = [
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store))\b"
             r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)|"
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store)\s+"
-            r"(?:any |all |the )?(?:customer |personal )?(?:data|information)"
+            r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?)?\s*(?:of\s+)?"
+            r"(?:customer )?(?:personal )?(?:data|information)"
             r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)",
             re.IGNORECASE,
         ),
@@ -389,7 +395,9 @@ RULES: List[Rule] = [
             r"(?:ninety|[0-9]+)?\s*(?:days?|weeks?|months?|years?)[^.;]{0,30}(?:of|after|from) (?:termination|such termination)|"
             r"only to the extent (?:needed|necessary) to return|"
             r"return(?:ed)?[^.;]{0,30}on (?:the )?(?:customer'?s|data subject'?s)? request|"
-            r"for a period of[^.;]{0,30}(?:days?|weeks?|months?|years?))",
+            r"for a period of[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
+            r"after which (?:it|they|such (?:data|information))[^.;]{0,20}"
+            r"(?:shall|will|may) (?:be )?(?:deleted|removed|purged|destroyed|returned|erased))",
             re.IGNORECASE,
         ),
         severity=20,

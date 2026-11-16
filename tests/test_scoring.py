@@ -486,6 +486,17 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-COMM-7" for p in r.penalties)
 
+    def test_payments_final_not_refunded_flagged(self):
+        # Regression: "payments ... are final and shall not be refunded"
+        # wording (noun + passive verb, no literal "non-refundable") must fire.
+        cases = [
+            ["All payments made under this agreement are final and shall not be refunded once the services have been provided."],
+            ["All fees are final and shall not be refunded or returned to Customer under any circumstances."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), paras
+
     def test_availability_disclaimer_flagged(self):
         r = score_document(
             ["Provider does not warrant that the Services will be uninterrupted or error-free."], "d"
@@ -594,6 +605,32 @@ class TestRuleMeshes:
             r = score_document(paras, "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), paras
 
+    def test_keep_copies_or_extracts_retention_flagged(self):
+        # Regression: retention verbs with an intervening "copies of" / "extracts
+        # of" noun ("keep copies of Customer data", "store extracts of Customer
+        # information") must still fire R-DATA-5.
+        cases = [
+            ["Provider may keep copies of Customer data following termination of this agreement."],
+            ["Provider shall store extracts of Customer information upon termination for its own records."],
+            ["Provider may retain backup copies of Customer personal data following such termination."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), paras
+
+    def test_bounded_retention_then_deletion_not_flagged(self):
+        # Regression: retention bounded to a fixed window followed by an explicit
+        # deletion/return obligation ("after which it shall be deleted") is a
+        # protective bound and must not fire R-DATA-5.
+        cases = [
+            ["Provider may retain Customer data for ninety (90) days following termination of this agreement, after which it shall be deleted."],
+            ["Provider may keep Customer data for six months after termination, after which it shall be returned to the customer."],
+            ["Provider shall store Customer information for sixty (60) days following termination, after which such data shall be destroyed."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), paras
+
     def test_extended_rules_keep_clean_footer_text_clean(self):
         """Calibration guard: extended rule set adds no findings to clean fixtures."""
         r = score_document(
@@ -640,6 +677,49 @@ class TestRuleMeshes:
             ["In no event shall either party be liable for consequential damages."], "d"
         )
         assert all(p.rule_id != "R-LIAB-1" for p in r.penalties)
+
+    def test_vendor_supplier_liability_disclaimer_flagged(self):
+        # Regression: "vendor" / "supplier" / "licensor" subjects were missing
+        # from the R-LIAB-1 alternation and slipped past the rule.
+        cases = [
+            ["Under no circumstances shall the vendor be liable for indirect or consequential damages."],
+            ["Supplier shall not be liable for consequential losses, lost profits or loss of goodwill."],
+            ["The licensor shall not have any liability for delay or non-performance of the software."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-LIAB-1" for p in r.penalties), paras
+
+    def test_vendor_disclaimer_with_carve_outs_not_flagged(self):
+        # Guard: vendor/supplier disclaimers that do carry carve-outs must stay
+        # silent under R-LIAB-1.
+        r = score_document(
+            ["Under no circumstances shall the vendor be liable for indirect damages; nothing in this clause excludes liability for death or personal injury."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-1" for p in r.penalties)
+
+    def test_mutual_cap_each_party_not_flagged(self):
+        # Regression: a symmetric cap applying to both parties (mutual "each
+        # party / either party" subject) is not a one-sided exposure and must
+        # not fire R-LIAB-2.
+        cases = [
+            ["The total aggregate liability of each party under this agreement is limited to the amounts actually paid or received under this agreement."],
+            ["Full liability of either party shall not exceed the amounts actually paid or received under this agreement."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert all(p.rule_id != "R-LIAB-2" for p in r.penalties), paras
+
+    def test_one_sided_cap_still_flagged(self):
+        # Guard: a cap binding only the counterparty must still fire R-LIAB-2
+        # even though "each party" appears elsewhere in the sentence field.
+        cases = [
+            ["Provider's aggregate liability under this agreement is limited to the fees paid in the preceding twelve months."],
+            ["The aggregate liability of the supplier is limited to amounts actually received; each party bears its own costs."],
+        ]
+        for paras in cases:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-LIAB-2" for p in r.penalties), paras
 
     def test_as_is_disclaimer_flagged(self):
         r = score_document(
