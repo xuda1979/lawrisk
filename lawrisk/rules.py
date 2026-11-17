@@ -524,20 +524,29 @@ RULES: List[Rule] = [
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store|preserve)\s+"
             r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?|records?|possession)?\s*(?:of\s+)?"
             r"(?:customer )?(?:personal )?(?:data|information)"
-            r"[^.]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)",
+            r"[^.]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
+            r"(?:the )?(?:retention|storage|preservation) of (?:customer )?(?:personal )?(?:data|information)"
+            r"[^.;]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
+            r"(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)"
+            r"[^.;]{0,40}(?:the )?(?:retention|storage|preservation) of (?:customer )?(?:personal )?(?:data|information)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:require|required|obligat|as (?:required|needed)|in accordance with|"
             r"only for|solely|necessary to (?:comply|fulfil|fulfill)|legal obligation|"
-            r"not (?:be )?(?:retained|kept)|"
+            r"not (?:be )?(?:retained|kept)|no (?:retention|storage|preservation) of\b|"
             r"until[^.;]{0,40}(?:deleted|removed|purged|destroyed|returned)|"
             r"deleted[^.;]{0,30}within|removed[^.;]{0,30}within|returned[^.;]{0,30}within|"
             r"within (?:a period of|ninety|[0-9]+|thirty|sixty|seven|\w+)\s*(?:\(?\s*[0-9]+\s*\)?)?\s*"
             r"(?:ninety|[0-9]+)?\s*(?:days?|weeks?|months?|years?)[^.;]{0,30}(?:of|after|from) (?:termination|such termination)|"
             r"only to the extent (?:needed|necessary) to return|"
             r"return(?:ed)?[^.;]{0,30}on (?:the )?(?:customer'?s|data subject'?s)? request|"
-            r"for (?:a period of|up to)[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
+            r"the (?:retention|storage|preservation) of (?:customer )?(?:personal )?(?:data|information)"
+            r"[^.;]{0,80}(?:not\s+)?exceed(?:s|ing)|\bnot\s+exceed|\bexceed(?:s|ing)\b"
+            r"[^.;]{0,40}(?:days?|weeks?|months?|years?)|"
+            r"for (?:a period of|up to|a period not exceeding)[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
+            r"(?:bounded|capped|limited) (?:to|at)[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
+            r"no more than[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
             r"after which (?:it|they|such (?:data|information))[^.;]{0,20}"
             r"(?:shall|will|may) (?:be )?(?:deleted|removed|purged|destroyed|returned|erased))",
             re.IGNORECASE,

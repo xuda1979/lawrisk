@@ -3290,3 +3290,83 @@ class TestCycle17Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-COMM-5" for p in r.penalties), t
+
+
+class TestCycle18Precision:
+    # ------------------------------------------------------------------ R-DATA-5
+    # Precision: noun-led retention forms ("Retention of customer data ...")
+    # without a retain/keep/store verb were silent for both bounded and
+    # UNBOUNDED retention. The noun-led branch now fires them, and the
+    # exclusion gained the bound idioms they use ("shall not exceed N",
+    # "not exceeding", "no more than", "bounded/capped/limited to", "no
+    # retention/storage/preservation of").
+
+    def test_noun_led_unbounded_retention_flagged(self):
+        flagged = [
+            "Retention of customer data after termination.",
+            "Retention of customer data following termination of this agreement.",
+            "Storage of customer data after the expiry of this agreement.",
+            "Preservation of customer data upon termination.",
+            "The retention of customer data following termination is permitted.",
+            "Any retention of personal data following termination is unrestricted.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_noun_led_bounded_retention_not_flagged(self):
+        benign = [
+            "Retention of customer data for up to 90 days after termination.",
+            "Retention of customer data for a period of 12 months following termination.",
+            "Retention of customer data shall not exceed 90 days after termination.",
+            "Retention of customer data shall not exceed twelve months following termination.",
+            "Retention of customer data for a period not exceeding 90 days after termination.",
+            "Retention of customer data shall not exceed beyond six months after termination.",
+            "Retention of customer data is capped at twelve months following termination.",
+            "Retention of customer data is limited to 60 days after termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_noun_led_bounded_then_deletion_not_flagged(self):
+        benign = [
+            "Retention of customer data after termination shall not exceed 90 days, after which it shall be deleted.",
+            "Retention of customer data following termination for a period of six months, after which such data shall be destroyed.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_no_retention_of_denial_not_flagged(self):
+        # Regression: "no retention/storage/preservation of" is the noun-led
+        # mirror of "shall not retain" and must stay silent.
+        benign = [
+            "No retention of customer data after termination.",
+            "No storage of customer data following termination.",
+            "No preservation of customer data upon termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_verb_led_controls_unchanged(self):
+        # Controls: verb-led retention behavior is unchanged after adding the
+        # noun-led branch and the new bound idioms.
+        flagged = [
+            "Customer data shall be retained after termination for seven years.",
+            "Provider may keep personal information following termination of this agreement.",
+            "Provider may retain customer data after such termination for seven years.",
+        ]
+        benign = [
+            "Provider shall delete all customer data upon termination of this agreement.",
+            "Provider may keep customer data for up to 12 months after expiry of this agreement.",
+            "Provider shall retain billing records for up to seven years following termination.",
+            "Provider may store customer data after termination for a period of 90 days.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
