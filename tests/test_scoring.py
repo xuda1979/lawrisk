@@ -1730,3 +1730,156 @@ class TestRuleMeshes:
             "d",
         )
         assert all(p.rule_id != "R-LIAB-3" for p in r.penalties)
+
+
+# --- Cycle 6: no-warranty disclaimers, update-terms, suspension discretion,
+# late/carrying charges, price-change variants, Sudan/Myanmar references --------
+
+
+class TestCycle6Precision:
+    """Regression mesh for cycle-6 over-fire and under-fire gap fixes."""
+
+    def test_update_terms_at_any_time_flagged(self):
+        # Regression: "update these terms" (beyond amend/modify/revise) must
+        # fire the unilateral-amendment rule R-COMM-5.
+        r = score_document(
+            ["Provider may update these terms at any time upon 15 days' notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_prices_may_change_flagged(self):
+        # Regression: "Prices may change at any time" (subject-verb form with
+        # no passive participle) must fire R-COMM-3.
+        r = score_document(
+            ["Prices may change at any time during the term of this agreement."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_may_be_altered_flagged(self):
+        # Regression: "the fees may be altered by Provider" must fire R-COMM-3.
+        r = score_document(
+            ["The fees may be altered by Provider upon 30 days' written notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_flat_late_charge_flagged(self):
+        # Regression: a fixed-dollar monthly "late charge" (noun charge, not
+        # percentage-only "penalty") must fire R-COMM-6.
+        r = score_document(
+            ["A late charge of $50 per month shall be assessed on any overdue invoice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_carrying_charge_flagged(self):
+        # Regression: "carrying charge" interest on unpaid balances must fire
+        # R-COMM-6 alongside interest / penalty / finance-charge anchors.
+        r = score_document(
+            ["Unpaid balances shall bear a carrying charge of 1.5% per month until paid."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_non_returnable_non_creditable_flagged(self):
+        # Regression: "non-returnable and non-creditable" payments must fire
+        # R-COMM-7 just like "non-refundable".
+        r = score_document(
+            ["All fees are non-returnable and non-creditable once services are provided."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-7" for p in r.penalties)
+
+    def test_suspension_discretion_before_verb_flagged(self):
+        # Regression: discretion/adverbial modifiers placed BEFORE the
+        # suspend/deactivate verb must still fire R-COMM-8.
+        for para in (
+            "Provider at its sole discretion may suspend access to the services at any time.",
+            "Provider may deactivate any account at its absolute discretion without notice.",
+            "Provider with immediate effect may suspend the services if Customer fails to pay.",
+        ):
+            r = score_document([para], "d")
+            assert any(p.rule_id == "R-COMM-8" for p in r.penalties), para
+
+    def test_no_warranties_of_any_kind_flagged(self):
+        # Regression: noun-phrase "gives no warranties of any kind" (no verb
+        # "warrant") must fire R-LIAB-4.
+        r = score_document(
+            ["Provider gives no warranties of any kind with respect to the services."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-4" for p in r.penalties)
+
+    def test_makes_no_warranties_flagged(self):
+        # Regression: "makes no warranties" (make-verb no-warranty form) must
+        # fire R-LIAB-4.
+        r = score_document(
+            ["Vendor makes no warranties and gives no representations regarding the software."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-4" for p in r.penalties)
+
+    def test_one_sided_no_warranty_survives_mutual_exclusion(self):
+        # Guard: the mutual "each party makes no warranties" exclusion must not
+        # swallow a genuinely one-sided disclaimer.
+        r = score_document(
+            ["Provider gives no warranties of any kind with respect to the services."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-4" for p in r.penalties)
+
+    def test_each_party_makes_no_warranties_not_flagged(self):
+        # Regression: a mutual disclaimer of both parties' warranties (no "party"
+        # subject appears) must not fire R-LIAB-4 as one-sided risk.
+        r = score_document(
+            ["Each party makes no warranties of any kind with respect to its own pre-contractual statements."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-4" for p in r.penalties)
+
+    def test_suitable_for_particular_purpose_flagged(self):
+        # Regression: "suitability for a particular purpose" (beyond literal
+        # "fitness for") must fire R-LIAB-5's purpose tail.
+        r = score_document(
+            ["Provider makes no representations or warranties regarding the suitability of the services for a particular purpose."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
+
+    def test_meet_requirements_flagged(self):
+        # Regression: "will not meet all of Customer's requirements"
+        # (verb-object form, no availability/fitness noun) must fire R-LIAB-5.
+        r = score_document(
+            ["Provider makes no warranty that the services will meet all of Customer's requirements."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
+
+    def test_sudan_myanmar_references_flagged(self):
+        # Regression: named-country expansion covering Sudan and Myanmar must
+        # fire R-EXP-2.
+        r = score_document(
+            ["The vendor maintains distributors in Sudan and ships directly to Myanmar."], "d"
+        )
+        assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
+
+    def test_sanctions_compliance_mention_sudan_myanmar_not_flagged(self):
+        # Regression: a compliance clause that merely names sanctioned
+        # jurisdictions must not fire R-EXP-2.
+        r = score_document(
+            ["Each party shall comply with all applicable sanctions, including those covering Sudan and Myanmar."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_adequacy_determination_transfer_not_flagged(self):
+        # Regression: a transfer following an "adequacy determination" (not the
+        # literal "adequacy decision") is safeguard-backed and must not fire
+        # R-DATA-1 or R-DATA-2.
+        r = score_document(
+            ["Personal data may be transferred to the United States following an adequacy determination by the European Commission."],
+            "d",
+        )
+        assert all(p.rule_id not in ("R-DATA-1", "R-DATA-2") for p in r.penalties)
+
+    def test_adequacy_finding_transfer_not_flagged(self):
+        # Regression: "adequacy finding" from the destination regulator must
+        # also stay silent.
+        r = score_document(
+            ["Customer data will be processed in the United Kingdom pursuant to an adequacy finding adopted by the European Commission."],
+            "d",
+        )
+        assert all(p.rule_id not in ("R-DATA-1", "R-DATA-2") for p in r.penalties)

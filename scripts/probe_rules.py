@@ -46,6 +46,11 @@ SHOULD_NOT_FIRE = [
     # R-LIAB-4 over-fire
     ("L-4 neg: strict warranty clause", "Provider warrants the services will be free from defects; the as-is language in the previous recitals does not apply to the warranties in this clause."),
     ("L-4 neg: as-is with warranty carve", "The software is provided as-is; however, the warranties set forth in Section 5 shall apply."),
+    ("L-4 neg: each party makes no warranties", "Each party makes no warranties of any kind with respect to its own pre-contractual statements."),
+    # R-DATA-1/R-DATA-2 over-fire
+    ("D-2 neg: adequacy determination transfer", "Personal data may be transferred to the United States following an adequacy determination by the European Commission."),
+    # R-EXP-2 over-fire
+    ("E-2 neg: sanctions compliance mentions Sudan/Myanmar", "Each party shall comply with all applicable sanctions, including those covering Sudan and Myanmar."),
 ]
 
 SHOULD_FIRE = [
@@ -77,6 +82,26 @@ SHOULD_FIRE = [
     ("C-7 pos: non-refundable fees", "All fees paid under this agreement are final, non-refundable and non-cancellable once the services have been provisioned."),
     # R-EXP-3 under-fire
     ("E-3 pos: no export control", "The software is deliverable worldwide; Customers may re-export the software to any country or use it for any end-use."),
+    # R-COMM-5 under-fire
+    ("C-5 pos: update terms at any time", "Provider may update these terms at any time upon 15 days' notice."),
+    # R-COMM-3 under-fire
+    ("C-3 pos: prices may change", "Prices may change at any time during the term of this agreement."),
+    ("C-3 pos: fees may be altered", "The fees may be altered by Provider upon 30 days' written notice."),
+    # R-COMM-6 under-fire
+    ("C-6 pos: $50 monthly late charge", "A late charge of $50 per month shall be assessed on any overdue invoice."),
+    ("C-6 pos: carrying charge", "Unpaid balances shall bear a carrying charge of 1.5% per month until paid."),
+    # R-COMM-7 under-fire
+    ("C-7 pos: non-returnable and non-creditable", "All fees are non-returnable and non-creditable once services are provided."),
+    # R-COMM-8 under-fire
+    ("C-8 pos: discretion before verb", "Provider at its sole discretion may suspend access to the services at any time."),
+    # R-LIAB-4 under-fire
+    ("L-4 pos: no warranties of any kind", "Provider gives no warranties of any kind with respect to the services."),
+    ("L-4 pos: makes no warranties", "Vendor makes no warranties and gives no representations regarding the software."),
+    # R-LIAB-5 under-fire
+    ("L-5 pos: suitable for particular purpose", "Provider makes no representations or warranties regarding the suitability of the services for a particular purpose."),
+    ("L-5 pos: meet requirements", "Provider makes no warranty that the services will meet all of Customer's requirements."),
+    # R-EXP-2 under-fire
+    ("E-2 pos: sudan and myanmar references", "The vendor maintains distributors in Sudan and ships directly to Myanmar."),
 ]
 
 
