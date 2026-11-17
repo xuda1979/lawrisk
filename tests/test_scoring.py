@@ -2935,3 +2935,128 @@ class TestCycle14Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-3" for p in r.penalties), t
+
+
+class TestCycle15Precision:
+    """Cycle-15 precision: bounded retention ("up to N") is protective for
+    R-DATA-5; reversed-order and express/implied disclaimers plus "with all
+    faults" fire R-LIAB-4; gives/offers/provides-no availability disclaimers
+    fire R-LIAB-5; bare absolute no-refunds noun phrases fire R-COMM-7."""
+
+    # ------------------------------------------------------------------ R-COMM-7
+
+    def test_bare_absolute_no_refunds_flagged(self):
+        # Regression: bare noun-phrase denials of any refund (no modal+verb
+        # form) must fire R-COMM-7 just like "non-refundable".
+        flagged = [
+            "There are no refunds under any circumstances.",
+            "No refunds for any reason whatsoever.",
+            "No refund for any reason whatsoever.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), t
+
+    def test_no_refunds_for_reason_shield(self):
+        # Precision: "no refunds for any reason" with a defect carve-out is a
+        # bounded denial and must not fire R-COMM-7.
+        benign = [
+            "No refunds will be given for any reason unless the services are defective.",
+            "No refunds for any reason except for defective work.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-7" for p in r.penalties), t
+
+    def test_refund_for_any_reason_not_flagged(self):
+        # Precision: "a refund for any reason whatsoever is available" is a
+        # permissive refund policy, not a denial, and must not fire R-COMM-7.
+        r = score_document(
+            ["A refund for any reason whatsoever is available within 30 days."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-7" for p in r.penalties)
+
+    # ------------------------------------------------------------------ R-DATA-5
+
+    def test_up_to_bounded_retention_not_flagged(self):
+        # Regression: post-termination retention bounded "for up to N days /
+        # months" is a protective bound (like "for a period of N") and must
+        # not fire R-DATA-5.
+        benign = [
+            "Following termination, Provider may retain copies of personal data for up to 90 days.",
+            "Provider may keep customer data for up to 12 months after expiry of this agreement.",
+            "Provider shall retain billing records for up to seven years following termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_unbounded_retention_still_flagged(self):
+        # Controls: genuinely unbounded retention must keep firing R-DATA-5
+        # despite the "up to" bound being added.
+        flagged = [
+            "Customer data shall be retained after termination for seven years.",
+            "Provider may keep personal information following termination of this agreement.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    # ------------------------------------------------------------------ R-LIAB-4
+
+    def test_reversed_order_disclaimers_flagged(self):
+        # Regression: disclaimers with the noun order reversed ("representations
+        # and warranties", "conditions and warranties") must fire R-LIAB-4.
+        flagged = [
+            "Provider disclaims all representations and warranties with respect to the software.",
+            "Provider disclaims all conditions and warranties of any kind.",
+            "Provider disclaims all express and implied warranties.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-4" for p in r.penalties), t
+
+    def test_with_all_faults_flagged(self):
+        # Regression: "provided with all faults" is an as-is synonym and must
+        # fire R-LIAB-4 like "as-is".
+        r = score_document(["The services are provided with all faults."], "d")
+        assert any(p.rule_id == "R-LIAB-4" for p in r.penalties)
+
+    def test_qualified_as_is_shield(self):
+        # Precision: the surviving-warranties ("set forth ... shall apply")
+        # qualification stays protective for R-LIAB-4.
+        r = score_document(
+            ["The software is provided as-is; however, the warranties set forth in Section 5 shall apply."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-4" for p in r.penalties)
+
+    def test_mutual_no_warranty_shield(self):
+        # Precision: a mutual ("each party") disclaimer stays protective.
+        r = score_document(
+            ["Each party makes no warranties of any kind with respect to its own pre-contractual statements."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-4" for p in r.penalties)
+
+    # ------------------------------------------------------------------ R-LIAB-5
+
+    def test_gives_offers_provides_no_availability_flagged(self):
+        # Regression: "gives/offers/provides no guarantee/warranty" of
+        # availability must fire R-LIAB-5 like "makes no".
+        flagged = [
+            "The company gives no guarantee that the service will be continuously available.",
+            "Provider offers no warranty that the service will be uninterrupted.",
+            "Provider provides no warranty of fitness for a particular purpose.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-5" for p in r.penalties), t
+
+    def test_sla_break_guarantee_shield(self):
+        # Precision: a committed availability SLA with a guarantee stays
+        # protective for R-LIAB-5.
+        r = score_document(
+            ["The Services will be available 99.9% of the time; guaranteed response times apply."], "d"
+        )
+        assert all(p.rule_id != "R-LIAB-5" for p in r.penalties)

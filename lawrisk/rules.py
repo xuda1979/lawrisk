@@ -293,8 +293,10 @@ RULES: List[Rule] = [
             r"non[ -]?refundable(?: and non[ -]?cancellable)?|non[ -]?cancellable|"
             r"non[ -]?returnable(?: and non[ -]?creditable)?|non[ -]?creditable|"
             r"no (?:credits?,?\s*(?:returns?,?\s*)?(?:or\s+)?)?refunds?\s+"
-            r"(?:shall|will|may|can|cannot?|may not)\s+(?:be\s+)?(?:made|given|paid|issued)|"
+            r"(?:shall|will|may|can|cannot?|may not)\s+(?:be\s+)?(?:made|given|paid|issued|provided)|"
             r"refunds? (?:will|shall) not (?:be )?(?:made|given|paid|issued)|"
+            r"no refunds?[^.;]{0,25}(?:for any reason|under any circumstances|whatsoever)\b|"
+            r"there (?:are|will be|shall be|can be) no refunds?\b|"
             r"(?:payments?|fees?)[^.;]{0,35}(?:are|shall be|will be)? final[^.;]{0,40}"
             r"(?:shall|will) not (?:be )?refunded",
             re.IGNORECASE,
@@ -414,10 +416,13 @@ RULES: List[Rule] = [
         rule_id="R-LIAB-4",
         dimension=Dimension.LIABILITY,
         pattern=re.compile(
-            r"(?:as[ -]is|without (?:any )?warrant(?:y|ies)|"
+            r"(?:as[ -]is|with (?:all|any) faults?\b|without (?:any )?warrant(?:y|ies)|"
             r"(?:makes?|gives?|offers?)\s+no\s+(?:warrant(?:y|ies)|representation(?:s)?)\b|"
             r"no\s+(?:warrant(?:y|ies)?|representation(?:s)?)\s+of\s+any\s+kind\b|"
-            r"disclaim(?:s|ing|ed)?[^.]{0,25}(?:all (?:warrant(?:y|ies)|(?:warrant(?:y|ies) and (?:representations?|conditions?)))|"
+            r"disclaim(?:s|ing|ed)?[^.]{0,30}(?:all (?:warrant(?:y|ies)|"
+            r"(?:representations?|conditions?)\s+and\s+(?:warrant(?:y|ies)|conditions?)|"
+            r"(?:warrant(?:y|ies) and (?:representations?|conditions?))|"
+            r"(?:express and implied|express or implied|implied)\s+warrant(?:y|ies))|"
             r"warrant(?:y|ies),?\s+express or implied)\b)",
             re.IGNORECASE,
         ),
@@ -439,7 +444,8 @@ RULES: List[Rule] = [
         rule_id="R-LIAB-5",
         dimension=Dimension.LIABILITY,
         pattern=re.compile(
-            r"(?:does not|will not|shall not|makes? no|disclaim(?:s|ing|ed)?)[^.]{0,40}"
+            r"(?:does not|will not|shall not|makes? no|gives? no|offers? no|provides? no|"
+            r"disclaim(?:s|ing|ed)?)[^.]{0,40}"
             r"(?:warrant(?:y|ies?)?|guarantee|represent)[^.]{0,40}"
             r"(?:uninterrupted|error[- ]?free|available|availability|reliab|"
             r"fit for|fitness for|merchantab|suitab|"
@@ -518,7 +524,7 @@ RULES: List[Rule] = [
             r"(?:ninety|[0-9]+)?\s*(?:days?|weeks?|months?|years?)[^.;]{0,30}(?:of|after|from) (?:termination|such termination)|"
             r"only to the extent (?:needed|necessary) to return|"
             r"return(?:ed)?[^.;]{0,30}on (?:the )?(?:customer'?s|data subject'?s)? request|"
-            r"for a period of[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
+            r"for (?:a period of|up to)[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
             r"after which (?:it|they|such (?:data|information))[^.;]{0,20}"
             r"(?:shall|will|may) (?:be )?(?:deleted|removed|purged|destroyed|returned|erased))",
             re.IGNORECASE,
