@@ -136,6 +136,7 @@ RULES: List[Rule] = [
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
             r"(?:reserves the right to (?:adjust|increase|change|modify|revise|update)|"
+            r"(?:shall|will|may)\s+have the (?:right|option) to (?:adjust|increase|change|modify|revise|update)|"
             r"may (?:adjust|increase|change|modify|revise|update)|(?:can|may) adjust|(?:can|may) revise|"
             r"(?:can|may|shall|will) update)"
             r" (?:the )?(?:(?:monthly|annual|yearly|service|platform|subscription|"
@@ -163,7 +164,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-4",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"assign\s*:\s*|assign(?: (?:this agreement|all (?:of )?its? rights?(?: and obligations)?(?: and interests?)?|its? rights? and obligations under (?:this agreement|the agreement)|its? interests? (?:under|in) (?:this agreement|the agreement)))?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without|(?:may|can)\s+assign this agreement\s+at any time|this agreement (?:may|shall) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without|novat(?:e|es|ed|ing)?\s+(?:this agreement|the agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)", re.IGNORECASE),
+        pattern=re.compile(r"assign\s*:\s*|assign(?: (?:this agreement|all (?:of )?its? rights?(?: and obligations)?(?: and interests?)?|its? rights? and obligations under (?:this agreement|the agreement)|its? interests? (?:under|in) (?:this agreement|the agreement)))?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer(?: (?:all|any) (?:of )?its? rights?(?: and obligations)?(?: under (?:this |the )?agreement|in(?:to| under) this agreement)?)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without|(?:may|can)\s+assign this agreement\s+at any time|this agreement (?:may|shall) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without|novat(?:e|es|ed|ing)?\s+(?:this agreement|the agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? assign|"
             r"(?:may|shall|will) not assign(?: this agreement)?|"
@@ -236,11 +237,11 @@ RULES: List[Rule] = [
             r"(?:a rate of\s*)?\(?\d+(?:\.\d+)?\)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?"
             r"[^.;]{0,40}(?:on|for)[^.;]{0,20}(?:overdue|delinquent|late|unpaid)|"
             r"(?:late fee(?:s)?|late charge(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|"
-            r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?)"
+            r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?|service charge(?:s)?)"
             r"[^.;]{0,20}(?:of|=|at|:)\s*\$[0-9][0-9,]*(?:\.\d+)?[^.;]{0,25}"
             r"(?:per |for each |for every |each |weekly |daily |monthly |annually|accrues|accruing|accrual)|"
             r"(?:late fee(?:s)?|late charge(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|"
-            r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?)"
+            r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?|service charge(?:s)?)"
             r"[^.;]{0,20}(?:of|=|at|:)[^.;:]{0,10}\d+(?:\.\d+)?\s*%|"
             r"(?:unpaid|past[ -]?due|delinquent|overdue)\s+(?:invoices?|balances?|amounts?|payments?|fees?|accounts?)"
             r"[^.;]{0,30}(?:accrue(?:s|d|ing)?|bear(?:s|ing)?|shall|will|may)"
@@ -275,7 +276,8 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"non[ -]?refundable(?: and non[ -]?cancellable)?|non[ -]?cancellable|"
             r"non[ -]?returnable(?: and non[ -]?creditable)?|non[ -]?creditable|"
-            r"no refunds? (?:shall|will|may|can|cannot?|may not) (?:be )?(?:made|given|paid|issued)|"
+            r"no (?:credits?,?\s*(?:returns?,?\s*)?(?:or\s+)?)?refunds?\s+"
+            r"(?:shall|will|may|can|cannot?|may not)\s+(?:be\s+)?(?:made|given|paid|issued)|"
             r"refunds? (?:will|shall) not (?:be )?(?:made|given|paid|issued)|"
             r"(?:payments?|fees?)[^.;]{0,35}(?:are|shall be|will be)? final[^.;]{0,40}"
             r"(?:shall|will) not (?:be )?refunded",
@@ -358,7 +360,7 @@ RULES: List[Rule] = [
             r"|(?:each party|either party|both parties)'?s?[^.;]{0,30}(?:total |aggregate |maximum )?liability)"
             r"[^.;]{0,120}"
             r"(?:paid (?:or|and) received|received (?:or|and) paid|"
-            r"(?:paid|received)\s+(?:by|from)\s+(?:the )?(?:other|either|each|any) party|"
+            r"(?:paid|received)\s+(?:by|from)\s+(?:the )?(?:other|either|each|any|such) party|"
             r"amounts? actually paid)",
             re.IGNORECASE,
         ),

@@ -2275,3 +2275,162 @@ class TestCycle9Precision:
             "d",
         )
         assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+
+class TestCycle10Precision:
+    """Cycle-10 precision fixes: auto-extend opt-out, such-party caps,
+    genuine pre-estimate LDs, within-EEA storage, return-or-destroy,
+    mutual-consent fee adjustment, and the six false-negative families
+    (credits/returns, transfer of rights, right to change fees, service
+    charge on past-due accounts, subprocessor processing, lost-profits
+    disclaimers)."""
+
+    def test_auto_extend_with_intention_not_to_renew_not_flagged(self):
+        # Regression: extension whose opt-out only needs "intention not to
+        # renew" notice is a genuine auto-renewal with a renewal opt-out, so
+        # it must not fire R-COMM-1.
+        r = score_document(
+            [
+                "The term shall be extended for successive one-year periods "
+                "automatically unless either party gives written notice of "
+                "its intention not to renew at least 60 days prior to the "
+                "expiration date."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_mutual_cap_paid_by_such_party_not_flagged(self):
+        # Regression: a fee-based cap phrased as "amounts paid by such party"
+        # (mirroring the "paid by such party" style) is the same mutual
+        # limitation as "each/either/other party" and must not fire
+        # R-LIAB-2.
+        r = score_document(
+            [
+                "Either party's aggregate liability shall in no event exceed "
+                "the amounts paid by such party during the twelve months "
+                "preceding the claim."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-2" for p in r.penalties)
+
+    def test_liquidated_damages_genuine_pre_estimate_not_flagged(self):
+        # Regression: liquidated damages expressly described as a genuine
+        # pre-estimate are an enforceable fixed sum, not a penalty that must
+        # fire R-LIAB-6.
+        r = score_document(
+            [
+                "The liquidated damages sum of $10,000 represents a genuine "
+                "pre-estimate of the loss likely to be suffered in the event "
+                "of delay."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-6" for p in r.penalties)
+
+    def test_data_stored_within_eea_not_flagged(self):
+        # Regression: storage "within the EEA" is not a cross-border
+        # transfer from the EEA and must not fire R-DATA-2.
+        r = score_document(
+            [
+                "All Customer data is stored on servers located within the "
+                "European Economic Area (EEA)."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
+    def test_return_or_destroy_within_thirty_days_not_flagged(self):
+        # Regression: an obligation to return or destroy data on termination
+        # is data-deletion protection, not retention, and must not fire
+        # R-DATA-5.
+        r = score_document(
+            [
+                "Following termination, Provider shall return or destroy all "
+                "Customer data within thirty days."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_right_to_adjust_fees_by_mutual_consent_not_flagged(self):
+        # Regression: a fee-adjustment right exercisable only by mutual
+        # written consent is not unilateral and must not fire R-COMM-3.
+        r = score_document(
+            [
+                "Customer shall have the right to adjust the fees by mutual "
+                "written consent of both parties."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_payments_final_no_credits_returns_refunds_flagged(self):
+        # Regression: "no credits, returns, or refunds will be given" locks
+        # the counterparty into full payment and must fire R-COMM-7.
+        r = score_document(
+            [
+                "All payments are final and no credits, returns, or refunds "
+                "will be given once services have commenced."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-7" for p in r.penalties)
+
+    def test_transfer_all_rights_to_third_party_flagged(self):
+        # Regression: transferring all rights under the agreement to any
+        # third party without consent is an assignment-equivalent and must
+        # fire R-COMM-4.
+        r = score_document(
+            [
+                "Customer may transfer all of its rights under this "
+                "agreement to any third party without consent."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_shall_have_right_to_change_fees_flagged(self):
+        # Regression: "shall have the right to change the fees" is a
+        # unilateral price-change right and must fire R-COMM-3.
+        r = score_document(
+            ["Provider shall have the right to change the fees upon 30 days' "
+             "written notice."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_service_charge_on_past_due_accounts_flagged(self):
+        # Regression: a percentage "service charge" applied to past-due
+        # accounts is an above-market late/surcharge and must fire R-COMM-6.
+        r = score_document(
+            ["Past due accounts are subject to a monthly service charge of "
+             "1.5%."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_process_through_subprocessors_in_us_flagged(self):
+        # Regression: processing via subprocessors located in the United
+        # States is a cross-border data-flow and must fire R-DATA-2.
+        r = score_document(
+            [
+                "Provider may process Customer data through subprocessors "
+                "located in the United States."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_lost_profits_disclaimer_flagged(self):
+        # Regression: a provider disclaimer naming lost profits among the
+        # excluded indirect damages must fire R-LIAB-1.
+        r = score_document(
+            [
+                "Provider shall not be liable for any indirect damages, "
+                "including lost profits, revenue, or business interruption."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)

@@ -91,6 +91,18 @@ SHOULD_NOT_FIRE = [
     ("C-3 neg: CPI-indexed fees in line with CPI", "The fees may be adjusted annually in line with the consumer price index published by the national statistics office."),
     # cycle 9 R-LIAB-3 over-fire
     ("L-3 neg: each party held harmless for own negligence", "Each party shall be held harmless by the other party for its own negligence."),
+    # cycle 10 R-COMM-1 over-fire
+    ("C-1 neg: auto-extend with intention not to renew", "The term shall be extended for successive one-year periods automatically unless either party gives written notice of its intention not to renew at least 60 days prior to the expiration date."),
+    # cycle 10 R-LIAB-2 over-fire
+    ("L-2 neg: mutual cap paid by such party", "Either party's aggregate liability shall in no event exceed the amounts paid by such party during the twelve months preceding the claim."),
+    # cycle 10 R-LIAB-6 over-fire
+    ("L-6 neg: liquidated damages genuine pre-estimate", "The liquidated damages sum of $10,000 represents a genuine pre-estimate of the loss likely to be suffered in the event of delay."),
+    # cycle 10 R-DATA-2 over-fire
+    ("D-2 neg: data stored within EEA", "All Customer data is stored on servers located within the European Economic Area (EEA)."),
+    # cycle 10 R-DATA-5 over-fire
+    ("D-5 neg: return or destroy within 30 days", "Following termination, Provider shall return or destroy all Customer data within thirty days."),
+    # cycle 10 R-COMM-3 over-fire
+    ("C-3 neg: right to adjust by mutual consent", "Customer shall have the right to adjust the fees by mutual written consent of both parties."),
 ]
 
 SHOULD_FIRE = [
@@ -180,6 +192,18 @@ SHOULD_FIRE = [
     ("L-5 pos: availability not guaranteed", "The availability of the services at all times is not guaranteed by Provider."),
     # cycle 9 R-DATA-2 under-fire
     ("D-2 pos: accessible by employees in China", "Customer data is accessible by our employees in China."),
+    # cycle 10 R-COMM-7 under-fire
+    ("C-7 pos: payments final, no credits returns refunds", "All payments are final and no credits, returns, or refunds will be given once services have commenced."),
+    # cycle 10 R-COMM-4 under-fire
+    ("C-4 pos: transfer all rights to third party", "Customer may transfer all of its rights under this agreement to any third party without consent."),
+    # cycle 10 R-COMM-3 under-fire
+    ("C-3 pos: have the right to change fees", "Provider shall have the right to change the fees upon 30 days' written notice."),
+    # cycle 10 R-COMM-6 under-fire
+    ("C-6 pos: service charge on past due accounts", "Past due accounts are subject to a monthly service charge of 1.5%."),
+    # cycle 10 R-DATA-2 under-fire
+    ("D-2 pos: process through subprocessors in US", "Provider may process Customer data through subprocessors located in the United States."),
+    # cycle 10 R-LIAB-1 under-fire
+    ("L-1 pos: lost profits disclaimer", "Provider shall not be liable for any indirect damages, including lost profits, revenue, or business interruption."),
 ]
 
 
