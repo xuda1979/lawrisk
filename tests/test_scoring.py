@@ -3968,3 +3968,101 @@ class TestCycle25Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-LIAB-4" for p in r.penalties), t
+
+
+class TestCycle26Precision:
+    """Cycle-26 precision: R-LIAB-4 manner-connective adjectives,
+    R-DATA-5 future-perfect passive retention, and R-DATA-5
+    "pursuant to" legal-mandate tails.
+
+    Three documented Limits, all symmetric:
+    (1) The R-LIAB-4 relative-clause guard covered only
+        necessary/required/needed/appropriate; "as is customary /
+        standard / usual / typical / common / normal" and "as is the
+        custom / practice" (manner connectives with a relative-clause
+        reading) all still fired R-LIAB-4. The guard's adjective family
+        gains the manner-connective synonyms; genuine as-is disclaimers
+        (no connective adjective) still fire.
+    (2) Future-perfect passive "will have been retained/kept/stored"
+        was silent in R-DATA-5 in both the data-led forward branch and
+        the reversed-order branch, so unbounded future-perfect
+        retention ("will have been retained ... for seven years") was
+        a genuine miss. The copula alternatives gain "will have" plus
+        the optional "been"; future-perfect denials ("will not have
+        been retained") stay silent via pattern gap — the interposed
+        "not" blocks the immediate "will have" sequence.
+    (3) Legal-mandate "pursuant to" tails ("pursuant to applicable
+        law / statutory requirements / regulations / tax requirements")
+        over-fired R-DATA-5. A new exclusion branch anchors "pursuant
+        to" on legal words only (laws/regulations/requirements/
+        obligations with optional applicable/statutory/legal/tax
+        modifier); the contractual control "pursuant to the terms of
+        this agreement" deliberately stays flagged (no legal anchor).
+    """
+
+    def test_manner_connective_as_is_not_flagged(self):
+        benign = [
+            "Data is shared as is customary in the industry.",
+            "Information is processed as is standard practice.",
+            "Retention follows industry norms as is usual in similar transactions.",
+            "The service is delivered as is typical for software of this kind.",
+            "Data handling occurs as is common among providers.",
+            "Such safeguards are applied as is normal in the sector.",
+            "Licensing follows the practice as is the custom in this market.",
+            "Access is provided as is the practice for enterprise accounts.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-4" for p in r.penalties), t
+
+    def test_genuine_asiab_disclaimers_still_flagged(self):
+        flagged = [
+            "The software is provided as is.",
+            "All services are delivered as-is without warranty.",
+            "The platform is supplied as is with all faults.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-4" for p in r.penalties), t
+
+    def test_future_perfect_passive_retention_flagged(self):
+        flagged = [
+            "Customer data will have been retained by Provider after termination.",
+            "Customer data will have been kept following expiration.",
+            "Customer data will have been stored by the vendor for seven years after termination.",
+            "After termination, customer data will have been retained by Provider.",
+            "Following expiration, customer data will have been maintained.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_future_perfect_denials_not_flagged(self):
+        benign = [
+            "Customer data will not have been retained after termination.",
+            "After termination, customer data will not have been kept.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_pursuant_to_legal_mandate_not_flagged(self):
+        benign = [
+            "Customer data may be retained after termination pursuant to applicable law.",
+            "Customer data shall be kept after termination pursuant to statutory requirements.",
+            "Provider may retain customer data after termination pursuant to regulations.",
+            "Customer data is retained after termination pursuant to tax requirements.",
+            "Data is retained following termination pursuant to applicable regulations.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_pursuant_to_contractual_still_flagged(self):
+        flagged = [
+            "Customer data may be retained after termination pursuant to the terms of this agreement.",
+            "Provider shall keep customer data after termination pursuant to this contract.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t

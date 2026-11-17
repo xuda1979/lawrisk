@@ -447,7 +447,8 @@ RULES: List[Rule] = [
             r"(?:each|either|both|neither) party[^.;]{0,50}(?:makes?|gives?|offers?)?\s*"
             r"no\s+(?:warrant(?:y|ies)|representation(?:s)?)\b|"
             r"\bas (?:is )?(?:(?:legally|strictly|otherwise|reasonably|lawfully) )?"
-            r"(?:necessary|required|needed|appropriate)\b)",
+            r"(?:necessary|required|needed|appropriate|customary|standard|usual|typical|common|normal)\b|"
+            r"as (?:is )?the (?:custom|practice)\b)",
             re.IGNORECASE,
         ),
         severity=30,
@@ -516,7 +517,7 @@ RULES: List[Rule] = [
             r"(?:(?:shall|may|will|can|must) (?:be )?(?:required|obligated|compelled|bound) to (?:be )?(?:retained|kept|maintained|stored|preserved)|"
             r"(?:is|are|was|were) (?:required|obligated|compelled|bound) to (?:be )?(?:retained|kept|maintained|stored|preserved)|"
             r"(?:shall|may|will|can|must) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?|preserv(?:e|es|ed|ing)?)|"
-            r"(?:is|are|was|were)\s+(?:retained|kept|stored|maintained|preserved)\b|"
+            r"(?:is|are|was|were|will have)\s+(?:been )?(?:retained|kept|stored|maintained|preserved)\b|"
             r"(?:(?:shall|may|will|can|must)(?: (?:be )?(?:required|obligated|compelled|bound) to)?|"
             r"(?:is|are) (?:required|obligated|compelled|bound) to|undertake(?:s)? to|"
             r"commit(?:s)? to|agree(?:s)? to) "
@@ -552,8 +553,8 @@ RULES: List[Rule] = [
             r"such termination|termination of (?:this|the) agreement)"
             r"[^.;]{0,60}(?:customer |personal )?(?:data|information)"
             r"[^.;]{0,40}"
-            r"(?:(?:is|are|was|were) (?:required|obligated|compelled|bound) to (?:be )?|"
-            r"(?:is|are|was|were)\s+|"
+            r"(?:(?:is|are|was|were|will have) (?:required|obligated|compelled|bound) to (?:be )?|"
+            r"(?:is|are|was|were|will have)\s+(?:been )?|"
             r"(?:shall|may|will|can|must)(?: (?:be )?(?:required|obligated|compelled|bound) to (?:be )?| (?:be )?)?)"
             r"(?:retain|retained|keep|kept|store|stored|maintain|maintained|preserve|preserved)\b"
             r"(?:\s+by (?:the )?(?:provider|vendor|supplier|company|licensor|parties?))?",
@@ -615,7 +616,9 @@ RULES: List[Rule] = [
             r"(?:(?:as|so) long as "
             r"(?:(?:(?:it|such (?:data|information)) (?:is|are|remains?)|(?:is|are)) )?"
             r"(?:legally|statutorily|strictly|otherwise|reasonably|laws?|regulations?|rules?) "
-            r"(?:required|permitted|needed)))",
+            r"(?:required|permitted|needed)|"
+            r"pursuant to (?:the )?(?:applicable |statutory |legal |tax )?"
+            r"(?:laws?|regulations?|requirements?|obligations?)\b))",
             re.IGNORECASE,
         ),
         severity=20,
