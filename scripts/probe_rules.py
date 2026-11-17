@@ -112,6 +112,17 @@ SHOULD_NOT_FIRE = [
     ("L-6 neg: reasonable estimate", "The charge represents a reasonable estimate of the anticipated loss."),
     ("L-6 neg: no penalty", "No penalty shall be payable for any delay in delivery."),
     ("L-6 neg: penalty not exceeding 5%", "The penalty for delay shall not exceed 5% of the contract value."),
+    # cycle 12 R-DATA-5 over-fire (bounded retention)
+    ("D-5 neg: retain for tax purposes", "Provider shall retain Customer data following termination for tax purposes as required by applicable law."),
+    ("D-5 neg: retain for compliance purposes", "Following termination, Provider shall retain Customer records solely to comply with regulatory obligations."),
+    # cycle 12 R-COMM-1 over-fire (opt-out / no-rollover controls)
+    ("C-1 neg: renew unless notice not to renew", "This agreement shall automatically renew for successive one-year terms unless either party provides written notice not to renew at least 60 days prior to expiration."),
+    ("C-1 neg: extended with 90-day opt-out", "The term shall be automatically extended for successive one-year periods unless either party gives written notice of termination at least 90 days before the expiry date."),
+    ("C-1 neg: no automatic renewal", "This agreement shall not automatically renew; any renewal requires a new written agreement."),
+    ("C-1 neg: continue unless notice not to renew", "This agreement shall continue in effect for successive one-year terms unless either party provides written notice not to renew at least 60 days prior to expiration."),
+    ("C-1 neg: continue with 90-day opt-out", "The term shall continue for additional successive periods unless either party gives written notice of termination at least 90 days before the expiry date."),
+    ("C-1 neg: deemed extended unless object", "The term shall be deemed extended automatically for additional one-year periods unless either party objects in writing at least 30 days prior to the renewal date."),
+    ("C-1 neg: fixed term no rollover", "This agreement shall continue in effect for a fixed term of one year from the effective date."),
 ]
 
 SHOULD_FIRE = [
@@ -221,6 +232,14 @@ SHOULD_FIRE = [
     ("L-6 pos: penalty $1,000 for any delay", "A penalty of $1,000 shall be payable by the supplier for any delay in delivery."),
     ("L-6 pos: penalty 2% of purchase price", "The supplier shall pay a penalty equal to 2% of the purchase price for each week of delay."),
     ("L-6 pos: fixed charge no tail", "A fixed charge of EUR 500 for any delay shall be paid by the supplier."),
+    # cycle 12 R-COMM-1 under-fire (auto-renewal rollover variants)
+    ("C-1 pos: renew automatically no opt-out", "This agreement shall renew automatically for successive one-year periods."),
+    ("C-1 pos: deemed extended no opt-out", "The term shall be deemed extended automatically for additional one-year periods without further action."),
+    ("C-1 pos: continue for successive terms", "This agreement shall continue in effect for successive one-year renewal terms."),
+    ("C-1 pos: renewed automatically each anniversary", "The agreement will be renewed automatically on each anniversary of the effective date."),
+    # cycle 12 R-DATA-5 under-fire (retention phrasing variants)
+    ("D-5 pos: retain possession of data", "Following termination of this agreement, Provider may retain possession of Customer data."),
+    ("D-5 pos: preserve data after termination", "Provider shall preserve Customer data after termination of this agreement."),
 ]
 
 

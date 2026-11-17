@@ -65,8 +65,13 @@ RULES: List[Rule] = [
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|"
             r"renew(?:s|ed|ing)?[^.;]{0,40}automatically|"
             r"(?:is|shall|will|may) be (?:extended|renewed)[^.;]{0,40}automatically|"
+            r"(?:be )?deemed (?:to be )?(?:extended|renewed)[^.;]{0,40}automatically|"
+            r"(?:be )?deemed (?:to be )?automatically (?:extended|renewed)[^.;]{0,15}|"
             r"(?:is|shall|will|may) automatically (?:be )?(?:extended|renewed)[^.;]{0,15}|"
-            r"automatically extend(?:s|ed|ing)?|automatic(?:al)? extension(?:s)?",
+            r"automatically extend(?:s|ed|ing)?|automatic(?:al)? extension(?:s)?|"
+            r"(?:shall|will|may) continue (?:in effect|in force|for)[^.;]{0,40}"
+            r"(?:successive|from term to term|renewal (?:terms?|periods?)|"
+            r"additional (?:successive )?(?:terms?|periods?))",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -75,6 +80,8 @@ RULES: List[Rule] = [
             r"(?:does|shall|will|may) not (?:be )?(?:auto[- ]?renew|"
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?)|"
             r"(?:does|shall|will|may) not (?:be )?renewed automatically|"
+            r"(?:is|shall|will|may) not (?:be )?deemed (?:to be )?(?:extended|renewed) automatically|"
+            r"(?:shall|will|may) (?:be )?deemed (?:to be )?not (?:extended|renewed)|"
             r"(?:is|shall|will|may) be (?:extended|renewed)[^.;]{0,40}automatically"
             r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew)|"
             r"(?:is|shall|will|may) be automatically (?:extended|renewed)"
@@ -100,7 +107,12 @@ RULES: List[Rule] = [
             r"(?:automatically\s+renew|auto[- ]?renew(?:s|al)?|automatic renewal)"
             r"[^.;]{0,60}(?:unless|except|provided\s+(?:that|it))[^.;]{0,60}"
             r"(?:terminated?(?: in writing)?|notices? in writing|written notice)"
-            r"(?: by either party)?)",
+            r"(?: by either party)?|"
+            r"(?:deemed|continue (?:in effect|in force|for))[^.;]{0,80}"
+            r"(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew|"
+            r"object(?:s|ing)? in writing|written objection|"
+            r"written notice of (?:termination|cancellation)[^.;]{0,40}"
+            r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry)))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -476,18 +488,18 @@ RULES: List[Rule] = [
         dimension=Dimension.DATA,
         pattern=re.compile(
             r"(?:data|information)[^.]{0,60}"
-            r"(?:(?:shall|may|will|can) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?)|"
-            r"(?:shall|may|will|can) (?:retain|keep|maintain|store))\b"
+            r"(?:(?:shall|may|will|can) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?|preserv(?:e|es|ed|ing)?)|"
+            r"(?:shall|may|will|can) (?:retain|keep|maintain|store|preserve))\b"
             r"[^.]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
             r"(?:after|following|upon) (?:the )?(?:termination(?: date)?|expiration|expiry|"
             r"such termination|termination of (?:this|the) agreement)"
             r"[^.;]{0,60}(?:provider|vendor|supplier|company|licensor)?[^.;]{0,60}"
             r"(?:shall|may|will|can|must|is (?:required|obligated) to)[^.;]{0,20}"
-            r"(?:retain|keep|maintain|store)\s+(?:any |all |the )?(?:backup )?"
-            r"(?:copies?|extracts?|records?)?\s*(?:of\s+)?"
+            r"(?:retain|keep|maintain|store|preserve)\s+(?:any |all |the )?(?:backup )?"
+            r"(?:copies?|extracts?|records?|possession)?\s*(?:of\s+)?"
             r"(?:customer )?(?:personal )?(?:data|information)|"
-            r"(?:shall|may|will|can) (?:retain|keep|maintain|store)\s+"
-            r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?|records?)?\s*(?:of\s+)?"
+            r"(?:shall|may|will|can) (?:retain|keep|maintain|store|preserve)\s+"
+            r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?|records?|possession)?\s*(?:of\s+)?"
             r"(?:customer )?(?:personal )?(?:data|information)"
             r"[^.]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)",
             re.IGNORECASE,

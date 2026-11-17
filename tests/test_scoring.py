@@ -2552,3 +2552,169 @@ class TestCycle11Precision:
             "d",
         )
         assert all(p.rule_id != "R-LIAB-6" for p in r.penalties)
+
+
+class TestCycle12Precision:
+    """Cycle-12 precision regression: R-COMM-1 rollover-phrasing variants
+    (deemed / continue-for-successive-terms); R-DATA-5 retention verbs
+    (preserve) and possessive mediation (retain possession of)."""
+
+    # --- R-COMM-1 under-fire regressions ---
+
+    def test_renew_automatically_no_opt_out_flagged(self):
+        # Regression: an automatic rollover without any opt-out window must
+        # fire R-COMM-1.
+        r = score_document(
+            ["This agreement shall renew automatically for successive "
+             "one-year periods."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_deemed_extended_no_opt_out_flagged(self):
+        # Regression: a "deemed extended automatically" rollover is an
+        # auto-renewal and must fire R-COMM-1.
+        r = score_document(
+            ["The term shall be deemed extended automatically for additional "
+             "one-year periods without further action."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_continue_for_successive_terms_flagged(self):
+        # Regression: a successive-renewal-terms continuation with no
+        # opt-out window must fire R-COMM-1.
+        r = score_document(
+            ["This agreement shall continue in effect for successive "
+             "one-year renewal terms."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_renewed_automatically_each_anniversary_flagged(self):
+        # Regression: anniversary-based automatic renewal must fire
+        # R-COMM-1.
+        r = score_document(
+            ["The agreement will be renewed automatically on each "
+             "anniversary of the effective date."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    # --- R-COMM-1 over-fire controls ---
+
+    def test_renew_unless_notice_not_to_renew_not_flagged(self):
+        # Control: an auto-renewal with a notice-not-to-renew opt-out
+        # window stays silent.
+        r = score_document(
+            ["This agreement shall automatically renew for successive "
+             "one-year terms unless either party provides written notice "
+             "not to renew at least 60 days prior to expiration."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_extended_with_90_day_opt_out_not_flagged(self):
+        # Control: an automatic extension with a 90-day termination-notice
+        # window stays silent.
+        r = score_document(
+            ["The term shall be automatically extended for successive "
+             "one-year periods unless either party gives written notice of "
+             "termination at least 90 days before the expiry date."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_no_automatic_renewal_not_flagged(self):
+        # Control: an express no-auto-renewal clause stays silent.
+        r = score_document(
+            ["This agreement shall not automatically renew; any renewal "
+             "requires a new written agreement."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_continue_unless_notice_not_flagged(self):
+        # Control: the new continue-for-successive-terms pattern must still
+        # respect a notice-not-to-renew opt-out window.
+        r = score_document(
+            ["This agreement shall continue in effect for successive "
+             "one-year terms unless either party provides written notice "
+             "not to renew at least 60 days prior to expiration."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_continue_with_90_day_opt_out_not_flagged(self):
+        # Control: the continue pattern must respect a 90-day termination
+        # notice window.
+        r = score_document(
+            ["The term shall continue for additional successive periods "
+             "unless either party gives written notice of termination at "
+             "least 90 days before the expiry date."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_deemed_extended_unless_object_not_flagged(self):
+        # Control: the new deemed-extended pattern must respect a written
+        # objection opt-out.
+        r = score_document(
+            ["The term shall be deemed extended automatically for "
+             "additional one-year periods unless either party objects in "
+             "writing at least 30 days prior to the renewal date."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_fixed_term_no_rollover_not_flagged(self):
+        # Control: a fixed term that never rolls over stays silent, even
+        # though it says "continue in effect".
+        r = score_document(
+            ["This agreement shall continue in effect for a fixed term of "
+             "one year from the effective date."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    # --- R-DATA-5 regressions and controls ---
+
+    def test_retain_possession_of_data_flagged(self):
+        # Regression: retaining "possession of" customer data after
+        # termination must fire R-DATA-5 (mediated possessory retention).
+        r = score_document(
+            ["Following termination of this agreement, Provider may retain "
+             "possession of Customer data."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_preserve_data_after_termination_flagged(self):
+        # Regression: "preserve" as a retention verb after termination must
+        # fire R-DATA-5.
+        r = score_document(
+            ["Provider shall preserve Customer data after termination of "
+             "this agreement."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_retain_for_tax_purposes_not_flagged(self):
+        # Control: retention required for tax purposes per law stays
+        # silent.
+        r = score_document(
+            ["Provider shall retain Customer data following termination for "
+             "tax purposes as required by applicable law."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_retain_for_compliance_purposes_not_flagged(self):
+        # Control: retention solely to comply with regulatory obligations
+        # stays silent.
+        r = score_document(
+            ["Following termination, Provider shall retain Customer records "
+             "solely to comply with regulatory obligations."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
