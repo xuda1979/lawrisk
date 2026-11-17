@@ -3674,3 +3674,83 @@ class TestCycle22Precision:
         for t in flagged_as_is:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-LIAB-4" for p in r.penalties), t
+
+
+class TestCycle23Precision:
+    """Cycle-23 precision: obligation-mandate retention forms in R-DATA-5.
+
+    The R-DATA-5 pattern only carried the permission modals (shall / may /
+    will / can) and "is required|obligated to" in the reversed-order branch,
+    so genuine obligation-mandate retention still fired nothing: "Provider
+    must retain customer data after termination", "is required to retain",
+    "is obligated to store", "is compelled to retain", "shall be required
+    to retain", "undertakes / commits / agrees to retain" all stayed silent.
+
+    Widening the pattern alone was insufficient: the exclusion's bare first
+    token `(?:require|required|obligat|...)` was a bare-token trap — it
+    swallowed genuine obligations ("is required to retain", "is obligated to
+    store") while the legal-mandate carve-outs ("required by law", "required
+    by applicable regulations", "obligated under applicable law", "to the
+    extent required by law") must keep staying silent. The exclusion now
+    anchors on the legal mandate (required by/under law, obligated under/by
+    law, to the extent required, required to comply) instead of the bare
+    token.
+    """
+
+    def test_obligation_mandate_retention_flagged(self):
+        flagged = [
+            "Provider must retain customer data after termination of the Agreement.",
+            "Customer data must be retained by Provider after termination.",
+            "After termination, each party is required to retain customer data.",
+            "Provider is required to retain customer data after termination.",
+            "Provider is obligated to store customer data after termination.",
+            "After termination, Provider is obligated to retain customer data.",
+            "Provider shall be required to retain customer data after termination.",
+            "Each party undertakes to retain customer data after termination.",
+            "Provider agrees to retain customer data after termination.",
+            "Each party commits to retaining customer data after termination.",
+            "Provider will be required to retain customer data after termination.",
+            "Each party is compelled to retain customer data after termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_legal_mandate_retention_not_flagged(self):
+        # Legal-mandate retention (required/obligated by law or regulation)
+        # is a compliance carve-out and must stay silent.
+        benign = [
+            "Provider is required by law to retain customer data after termination.",
+            "Provider is required by applicable regulations to retain customer data after termination.",
+            "Customer data is retained after termination to the extent required to comply with law.",
+            "Provider is obligated under applicable law to retain customer data after termination.",
+            "Customer data must be retained after termination to the extent required by law.",
+            "Such retention after termination as is required by applicable law will be carried out.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_bound_and_denial_forms_unchanged(self):
+        benign = [
+            "Provider may retain customer data after termination for up to 90 days.",
+            "Provider shall not retain customer data after termination.",
+            "Provider shall retain Customer data following termination for tax "
+            "purposes as required by applicable law.",
+            "Following termination, Provider shall retain Customer records solely "
+            "to comply with regulatory obligations.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_positive_controls_still_flagged(self):
+        flagged = [
+            "Provider shall retain customer data after termination.",
+            "After termination, each party may retain the customer data.",
+            "Customer data shall be retained after termination for seven years.",
+            "Provider may keep personal information following termination of this agreement.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
