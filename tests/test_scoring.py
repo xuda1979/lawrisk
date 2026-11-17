@@ -1883,3 +1883,152 @@ class TestCycle6Precision:
             "d",
         )
         assert all(p.rule_id not in ("R-DATA-1", "R-DATA-2") for p in r.penalties)
+
+
+class TestCycle7Precision:
+    """Regression mesh for cycle-7 over-fire and under-fire gap fixes."""
+
+    def test_end_user_license_agreement_not_flagged(self):
+        # Regression: "end-user" (as in End User License Agreement) must not be
+        # read as "end use" by R-EXP-3.
+        r = score_document(
+            ["Customer may install the software under the terms of the End User License Agreement."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-3" for p in r.penalties)
+
+    def test_excluding_crimea_not_flagged(self):
+        # Regression: "available worldwide, excluding Crimea and other
+        # sanctioned regions" is a carve-out, not a sanctioned-destination
+        # commitment; must not fire R-EXP-1 or R-EXP-2.
+        r = score_document(
+            ["The services shall be available worldwide, excluding Crimea and other sanctioned regions."],
+            "d",
+        )
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-2") for p in r.penalties)
+
+    def test_terminated_for_convenience_flagged(self):
+        # Regression: inflected "terminated" (past participle) must fire the
+        # one-sided-termination rule R-COMM-2.
+        r = score_document(
+            ["This agreement may be terminated by Company at any time without cause and without penalty."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_cancelled_for_convenience_flagged(self):
+        # Regression: inflected "cancelled"/"cancellation" forms must fire
+        # R-COMM-2 just like "terminate".
+        r = score_document(
+            ["The agreement may be cancelled by Provider for convenience at any time."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_liable_or_responsible_flagged(self):
+        # Regression: "not be liable or responsible" (compound of the exclusion
+        # terms) must fire R-LIAB-1.
+        r = score_document(
+            ["Provider shall not be liable or responsible for any indirect, special or consequential damages."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_prices_subject_to_change_flagged(self):
+        # Regression: "Prices are subject to change" (subject-to-change form,
+        # not a price-increase verb) must fire R-COMM-3.
+        r = score_document(
+            ["Prices are subject to change at any time without prior notice."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_disclaim_all_warranties_flagged(self):
+        # Regression: verb-led "disclaims all warranties, express or implied"
+        # must fire R-LIAB-4 alongside noun-form disclaimers.
+        r = score_document(
+            ["Provider expressly disclaims all warranties, express or implied."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-4" for p in r.penalties)
+
+    def test_pii_collected_flagged(self):
+        # Regression: word-bounded "PII" alone (without the words "personal
+        # data/information") must fire R-DATA-1.
+        r = score_document(
+            ["The parties acknowledge that PII of customers may be collected during the provision of the services."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-1" for p in r.penalties)
+
+    def test_pii_stored_india_flagged(self):
+        # Regression: "PII is stored on servers located in India" (data-led
+        # sentence, PII subject) must fire R-DATA-2.
+        r = score_document(
+            ["All customer PII is stored on servers located in India."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_novate_without_consent_flagged(self):
+        # Regression: "novate this agreement to any third party without
+        # consent" must fire R-COMM-4's assignment-without-consent rule.
+        r = score_document(
+            ["Customer may novate this agreement to any third party without the prior written consent of Provider."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_marketing_use_flagged(self):
+        # Regression: "use Customer data for marketing purposes" is an
+        # unrelated/own-purpose use and must fire R-DATA-3.
+        r = score_document(
+            ["Provider may use Customer data for marketing purposes."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_either_party_terminates_not_flagged(self):
+        # Guard: "may be terminated by either party upon written notice" is
+        # mutual and must not fire R-COMM-2.
+        r = score_document(
+            ["This agreement may be terminated by either party upon 30 days' written notice."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_fees_may_be_reduced_not_flagged(self):
+        # Guard: "fees may be reduced" is favourable to the counterparty and
+        # must not fire R-COMM-3.
+        r = score_document(
+            ["The fees may be reduced by Provider if usage volume exceeds 1,000 units."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_privacy_policy_processing_not_flagged(self):
+        # Guard: processing "in accordance with the Privacy Policy" is
+        # governed and must not fire R-DATA-1.
+        r = score_document(
+            ["The parties shall process personal data in accordance with the Privacy Policy available at the provider's website."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-1" for p in r.penalties)
+
+    def test_aggregate_anonymised_statistics_not_flagged(self):
+        # Guard: "aggregate, anonymised data for statistical purposes" is not
+        # an unrelated commercial use and must not fire R-DATA-3.
+        r = score_document(
+            ["Provider may retain aggregate, anonymised data for statistical purposes without limitation."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_scc_transfer_processed_not_flagged(self):
+        # Guard: "is transferred ... subject to the Standard Contractual
+        # Clauses" is safeguard-backed and must not fire R-DATA-2.
+        r = score_document(
+            ["Customer data is transferred to the affiliate subject to the Standard Contractual Clauses approved by the European Commission."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)

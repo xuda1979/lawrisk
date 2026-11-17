@@ -51,6 +51,22 @@ SHOULD_NOT_FIRE = [
     ("D-2 neg: adequacy determination transfer", "Personal data may be transferred to the United States following an adequacy determination by the European Commission."),
     # R-EXP-2 over-fire
     ("E-2 neg: sanctions compliance mentions Sudan/Myanmar", "Each party shall comply with all applicable sanctions, including those covering Sudan and Myanmar."),
+    # cycle 7 R-EXP-3 over-fire
+    ("E-3 neg: EULA end-user", "Customer may install the software under the terms of the End User License Agreement."),
+    # cycle 7 R-EXP-1/R-EXP-2 over-fire
+    ("E-2 neg: excluding Crimea", "The services shall be available worldwide, excluding Crimea and other sanctioned regions."),
+    # cycle 7 R-DATA-1 over-fire
+    ("D-1 neg: privacy policy processing", "The parties shall process personal data in accordance with the Privacy Policy available at the provider's website."),
+    # cycle 7 R-DATA-3 over-fire
+    ("D-3 neg: aggregate anonymised statistics", "Provider may retain aggregate, anonymised data for statistical purposes without limitation."),
+    # cycle 7 R-COMM-2 over-fire
+    ("C-2 neg: either party may terminate", "This agreement may be terminated by either party upon 30 days' written notice."),
+    # cycle 7 R-COMM-3 over-fire
+    ("C-3 neg: fees may be reduced", "The fees may be reduced by Provider if usage volume exceeds 1,000 units."),
+    # cycle 7 R-EXP-3 over-fire
+    ("E-3 neg: no re-export without authorisation", "Buyer shall not re-export the software to any country without the prior written authorisation of the Licensor."),
+    # cycle 7 R-DATA-2 over-fire
+    ("D-2 neg: SCC transfer processed", "Customer data is transferred to the affiliate subject to the Standard Contractual Clauses approved by the European Commission."),
 ]
 
 SHOULD_FIRE = [
@@ -102,6 +118,23 @@ SHOULD_FIRE = [
     ("L-5 pos: meet requirements", "Provider makes no warranty that the services will meet all of Customer's requirements."),
     # R-EXP-2 under-fire
     ("E-2 pos: sudan and myanmar references", "The vendor maintains distributors in Sudan and ships directly to Myanmar."),
+    # cycle 7 R-COMM-2 under-fire
+    ("C-2 pos: terminated for convenience", "This agreement may be terminated by Company at any time without cause and without penalty."),
+    ("C-2 pos: cancelled for convenience", "The agreement may be cancelled by Provider for convenience at any time."),
+    # cycle 7 R-LIAB-1 under-fire
+    ("L-1 pos: liable or responsible", "Provider shall not be liable or responsible for any indirect, special or consequential damages."),
+    # cycle 7 R-COMM-3 under-fire
+    ("C-3 pos: prices subject to change", "Prices are subject to change at any time without prior notice."),
+    # cycle 7 R-LIAB-4 under-fire
+    ("L-4 pos: disclaim all warranties", "Provider expressly disclaims all warranties, express or implied."),
+    # cycle 7 R-DATA-1 under-fire
+    ("D-1 pos: PII collected", "The parties acknowledge that PII of customers may be collected during the provision of the services."),
+    # cycle 7 R-DATA-2 under-fire
+    ("D-2 pos: PII stored India", "All customer PII is stored on servers located in India."),
+    # cycle 7 R-COMM-4 under-fire
+    ("C-4 pos: novate no consent", "Customer may novate this agreement to any third party without the prior written consent of Provider."),
+    # cycle 7 R-DATA-3 under-fire
+    ("D-3 pos: marketing use", "Provider may use Customer data for marketing purposes."),
 ]
 
 
