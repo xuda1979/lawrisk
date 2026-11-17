@@ -512,7 +512,9 @@ RULES: List[Rule] = [
         dimension=Dimension.DATA,
         pattern=re.compile(
             r"(?:data|information)[^.]{0,60}"
-            r"(?:(?:shall|may|will|can|must) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?|preserv(?:e|es|ed|ing)?)|"
+            r"(?:(?:shall|may|will|can|must) (?:be )?(?:required|obligated|compelled|bound) to (?:be )?(?:retained|kept|maintained|stored|preserved)|"
+            r"(?:is|are|was|were) (?:required|obligated|compelled|bound) to (?:be )?(?:retained|kept|maintained|stored|preserved)|"
+            r"(?:shall|may|will|can|must) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?|preserv(?:e|es|ed|ing)?)|"
             r"(?:(?:shall|may|will|can|must)(?: (?:be )?(?:required|obligated|compelled|bound) to)?|"
             r"(?:is|are) (?:required|obligated|compelled|bound) to|undertake(?:s)? to|"
             r"commit(?:s)? to|agree(?:s)? to) "
@@ -543,7 +545,15 @@ RULES: List[Rule] = [
             r"(?:customer )?(?:personal )?(?:data|information) (?:retention|storage|preservation)"
             r"[^.;]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
             r"(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)"
-            r"[^.;]{0,40}(?:customer )?(?:personal )?(?:data|information) (?:retention|storage|preservation)",
+            r"[^.;]{0,40}(?:customer )?(?:personal )?(?:data|information) (?:retention|storage|preservation)|"
+            r"(?:after|following|upon) (?:the )?(?:termination(?: date)?|expiration|expiry|"
+            r"such termination|termination of (?:this|the) agreement)"
+            r"[^.;]{0,60}(?:customer |personal )?(?:data|information)"
+            r"[^.;]{0,40}"
+            r"(?:(?:is|are|was|were) (?:required|obligated|compelled|bound) to (?:be )?|"
+            r"(?:shall|may|will|can|must)(?: (?:be )?(?:required|obligated|compelled|bound) to (?:be )?| (?:be )?)?)"
+            r"(?:retain|retained|keep|kept|store|stored|maintain|maintained|preserve|preserved)\b"
+            r"(?:\s+by (?:the )?(?:provider|vendor|supplier|company|licensor|parties?))?",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -592,7 +602,13 @@ RULES: List[Rule] = [
             r"(?:bounded|capped|limited) (?:to|at)[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
             r"no more than[^.;]{0,30}(?:days?|weeks?|months?|years?)|"
             r"after which (?:it|they|such (?:data|information))[^.;]{0,20}"
-            r"(?:shall|will|may) (?:be )?(?:deleted|removed|purged|destroyed|returned|erased))",
+            r"(?:shall|will|may) (?:be )?(?:deleted|removed|purged|destroyed|returned|erased)|"
+            r"(?:required|obligated?) to (?:be )?(?:retain|retained|keep|kept|store|stored|maintain|maintained|"
+            r"preserve|preserved)[^.;]{0,40}(?:by|under) (?:the )?(?:applicable |statutory |legal )?"
+            r"(?:laws?|regulations?|requirements?|obligations?)|"
+            r"(?:retained|kept|stored|maintained|preserved)\s+by (?:the )?(?:applicable |statutory |legal )?"
+            r"(?:laws?|regulations?|requirements?|obligations?)|"
+            r"for\s+(?:the\s+)?(?:[0-9]+|thirty|sixty|ninety|twelve|six)\s+(?:days?|weeks?|months?))",
             re.IGNORECASE,
         ),
         severity=20,

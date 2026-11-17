@@ -3754,3 +3754,120 @@ class TestCycle23Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle24Precision:
+    """Cycle-24 precision: passive-obligation retention forms in R-DATA-5.
+
+    The R-DATA-5 pattern only covered active obligation verbs directly
+    attached to a retention verb ("is required to retain", "must retain").
+    The passive-obligation family — "is required to be retained", "is
+    obligated to be stored", "shall be required to be kept", "must be bound
+    to be retained", and their reversed-order twins after the termination
+    anchor — stayed silent while firing nothing, an asymmetric gap against
+    their active voice twins.
+
+    Widenings had to preserve four boundaries:
+    (1) passive denials ("may not be retained", "is prohibited from being
+        kept", "is not required to be retained") stay silent via pattern gap
+        — no optional negation was added;
+    (2) legal-mandate carve-outs in passive voice ("required to be retained
+        by applicable law", "required to be kept by statutory requirements",
+        "must be retained by applicable law") stay silent via new exclusion
+        branches that anchor on the law/regulation family after a mandate
+        verb or after a passive retention verb;
+    (3) bare numeric short-unit bounds ("for 90 days", "for 12 months")
+        stay silent via a new exclusion bound branch that deliberately
+        excludes years so "for seven years" stays flagged;
+    (4) "for a period of / up to / a period not exceeding" bounds and the
+        canonical "seven years" positive control keep their established
+        behavior.
+    """
+
+    def test_passive_obligation_retention_flagged(self):
+        flagged = [
+            "Customer data is required to be retained by Provider after termination.",
+            "Customer data is obligated to be stored by Provider after termination.",
+            "Customer data is compelled to be retained after termination.",
+            "Customer data shall be required to be retained after termination.",
+            "Customer data is required to be kept by Provider after termination.",
+            "Customer information is obligated to be stored by Provider after termination.",
+            "Customer data may be required to be retained after termination.",
+            "Customer data will be compelled to be preserved after termination.",
+            "Customer data must be bound to be retained after termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_reversed_passive_retention_flagged(self):
+        # Termination-anchored passive forms: obligation + be + retention
+        # verb, and plain modal passive ("must be retained").
+        flagged = [
+            "After termination, customer data is required to be retained by Provider.",
+            "After termination, customer data shall be required to be kept by Provider.",
+            "After termination, customer data is obligated to be stored by Provider.",
+            "After termination, customer data must be retained by Provider.",
+            "After termination, customer data will be retained by Provider.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_passive_denials_not_flagged(self):
+        # Denial / prohibition shapes must stay silent (pattern gap — no
+        # optional negation was added to the new passive branches).
+        benign = [
+            "Customer data may not be retained after termination.",
+            "Provider is prohibited from retaining customer data after termination.",
+            "Customer data is prohibited from being kept after termination.",
+            "After termination, customer data may not be retained.",
+            "After termination, customer data shall not be kept.",
+            "After termination, customer data is not required to be retained.",
+            "Customer data is not required to be retained after termination.",
+            "Customer data must not be retained after termination.",
+            "Customer data shall not be kept after termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_passive_legal_mandate_carveout_not_flagged(self):
+        # Legal-mandate carve-outs in passive / mandate-tail positions are a
+        # compliance basis and must stay silent.
+        benign = [
+            "Customer data is required to be retained by applicable law after termination.",
+            "Provider is required to retain customer data by applicable regulations after termination.",
+            "Provider is obligated to store customer data by applicable law after termination.",
+            "Customer data is required to be retained by statutory requirements after termination.",
+            "Customer data must be retained by applicable law after termination.",
+            "Provider is required by law to retain customer data after termination.",
+            "Customer data shall be retained after termination only to the extent required by applicable law.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_bare_numeric_bound_not_flagged(self):
+        # Bare short-unit numeric bounds (days / weeks / months) are bounded
+        # retention; the bound branch deliberately excludes years.
+        benign = [
+            "Provider may retain customer data after termination for 90 days.",
+            "Customer data may be retained after termination for 12 months.",
+            "Provider may retain customer data after termination for up to 90 days.",
+            "Retention of customer data for a period of 12 months after termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_positive_controls_still_flagged(self):
+        flagged = [
+            "Customer data shall be retained after termination.",
+            "Provider may keep customer data after termination.",
+            "Customer data must be retained by Provider after termination.",
+            "Customer data shall be retained after termination for seven years.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
