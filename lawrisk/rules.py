@@ -88,9 +88,15 @@ RULES: List[Rule] = [
             r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew)|"
             r"(?:is|shall|will|may) automatically (?:be )?(?:extended|renewed)"
             r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew|"
-            r"object(?:s|ing)? in writing|written objection)|"
+            r"object(?:s|ing)? in writing|written objection|"
+            r"written notice of (?:termination|cancellation)[^.;]{0,40}"
+            r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry))|"
             r"(?:either party|neither party)[^.;]{0,80}object(?:s|ing)? in writing|"
-            r"(?:either party|neither party)[^.;]{0,80}written objection)",
+            r"(?:either party|neither party)[^.;]{0,80}written objection|"
+            r"\b(?:either party|neither party)[^.;]{0,80}"
+            r"(?:may|shall|will)?\s*(?:give(?:s|n)?|deliver(?:s|ed)?|provide(?:s|d)?)"
+            r"\b[^.;]{0,40}written notice of (?:termination|cancellation)[^.;]{0,40}"
+            r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -283,7 +289,14 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-2",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,60}(?:limited to|shall not exceed|shall (?:in no event|never) exceed|in excess of|capped? at)", re.IGNORECASE),
+        pattern=re.compile(
+            r"(?:(?:total |aggregate |maximum )?liability[^.]{0,60}"
+            r"(?:limited to|shall not exceed|shall (?:in no event|never) exceed|in excess of|capped? at)|"
+            r"(?:in no event|under no circumstances|in any event)?\s*(?:shall|will)?\s*"
+            r"(?:the )?(?:total |aggregate |maximum )?liability[^.;]{0,50}"
+            r"exceed(?:s|ing)?\b)",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"(?:shall|will|is|is hereby|be) not (?:be )?limited(?: to)?|"
             r"not be limited to|not limited to|"
@@ -292,8 +305,10 @@ RULES: List[Rule] = [
             r"nothing in (?:this|any) (?:clause|section|agreement)[^.;]{0,40}(?:limits?|caps?|excludes?)|"
             r"without limitation of liability|"
             r"not subject to any (?:limitation|cap)|"
-            r"(?:total |aggregate )?liability[^.;]{0,30}(?:of|for) "
-            r"(?:each party|either party|both parties)[^.;]{0,60}"
+            r"(?:(?:total |aggregate )?liability[^.;]{0,30}(?:of|for) "
+            r"(?:each party|either party|both parties)"
+            r"|(?:each party|either party|both parties)'?s?[^.;]{0,30}(?:total |aggregate |maximum )?liability)"
+            r"[^.;]{0,60}"
             r"(?:paid (?:or|and) received|received (?:or|and) paid)",
             re.IGNORECASE,
         ),
@@ -306,12 +321,14 @@ RULES: List[Rule] = [
         rule_id="R-LIAB-3",
         dimension=Dimension.LIABILITY,
         pattern=re.compile(
-            r"indemnif(?:y|ies)[^.]{0,60}(?:against|from)[^.]{0,60}"
-            r"(?:all|any|third[ -]party|losses|damages|claims)",
+            r"(?:indemnif(?:y|ies)[^.]{0,60}(?:against|from)[^.]{0,60}"
+            r"(?:all|any|third[ -]party|losses|damages|claims)|"
+            r"hold(?:s|ing)?[^.]{0,25}harmless)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:each party indemnif|either party indemnif|"
+            r"each party hold|either party hold|"
             r"mutual(?:ly)? indemnif|"
             r"arising (?:out of|from) (?:its own|the indemnifying party's own|"
             r"such party's own) (?:breach|negligence)|"
@@ -390,11 +407,11 @@ RULES: List[Rule] = [
             r"(?:data|information)[^.]{0,60}"
             r"(?:(?:shall|may|will|can) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?)|"
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store))\b"
-            r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)|"
+            r"[^.]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store)\s+"
             r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?|records?)?\s*(?:of\s+)?"
             r"(?:customer )?(?:personal )?(?:data|information)"
-            r"[^.]{0,40}(?:after|following|upon) (?:termination|such termination)",
+            r"[^.]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -513,7 +530,7 @@ RULES: List[Rule] = [
             r"[^.]{0,30}data[^.]{0,20}"
             r"(?:for any purpose|for any other purpose|for any (?:and all|other) purposes?|"
             r"for (?:its|our) own(?: independent)?(?: business)? purposes|"
-            r"unlimited|without limitation)",
+            r"for purposes? other than|unlimited|without limitation)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -521,7 +538,10 @@ RULES: List[Rule] = [
             r"as (?:required|needed|mandated) by (?:applicable )?law|"
             r"required by (?:applicable )?(?:law|regulation)|"
             r"to meet (?:its|their) legal (?:and regulatory )?obligations?|"
-            r"legal (?:and regulatory )?obligations?)",
+            r"legal (?:and regulatory )?obligations?|"
+            r"(?:shall|will|may|must)\s+not[^.;]{0,60}"
+            r"(?:process|use|sell|disclos|retain)(?:ing|e|es|s)?"
+            r"[^.;]{0,40}(?:for|to)\s+(?:any\s+)?purpose)",
             re.IGNORECASE,
         ),
         severity=25,

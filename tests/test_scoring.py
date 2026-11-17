@@ -1654,3 +1654,79 @@ class TestRuleMeshes:
             "d",
         )
         assert any(p.rule_id in {"R-EXP-1", "R-EXP-3"} for p in r2.penalties)
+
+    def test_in_no_event_liability_exceed_flagged(self):
+        # Regression: a verb-led cap ("In no event shall the aggregate
+        # liability of Company exceed ...") must fire R-LIAB-2.
+        r = score_document(
+            ["In no event shall the aggregate liability of Company exceed the fees paid in the twelve months preceding the claim."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-2" for p in r.penalties)
+
+    def test_either_partys_symmetric_cap_not_flagged(self):
+        # Regression: a symmetric cap on both parties' liability ("either
+        # party's aggregate liability ... paid or received") is mutual and
+        # must not fire R-LIAB-2.
+        r = score_document(
+            ["In no event shall either party's aggregate liability exceed the amounts actually paid or received."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-2" for p in r.penalties)
+
+    def test_notice_of_termination_prior_to_expiration_not_flagged(self):
+        # Regression: automatic renewal with an opt-out by written notice of
+        # termination prior to expiration is a genuine rollover control and
+        # must not fire R-COMM-1.
+        r = score_document(
+            ["This agreement shall automatically renew for successive one-year periods unless either party gives written notice of termination at least sixty days prior to expiration."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_purposes_other_than_specified_flagged(self):
+        # Regression: processing "for purposes other than those specified"
+        # (and beyond the agreed scope) must fire R-DATA-3.
+        r = score_document(
+            ["Provider may process the personal data for purposes other than those specified in this agreement, including for its own product development."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_shall_not_process_any_purpose_other_than_not_flagged(self):
+        # Regression: a prohibition ("shall not process ... for any purpose
+        # other than") restricts processing and must not fire R-DATA-3.
+        r = score_document(
+            ["Provider shall not process personal data for any purpose other than performing its obligations under this agreement."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_retention_after_expiration_flagged(self):
+        # Regression: post-termination retention phrased around the term's
+        # end ("after the expiration / following the expiry") must fire
+        # R-DATA-5 just like "after termination".
+        for para in (
+            "Customer data may be retained by Provider after the expiration of this agreement.",
+            "Provider may retain copies of Customer data following the expiry of this agreement.",
+        ):
+            r = score_document([para], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_hold_harmless_flagged(self):
+        # Regression: "hold ... harmless from any and all claims" is an
+        # indemnity in noun-verb form and must fire R-LIAB-3.
+        r = score_document(
+            ["Customer shall hold Provider harmless from any and all claims, losses and damages arising from Customer's use of the services."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
+
+    def test_each_party_hold_harmless_own_breach_not_flagged(self):
+        # Regression: a mutual "each party ... own breach" hold-harmless is
+        # symmetric and must not fire R-LIAB-3.
+        r = score_document(
+            ["Each party shall hold the other party harmless against claims arising out of its own breach of this agreement."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-3" for p in r.penalties)
