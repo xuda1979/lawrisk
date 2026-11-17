@@ -115,10 +115,17 @@ RULES: List[Rule] = [
             r"\b(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?|terminab(?:le|ility))\b[^.]{0,40}"
             r"(?:without cause|for any(?: reason| purpose)?|for no reason|at will|"
             r"(?:at|for)\s+(?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience|"
-            r"for convenience|without assigning any reason|without (?:any )?reason\b)",
+            r"for convenience|without assigning any reason|without (?:any )?reason\b)"
+            r"|(?:at|for)\s+(?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience"
+            r"[^.;]{0,45}\b(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?)\b",
             re.IGNORECASE,
         ),
-        exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:{})|(?:{})|"
+            r"(?:where|as|if|to the extent)\s+(?:so\s+)?required\s+by\s+(?:applicable\s+)?law\b|"
+            r"(?:by\s+order\s+of\s+(?:a\s+)?court|(?:by|under|pursuant\s+to)\s+(?:applicable\s+)?law\b|court\s+order\b)".format(_CARVEOUT.pattern, _MUTUAL.pattern),
+            re.IGNORECASE,
+        ),
         severity=25,
         reason="One-sided termination-without-cause right for the counterparty",
         mitigation="Make termination rights mutual — require cause, mutual consent, or equal notice/fee windows for both parties.",
@@ -128,8 +135,9 @@ RULES: List[Rule] = [
         rule_id="R-COMM-3",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"(?:reserves the right to (?:adjust|increase|change|modify|revise)|"
-            r"may (?:adjust|increase|change|modify|revise)|(?:can|may) adjust|(?:can|may) revise)"
+            r"(?:reserves the right to (?:adjust|increase|change|modify|revise|update)|"
+            r"may (?:adjust|increase|change|modify|revise|update)|(?:can|may) adjust|(?:can|may) revise|"
+            r"(?:can|may|shall|will) update)"
             r" (?:the )?(?:(?:monthly|annual|yearly|service|platform|subscription|"
             r"license|licence|usage)\s+)?(?:price|prices|fees|fee|pricing)"
             r"|(?:price|prices|fees|fee)[^.;]{0,30}(?:may|shall|will|can) be "
@@ -143,7 +151,8 @@ RULES: List[Rule] = [
             r"(?:no price increase|without (?:any )?price increase|"
             r"there (?:shall|will|can|is|be) no|"
             r"by mutual(?: written)? agreement|mutual written consent|"
-            r"in accordance with [^.;]{0,40}(?:cpi|index(?:ed)?))",
+            r"(?:in accordance with|in line with|per the|as per) [^.;]{0,40}"
+            r"(?:consumer price index|cpi|index(?:ed)?))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -158,7 +167,7 @@ RULES: List[Rule] = [
         exclusion=re.compile(
             r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? assign|"
             r"(?:may|shall|will) not assign(?: this agreement)?|"
-            r"assign[^.]{0,60}(?:to an affiliate|with (?:the )?(?:prior )?written consent))",
+            r"assign[^.]{0,60}(?:to an affiliate|(?:with|upon|under|subject to) (?:the )?(?:prior )?written consent))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -227,11 +236,11 @@ RULES: List[Rule] = [
             r"(?:a rate of\s*)?\(?\d+(?:\.\d+)?\)?\s*%(?:[^.;]{0,12}per (?:month|annum|year))?"
             r"[^.;]{0,40}(?:on|for)[^.;]{0,20}(?:overdue|delinquent|late|unpaid)|"
             r"(?:late fee(?:s)?|late charge(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|"
-            r"overdue (?:fee|charge))"
+            r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?)"
             r"[^.;]{0,20}(?:of|=|at|:)\s*\$[0-9][0-9,]*(?:\.\d+)?[^.;]{0,25}"
             r"(?:per |for each |for every |each |weekly |daily |monthly |annually|accrues|accruing|accrual)|"
             r"(?:late fee(?:s)?|late charge(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|"
-            r"overdue (?:fee|charge))"
+            r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?)"
             r"[^.;]{0,20}(?:of|=|at|:)[^.;:]{0,10}\d+(?:\.\d+)?\s*%|"
             r"(?:unpaid|past[ -]?due|delinquent|overdue)\s+(?:invoices?|balances?|amounts?|payments?|fees?|accounts?)"
             r"[^.;]{0,30}(?:accrue(?:s|d|ing)?|bear(?:s|ing)?|shall|will|may)"
@@ -272,6 +281,13 @@ RULES: List[Rule] = [
             r"(?:shall|will) not (?:be )?refunded",
             re.IGNORECASE,
         ),
+        exclusion=re.compile(
+            r"(?:" + _CARVEOUT.pattern + r")|"
+            r"unless[^.;]{0,60}(?:defect|defective|quality|warrant)|"
+            r"(?:defect|defective|quality issue)[^.;]{0,40}refund|"
+            r"refunds?[^.;]{0,40}(?:defect|defective|quality)",
+            re.IGNORECASE,
+        ),
         severity=15,
         reason="Fees are non-refundable / non-cancellable, locking the counterparty into payment",
         mitigation="Allow pro-rata refunds or termination credits for unused services and carve out cancellation-for-cause.",
@@ -296,7 +312,12 @@ RULES: List[Rule] = [
             r"(?:the services|services|access|the account|any account)",
             re.IGNORECASE,
         ),
-        exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
+        exclusion=re.compile(
+            r"(?:{})|(?:{})|"
+            r"(?:where|as|if|to the extent)\s+(?:so\s+)?required\s+by\s+(?:applicable\s+)?law\b|"
+            r"(?:by\s+order\s+of\s+(?:a\s+)?court|(?:by|under|pursuant\s+to)\s+(?:applicable\s+)?law\b|court\s+order\b)".format(_CARVEOUT.pattern, _MUTUAL.pattern),
+            re.IGNORECASE,
+        ),
         severity=20,
         reason="Unilateral suspension of services/account by the counterparty without notice or consent",
         mitigation="Require notice, a cure period and cause for any suspension, and credit for service downtime.",
@@ -352,16 +373,18 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"(?:indemnif(?:y|ies)[^.]{0,60}(?:against|from)[^.]{0,60}"
             r"(?:all|any|third[ -]party|losses|damages|claims)|"
-            r"hold(?:s|ing)?[^.]{0,25}harmless)",
+            r"(?:held|hold(?:s|ing)?)[^.]{0,25}harmless)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:each party indemnif|either party indemnif|"
             r"each party hold|either party hold|"
+            r"each party[^.;]{0,25}(?:hold|held)|"
             r"mutual(?:ly)? indemnif|"
             r"arising (?:out of|from) (?:its own|the indemnifying party's own|"
             r"such party's own) (?:breach|negligence)|"
-            r"to the extent (?:caused by|arising from) (?:its |the indemnifying party's )?own)",
+            r"to the extent (?:caused by|arising from) (?:its |the indemnifying party's )?own|"
+            r"(?:each|either|both) party[^.;]{0,40}for its own (?:breach|negligence))",
             re.IGNORECASE,
         ),
         severity=30,
@@ -403,7 +426,10 @@ RULES: List[Rule] = [
             r"(?:uninterrupted|error[- ]?free|available|availability|reliab|"
             r"fit for|fitness for|merchantab|suitab|"
             r"meet(?:s|ing)?[^.]{0,25}(?:requirements?|expectations?|specifications?)|"
-            r"particular purpose)",
+            r"particular purpose)|"
+            r"(?:availability|reliab\w*|error[- ]?free (?:operation|performance)|"
+            r"uninterrupted (?:operation|performance|service))[^.;]{0,45}"
+            r"(?:is|are|shall be|will be|can be|may be)\s+not\s+guaranteed",
             re.IGNORECASE,
         ),
         severity=20,
@@ -537,7 +563,7 @@ RULES: List[Rule] = [
             r"(?:pii\b|(?:personal )?(?:data|information))[^.]{0,15}"
             r"(?:(?:is|are|shall|will|may|can|be|being|was|were)[^.]{0,5})?"
             r"(?:transferred|transmitted|processed|stored|shared|accessed|exported|sent|moved|"
-            r"hosted|located|maintained)"
+            r"hosted|located|maintained|accessible)"
             r"[^.]{0,30}"
             r"(?:abroad|outside|"
             r"(?:to|from|in|at|into|with|outside)"

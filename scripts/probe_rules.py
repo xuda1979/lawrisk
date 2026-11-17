@@ -79,6 +79,18 @@ SHOULD_NOT_FIRE = [
     ("C-1 neg: renew unless terminated in writing", "The term shall automatically renew for successive one-year periods unless terminated in writing by either party."),
     # cycle 8 R-EXP-1 over-fire
     ("E-1 neg: exports under valid licence", "All exports shall be made under a valid export licence obtained by the exporter."),
+    # cycle 9 R-COMM-4 over-fire
+    ("C-4 neg: assign upon written consent", "Customer may assign this agreement to any third party upon the prior written consent of Provider."),
+    # cycle 9 R-COMM-7 over-fire
+    ("C-7 neg: non-refundable unless defective work", "Custom development fees are non-refundable after the work has been performed, unless the work was defective."),
+    # cycle 9 R-COMM-8 over-fire
+    ("C-8 neg: suspension required by law / court order", "Provider may suspend the services with immediate effect where required by law or a court order."),
+    # cycle 9 R-COMM-2 over-fire
+    ("C-2 neg: terminate required by law", "Company may terminate this agreement without cause where required by applicable law."),
+    # cycle 9 R-COMM-3 over-fire
+    ("C-3 neg: CPI-indexed fees in line with CPI", "The fees may be adjusted annually in line with the consumer price index published by the national statistics office."),
+    # cycle 9 R-LIAB-3 over-fire
+    ("L-3 neg: each party held harmless for own negligence", "Each party shall be held harmless by the other party for its own negligence."),
 ]
 
 SHOULD_FIRE = [
@@ -155,6 +167,19 @@ SHOULD_FIRE = [
     ("D-5 pos: keep following expiry", "Following expiry of the agreement, the vendor may keep Customer information."),
     # cycle 8 R-COMM-2 under-fire
     ("C-2 pos: terminate without reason", "Company may terminate the agreement at any time without reason."),
+    # cycle 9 R-COMM-2 under-fire
+    ("C-2 pos: convenience before verb", "For its convenience and at any time, Company may terminate this agreement."),
+    # cycle 9 R-COMM-3 under-fire
+    ("C-3 pos: may update the service fees", "Provider may update the service fees upon 30 days' prior written notice."),
+    # cycle 9 R-COMM-6 under-fire
+    ("C-6 pos: carrying charge $25/month", "Unpaid balances shall bear a carrying charge of $25 per month."),
+    ("C-6 pos: finance charge $25/month", "Accounts paid late shall incur a finance charge of $25 per month."),
+    # cycle 9 R-LIAB-3 under-fire
+    ("L-3 pos: held harmless from third-party claims", "Provider shall be held harmless from any claims by third parties arising out of Customer's use of the services."),
+    # cycle 9 R-LIAB-5 under-fire
+    ("L-5 pos: availability not guaranteed", "The availability of the services at all times is not guaranteed by Provider."),
+    # cycle 9 R-DATA-2 under-fire
+    ("D-2 pos: accessible by employees in China", "Customer data is accessible by our employees in China."),
 ]
 
 

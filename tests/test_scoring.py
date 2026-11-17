@@ -2135,3 +2135,143 @@ class TestCycle8Precision:
             "d",
         )
         assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+class TestCycle9Precision:
+    """Regression tests for cycle 9 precision-gap fixes (rules engine)."""
+
+    def test_assign_upon_written_consent_not_flagged(self):
+        # Regression: "assign to any third party upon the prior written
+        # consent" is consent-backed and must not fire R-COMM-4.
+        r = score_document(
+            [
+                "Customer may assign this agreement to any third party upon "
+                "the prior written consent of Provider."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_non_refundable_unless_defective_not_flagged(self):
+        # Regression: non-refundable fees with a defective-work carve-out must
+        # not fire R-COMM-7.
+        r = score_document(
+            [
+                "Custom development fees are non-refundable after the work has "
+                "been performed, unless the work was defective."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-7" for p in r.penalties)
+
+    def test_suspension_required_by_law_not_flagged(self):
+        # Regression: suspension required by law or a court order is not a
+        # unilateral-discretion gap and must not fire R-COMM-8.
+        r = score_document(
+            [
+                "Provider may suspend the services with immediate effect where "
+                "required by law or a court order."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-8" for p in r.penalties)
+
+    def test_terminate_without_cause_required_by_law_not_flagged(self):
+        # Regression: "terminate ... without cause where required by
+        # applicable law" is legally mandated, not convenience, and must not
+        # fire R-COMM-2.
+        r = score_document(
+            ["Company may terminate this agreement without cause where required by applicable law."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_fees_in_line_with_cpi_not_flagged(self):
+        # Regression: fee adjustment pegged in line with the consumer price
+        # index is not a unilateral-increase gap and must not fire R-COMM-3.
+        r = score_document(
+            [
+                "The fees may be adjusted annually in line with the consumer "
+                "price index published by the national statistics office."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_each_party_held_harmless_own_negligence_not_flagged(self):
+        # Regression: a mutual each-party-held-harmless-for-own-negligence
+        # clause is not one-sided exposure and must not fire R-LIAB-3.
+        r = score_document(
+            [
+                "Each party shall be held harmless by the other party for its "
+                "own negligence."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-3" for p in r.penalties)
+
+    def test_convenience_before_verb_flagged(self):
+        # Regression: "For its convenience ... Company may terminate" (modifier
+        # before the verb) must fire R-COMM-2.
+        r = score_document(
+            ["For its convenience and at any time, Company may terminate this agreement."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_may_update_service_fees_flagged(self):
+        # Regression: "may update the service fees" is a unilateral price
+        # change and must fire R-COMM-3.
+        r = score_document(
+            ["Provider may update the service fees upon 30 days' prior written notice."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_flat_dollar_carrying_charge_flagged(self):
+        # Regression: a flat-dollar "carrying charge of $25 per month" must
+        # fire R-COMM-6.
+        r = score_document(
+            ["Unpaid balances shall bear a carrying charge of $25 per month."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_flat_dollar_finance_charge_flagged(self):
+        # Regression: a flat-dollar "finance charge of $25 per month" must
+        # fire R-COMM-6.
+        r = score_document(
+            ["Accounts paid late shall incur a finance charge of $25 per month."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_held_harmless_from_third_party_claims_flagged(self):
+        # Regression: "Provider shall be held harmless from any claims by
+        # third parties" is a one-sided hold-harmless and must fire R-LIAB-3.
+        r = score_document(
+            [
+                "Provider shall be held harmless from any claims by third "
+                "parties arising out of Customer's use of the services."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
+
+    def test_availability_not_guaranteed_flagged(self):
+        # Regression: passive "The availability ... is not guaranteed" must
+        # fire R-LIAB-5.
+        r = score_document(
+            ["The availability of the services at all times is not guaranteed by Provider."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-5" for p in r.penalties)
+
+    def test_accessible_by_employees_abroad_flagged(self):
+        # Regression: "Customer data is accessible by our employees in China"
+        # is the same cross-border-access risk family as storage and must fire
+        # R-DATA-2.
+        r = score_document(
+            ["Customer data is accessible by our employees in China."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
