@@ -103,6 +103,15 @@ SHOULD_NOT_FIRE = [
     ("D-5 neg: return or destroy within 30 days", "Following termination, Provider shall return or destroy all Customer data within thirty days."),
     # cycle 10 R-COMM-3 over-fire
     ("C-3 neg: right to adjust by mutual consent", "Customer shall have the right to adjust the fees by mutual written consent of both parties."),
+    # cycle 11 R-COMM-3 over-fire
+    ("C-3 neg: prices may decrease", "Prices may decrease at any time at the provider's sole discretion."),
+    ("C-3 neg: no price increase for first year", "There shall be no price increase during the first year of the term."),
+    ("C-3 neg: CPI-indexed increase", "Fees will increase annually in line with the consumer price index."),
+    # cycle 11 R-LIAB-6 over-fire
+    ("L-6 neg: penalty capped at actual loss", "Any penalty for delay shall be capped at the actual loss suffered by the buyer."),
+    ("L-6 neg: reasonable estimate", "The charge represents a reasonable estimate of the anticipated loss."),
+    ("L-6 neg: no penalty", "No penalty shall be payable for any delay in delivery."),
+    ("L-6 neg: penalty not exceeding 5%", "The penalty for delay shall not exceed 5% of the contract value."),
 ]
 
 SHOULD_FIRE = [
@@ -204,6 +213,14 @@ SHOULD_FIRE = [
     ("D-2 pos: process through subprocessors in US", "Provider may process Customer data through subprocessors located in the United States."),
     # cycle 10 R-LIAB-1 under-fire
     ("L-1 pos: lost profits disclaimer", "Provider shall not be liable for any indirect damages, including lost profits, revenue, or business interruption."),
+    # cycle 11 R-COMM-3 under-fire
+    ("C-3 pos: prices may increase", "Prices may increase at any time upon 30 days' prior written notice to Customer."),
+    ("C-3 pos: fees will increase annually", "The fees will increase annually upon 60 days' written notice."),
+    # cycle 11 R-LIAB-6 under-fire
+    ("L-6 pos: penalty 5% of contract value", "A penalty of 5% of the contract value shall be payable by the supplier for any delay in delivery."),
+    ("L-6 pos: penalty $1,000 for any delay", "A penalty of $1,000 shall be payable by the supplier for any delay in delivery."),
+    ("L-6 pos: penalty 2% of purchase price", "The supplier shall pay a penalty equal to 2% of the purchase price for each week of delay."),
+    ("L-6 pos: fixed charge no tail", "A fixed charge of EUR 500 for any delay shall be paid by the supplier."),
 ]
 
 

@@ -143,7 +143,7 @@ RULES: List[Rule] = [
             r"license|licence|usage)\s+)?(?:price|prices|fees|fee|pricing)"
             r"|(?:price|prices|fees|fee)[^.;]{0,30}(?:may|shall|will|can) be "
             r"(?:adjusted|increased|changed|modified|revised|altered)"
-            r"|(?:prices?|fees?)\s+(?:may|shall|will|can)\s+change\b|"
+            r"|(?:prices?|fees?)\s+(?:may|shall|will|can)\s+(?:change\b|increase\b|rise\b|escalate\b)|"
             r"(?:prices?|fees?)\s+(?:are|is|shall be|will be|may be)\s+subject to\s+change\b|"
             r"price (?:increase|escalation)",
             re.IGNORECASE,
@@ -448,7 +448,10 @@ RULES: List[Rule] = [
             r"liquidated damages\b|"
             r"(?:penalt(?:y|ies)|fixed charge(?:s)?|forfeit(?:ure)?)[^.;]{0,60}"
             r"(?:\$[^.;]{0,20}(?:per |for each |for every |upon)|"
-            r"forfeit(?:ed|ing)?\b|per[ -]?(?:day|week|month|occurrence|event)\b)",
+            r"forfeit(?:ed|ing)?\b|per[ -]?(?:day|week|month|occurrence|event)\b|"
+            r"(?:\d+(?:\.\d+)?\s*%|\$\s?\d[\d,.]*|\d[\d,.]*\s*(?:USD|EUR|GBP|AUD|CAD|dollars?|euros?)|"
+            r"(?:USD|EUR|GBP|AUD|CAD)\s*\d[\d,.]*)"
+            r"[^.;]{0,40}(?:for (?:any|each|every)|\bp(?:ayable|aid)\b|\bimposed\b))",
             re.IGNORECASE,
         ),
         exclusion=re.compile(

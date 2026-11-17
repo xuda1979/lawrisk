@@ -2434,3 +2434,121 @@ class TestCycle10Precision:
             "d",
         )
         assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+
+class TestCycle11Precision:
+    """Cycle-11 precision regression: R-COMM-3 active intransitive
+    increases; R-LIAB-6 unanchored flat/percentage penalties."""
+
+    def test_prices_may_increase_flagged(self):
+        # Regression: an active intransitive "prices may increase" clause
+        # is a unilateral price hike and must fire R-COMM-3.
+        r = score_document(
+            ["Prices may increase at any time upon 30 days' prior written "
+             "notice to Customer."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_fees_will_increase_annually_flagged(self):
+        # Regression: a mandatory annual fee escalation must fire R-COMM-3.
+        r = score_document(
+            ["The fees will increase annually upon 60 days' written notice."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_prices_may_decrease_not_flagged(self):
+        # Control: a right to lower prices is not a unilateral increase.
+        r = score_document(
+            ["Prices may decrease at any time at the provider's sole "
+             "discretion."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_no_price_increase_for_first_year_not_flagged(self):
+        # Control: an explicit no-increase commitment is not a hike.
+        r = score_document(
+            ["There shall be no price increase during the first year of the "
+             "term."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_cpi_indexed_increase_not_flagged(self):
+        # Control: an objective CPI-indexed escalation is market-tied and
+        # stays silent.
+        r = score_document(
+            ["Fees will increase annually in line with the consumer price "
+             "index."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_penalty_percentage_of_contract_value_flagged(self):
+        # Regression: a flat percentage penalty for delay must fire
+        # R-LIAB-6 even without a per-day or forfeiture anchor.
+        r = score_document(
+            ["A penalty of 5% of the contract value shall be payable by the "
+             "supplier for any delay in delivery."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-6" for p in r.penalties)
+
+    def test_penalty_fixed_dollar_for_any_delay_flagged(self):
+        # Regression: a fixed-dollar penalty with a "for any delay" tail
+        # must fire R-LIAB-6.
+        r = score_document(
+            ["A penalty of $1,000 shall be payable by the supplier for any "
+             "delay in delivery."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-6" for p in r.penalties)
+
+    def test_penalty_percentage_per_week_flagged(self):
+        # Regression: a per-week percentage penalty must fire R-LIAB-6.
+        r = score_document(
+            ["The supplier shall pay a penalty equal to 2% of the purchase "
+             "price for each week of delay."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-6" for p in r.penalties)
+
+    def test_fixed_charge_currency_prefix_flagged(self):
+        # Regression: a currency-word-prefixed fixed charge for any delay
+        # must fire R-LIAB-6.
+        r = score_document(
+            ["A fixed charge of EUR 500 for any delay shall be paid by the "
+             "supplier."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-6" for p in r.penalties)
+
+    def test_penalty_capped_at_actual_loss_not_flagged(self):
+        # Control: a penalty bounded at the actual loss is not
+        # disproportionate and stays silent.
+        r = score_document(
+            ["Any penalty for delay shall be capped at the actual loss "
+             "suffered by the buyer."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-6" for p in r.penalties)
+
+    def test_penalty_not_exceeding_percentage_not_flagged(self):
+        # Control: an express cap ("not exceed 5%") keeps the penalty
+        # proportionate and silent.
+        r = score_document(
+            ["The penalty for delay shall not exceed 5% of the contract "
+             "value."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-6" for p in r.penalties)
+
+    def test_no_penalty_not_flagged(self):
+        # Control: an express no-penalty clause must stay silent.
+        r = score_document(
+            ["No penalty shall be payable for any delay in delivery."],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-6" for p in r.penalties)
