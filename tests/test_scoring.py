@@ -3530,3 +3530,74 @@ class TestCycle20Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-EXP-1" for p in r.penalties), t
+
+
+class TestCycle21Precision:
+    """Cycle-21 precision: additional denial-phrasing variants in R-DATA-5.
+    The exclusion previously silenced only "not retained/kept" (passive) plus
+    the "no retention of" / "no ... retention" noun forms. Sentence-initial
+    "No ... data shall be retained", "No party shall retain", and reversed-order
+    "After termination, ... shall not retain/store" phrasings over-fired the
+    rule even though they positively forbid post-termination retention. Three
+    paired denial branches were added to the exclusion. Covered: singular
+    party names, "None of the parties", plain "No customer data is retained",
+    and reversed-order active denial. Positive unbounded retention controls
+    still flag; existing noun/attributive denials and bounded forms stay silent.
+    """
+
+    def test_sentence_initial_no_be_denial_not_flagged(self):
+        benign = [
+            "No customer data shall be retained by Provider after termination of the Agreement.",
+            "No personal data will be kept by the parties after expiry of this Agreement.",
+            "No information shall be stored following termination of the Agreement.",
+            "No customer data is retained after termination of the agreement.",
+            "Following expiry, no customer data shall be stored by Provider.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_sentence_initial_no_party_denial_not_flagged(self):
+        benign = [
+            "No party shall retain customer data after termination of the Agreement.",
+            "No provider shall keep any customer data following termination.",
+            "No vendor shall store personal data after expiry of this agreement.",
+            "None of the parties shall retain customer data after termination.",
+            "None of the providers shall keep customer data following expiration.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_reversed_order_active_denial_not_flagged(self):
+        benign = [
+            "After termination, the parties shall not retain any customer data.",
+            "After termination, Customer shall not keep any personal data.",
+            "Upon expiry, the Provider shall not store any customer information.",
+            "After termination, the Provider must not maintain any customer data.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_positive_unbounded_retention_still_flagged(self):
+        flagged = [
+            "Customer data shall be retained by Provider after termination of the Agreement.",
+            "Provider shall retain customer data after termination.",
+            "After termination, Provider shall retain any customer data.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_prior_denial_and_bound_forms_unchanged(self):
+        benign = [
+            "There shall be no retention of customer data after termination.",
+            "Customer data shall not be retained after termination.",
+            "Customer data shall not be kept by Provider after termination.",
+            "Provider may retain customer data for up to 90 days after termination.",
+            "Customer data shall be deleted within 30 days after termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
