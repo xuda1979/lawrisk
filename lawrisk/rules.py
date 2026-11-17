@@ -159,7 +159,7 @@ RULES: List[Rule] = [
             r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof)"
             r"[^.]{0,35}"
             r"(?:at any time|at (?:its|his|their)? ?(?:own )?(?:sole|absolute) discretion|"
-            r"without (?:prior )?(?:notice|consent|approval)|unilaterally)"
+            r"without (?:prior )?(?:notice|consent|approval)|unilaterally|from time to time)"
             r")|"
             r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
             r"[^.]{0,20}(?:amend|modify|alter|vary|change|revise)\s+"
@@ -171,7 +171,8 @@ RULES: List[Rule] = [
             r"[^.]{0,35}(?:may|can|shall|will) be (?:amended|modified|altered|varied|changed|revised)"
             r"[^.]{0,25}(?:by(?: the)? (?:provider|company|vendor|licensor|supplier))"
             r"[^.]{0,40}(?:at any time|without (?:prior )?(?:notice|consent|approval)|"
-            r"at (?:its|their|the (?:provider|company|vendor))? ?(?:own )?(?:sole|absolute) discretion|unilaterally)",
+            r"at (?:its|their|the (?:provider|company|vendor))? ?(?:own )?(?:sole|absolute) discretion|"
+            r"unilaterally|from time to time)",
             re.IGNORECASE,
         ),
         exclusion=_MUTUAL,
@@ -266,7 +267,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-1",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"((?:in no event|under no circumstances)) (?:shall|will) (?:the )?(?:provider|company|vendor|supplier|licensor)|(?:provider|company|vendor|supplier|licensor) shall not (?:be liable|have any liability) for", re.IGNORECASE),
+        pattern=re.compile(r"((?:in no event|under no circumstances)) (?:shall|will) (?:the )?(?:provider|company|vendor|supplier|licensor)|(?:provider|company|vendor|supplier|licensor) (?:shall|will) (?:not (?:be liable|have any liability)|have no liability) for", re.IGNORECASE),
         exclusion=re.compile(r"(?:fraud|death|personal injury|gross negligence|wilful misconduct|willful misconduct|neither party|both parties|each party|either party)", re.IGNORECASE),
         severity=25,
         reason="Broad disclaimer covering consequential/indirect damages",
@@ -276,7 +277,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-2",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,60}(?:limited to|shall not exceed|capped? at)", re.IGNORECASE),
+        pattern=re.compile(r"(?:total |aggregate |maximum )?liability[^.]{0,60}(?:limited to|shall not exceed|shall (?:in no event|never) exceed|in excess of|capped? at)", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:shall|will|is|is hereby|be) not (?:be )?limited(?: to)?|"
             r"not be limited to|not limited to|"
@@ -449,7 +450,7 @@ RULES: List[Rule] = [
             # verb-led: {transfer...} {data} {outbound}
             r"(?:transfer(?:ring|red|s)?|transmit(?:ting|ted|s)?|process(?:ing|ed|es)?|"
             r"share(?:ing|d|s)?|store(?:ing|d|s)?|export(?:ing|ed|s)?|send(?:ing)?|"
-            r"access(?:ing|ed)?|move(?:ing|d)?)"
+            r"access(?:ing|ed)?|move(?:ing|d)?|host(?:ing|ed|s)?)"
             r"[^.]{0,20}(?:personal )?(?:data|information)[^.]{0,30}"
             r"(?:to|outside|abroad|from|in|at|into)"
             r"[^.]{0,20}(?:the )?"
@@ -460,7 +461,8 @@ RULES: List[Rule] = [
             # data-led: {data} {modal?} {passive verb} {outbound}
             r"(?:personal )?(?:data|information)[^.]{0,15}"
             r"(?:(?:is|are|shall|will|may|can|be|being|was|were)[^.]{0,5})?"
-            r"(?:transferred|transmitted|processed|stored|shared|accessed|exported|sent|moved)"
+            r"(?:transferred|transmitted|processed|stored|shared|accessed|exported|sent|moved|"
+            r"hosted|located|maintained)"
             r"[^.]{0,30}"
             r"(?:abroad|outside|"
             r"(?:to|from|in|at|into|with|outside)"
@@ -493,7 +495,8 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"(?:process|use|sell|disclos|retain)(?:ing|es|ed|s)?"
             r"[^.]{0,30}data[^.]{0,20}"
-            r"(?:for any purpose|for (?:its|our) own(?: independent)?(?: business)? purposes|"
+            r"(?:for any purpose|for any other purpose|for any (?:and all|other) purposes?|"
+            r"for (?:its|our) own(?: independent)?(?: business)? purposes|"
             r"unlimited|without limitation)",
             re.IGNORECASE,
         ),
@@ -526,7 +529,10 @@ RULES: List[Rule] = [
             r"(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
             r"(?:re[- ]?export|export|transfer)\w*[^.;]{0,60}"
             r"\bwith(?: the)? [^.;]{0,25}(?:prior |written ){0,2}"
-            r"(?:authori[sz](?:ation)?|approval|permission|consent)\b)",
+            r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
+            r"(?:may|shall|will|must|can) not (?:be )?(?:re[- ]?export(?:ed|ing)?|export(?:ed|ing)?)"
+            r"[^.;]{0,60}without[^.;]{0,40}"
+            r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e))",
             re.IGNORECASE,
         ),
         severity=25,
@@ -581,7 +587,7 @@ RULES: List[Rule] = [
             r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
             r"(?:may|shall|will|must|can) not (?:be )?(?:re[- ]?export(?:ed|ing)?|export(?:ed|ing)?)"
             r"[^.;]{0,40}without[^.;]{0,40}"
-            r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent)|"
+            r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
             r"subject to|comply|controls|restrictions|screening)",
             re.IGNORECASE,
         ),

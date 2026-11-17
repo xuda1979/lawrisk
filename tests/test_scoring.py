@@ -725,6 +725,16 @@ class TestRuleMeshes:
             r = score_document(paras, "d")
             assert any(p.rule_id == "R-LIAB-1" for p in r.penalties), paras
 
+    def test_shall_have_no_liability_flagged(self):
+        # Regression: the "shall have no liability for" construction (object
+        # form, no "not" after the subject) was missing from the R-LIAB-1
+        # subject branch and slipped past the rule.
+        r = score_document(
+            ["The provider shall have no liability for consequential or indirect losses arising from use of the services."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
     def test_vendor_disclaimer_with_carve_outs_not_flagged(self):
         # Guard: vendor/supplier disclaimers that do carry carve-outs must stay
         # silent under R-LIAB-1.
@@ -756,6 +766,28 @@ class TestRuleMeshes:
             r = score_document(paras, "d")
             assert any(p.rule_id == "R-LIAB-2" for p in r.penalties), paras
 
+    def test_liability_shall_in_no_event_exceed_flagged(self):
+        # Regression: "liability shall in no event exceed" places the adverb
+        # between "shall" and the cap verb; the pattern only matched
+        # "shall not exceed" and slipped past the rule.
+        r = score_document(
+            ["The provider's aggregate liability shall in no event exceed the fees paid in the twelve months preceding the claim."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-2" for p in r.penalties)
+
+    def test_liability_in_excess_of_amounts_paid_flagged(self):
+        # Regression: "shall have liability in excess of the amounts actually
+        # paid" is the classic cap-at-fees formulation; "in excess of" was
+        # missing from the R-LIAB-2 pattern. The asymmetric "Neither the
+        # provider nor its affiliates" subject keeps it out of the mutual
+        # "paid or received" exclusion.
+        r = score_document(
+            ["Neither the provider nor its affiliates shall have liability in excess of the amounts actually paid by Customer."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-2" for p in r.penalties)
+
     def test_as_is_disclaimer_flagged(self):
         r = score_document(
             ["The Services are provided on an as-is basis without warranties of any kind."], "d"
@@ -771,6 +803,16 @@ class TestRuleMeshes:
     def test_cross_border_data_transfer_flagged(self):
         r = score_document(
             ["Provider may transfer personal data outside the EEA for processing."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_hosted_in_united_states_flagged(self):
+        # Regression: "will be hosted in the United States" is a cross-border
+        # data-location statement; "hosted" was missing from the R-DATA-2
+        # verb lists and slipped past the rule.
+        r = score_document(
+            ["Customer data will be hosted in the United States by the provider's affiliate."],
+            "d",
         )
         assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
 
@@ -798,6 +840,23 @@ class TestRuleMeshes:
     def test_unlimited_data_processing_flagged(self):
         r = score_document(
             ["Provider may process Customer data for any purpose."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_process_for_any_other_purpose_flagged(self):
+        # Regression: "for any other purpose" is the same open-ended processing
+        # purpose as "for any purpose" and must fire R-DATA-3.
+        r = score_document(
+            ["Provider may process Customer data for any other purpose without limitation."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_use_for_any_and_all_purposes_flagged(self):
+        # Regression: "for any and all purposes" is an all-purpose grant and
+        # must fire R-DATA-3.
+        r = score_document(
+            ["Provider may use the data for any and all purposes."], "d"
         )
         assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
 
@@ -881,6 +940,17 @@ class TestRuleMeshes:
         # approval") is a control, not a gap, and must not fire R-EXP-1/R-EXP-3.
         r = score_document(
             ["Deliverables may be shipped worldwide, but may not be re-exported without the prior written approval of the licensor."], "d"
+        )
+        assert all(p.rule_id not in {"R-EXP-1", "R-EXP-3"} for p in r.penalties)
+
+    def test_reexport_ban_without_export_licence_not_flagged(self):
+        # Regression: "shall not re-export ... without an export licence" is a
+        # protective prohibition (the licence requirement is the control) and
+        # must not fire R-EXP-1 or R-EXP-3; "licence" was missing from the
+        # post-"without" tails of both exclusions.
+        r = score_document(
+            ["The buyer shall not re-export the software to any third party without an export licence."],
+            "d",
         )
         assert all(p.rule_id not in {"R-EXP-1", "R-EXP-3"} for p in r.penalties)
 
@@ -1246,6 +1316,25 @@ class TestRuleMeshes:
             ["Either party may amend this Agreement by written agreement signed by both parties."], "d"
         )
         assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_amendment_by_licensor_from_time_to_time_flagged(self):
+        # Regression: "may be amended by the Licensor from time to time" is a
+        # unilateral amendment right; "from time to time" must be accepted by
+        # the R-COMM-5 tail even though it is not "at any time"/"sole discretion".
+        r = score_document(
+            ["The terms and conditions of this agreement may be amended by the Licensor from time to time."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_revision_by_provider_from_time_to_time_flagged(self):
+        # Regression: the passive-branch tail must also accept "from time to
+        # time" for "revised by the Provider ... from time to time".
+        r = score_document(
+            ["These terms may be revised by the Provider from time to time, with updated versions posted online."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
 
     def test_for_convenience_with_at_termination_flagged(self):
         # Regression: "at its convenience" (the "at ... convenience" form of the
