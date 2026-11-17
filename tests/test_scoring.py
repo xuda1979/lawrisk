@@ -2032,3 +2032,106 @@ class TestCycle7Precision:
             "d",
         )
         assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
+
+class TestCycle8Precision:
+    """Regression mesh for cycle-8 over-fire and under-fire gap fixes."""
+
+    def test_end_users_not_flagged(self):
+        # Regression: "end users" (plural noun, no end-use commitment) must not
+        # fire R-EXP-3; the lookahead must also reject "end users", not just
+        # "end-user".
+        r = score_document(
+            ["Provider delivers the software for use by end users across the globe."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-3" for p in r.penalties)
+
+    def test_cap_on_amounts_paid_by_other_party_not_flagged(self):
+        # Regression: a symmetric cap tied to "amounts actually paid by the
+        # other party" (mutual, per-party) must not fire R-LIAB-2.
+        r = score_document(
+            [
+                "In no event shall either party's aggregate liability arising out of this agreement "
+                "exceed the amounts actually paid by the other party in the preceding twelve months."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-LIAB-2" for p in r.penalties)
+
+    def test_parties_amend_by_mutual_written_agreement_not_flagged(self):
+        # Regression: "The parties may amend ... by mutual written agreement"
+        # is a mutual amendment and must not fire R-COMM-5.
+        r = score_document(
+            ["The parties may amend these terms at any time by mutual written agreement."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_not_for_delivery_to_cuba_or_iran_not_flagged(self):
+        # Regression: "not for delivery to Cuba or Iran" is a prohibition, not
+        # a sanctioned-destination commitment; must not fire R-EXP-2.
+        r = score_document(
+            ["All goods are strictly not for delivery to Cuba or Iran under any circumstances."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_renew_unless_terminated_in_writing_not_flagged(self):
+        # Regression: "shall automatically renew ... unless terminated in
+        # writing by either party" has an opt-out and must not fire R-COMM-1.
+        r = score_document(
+            [
+                "The term shall automatically renew for successive one-year periods "
+                "unless terminated in writing by either party."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_exports_under_valid_licence_not_flagged(self):
+        # Regression: "All exports shall be made under a valid export licence"
+        # is a controlled export, not a missing-controls gap; must not fire
+        # R-EXP-1.
+        r = score_document(
+            ["All exports shall be made under a valid export licence obtained by the exporter."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-1" for p in r.penalties)
+
+    def test_retain_after_termination_date_flagged(self):
+        # Regression: time-preposition-first "After the termination date,
+        # Provider shall retain Customer data" must fire R-DATA-5.
+        r = score_document(
+            ["After the termination date, Provider shall retain Customer data."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_use_for_any_reason_whatsoever_flagged(self):
+        # Regression: "use Customer data for any reason whatsoever" is an
+        # unrestricted-use gap and must fire R-DATA-3.
+        r = score_document(
+            ["Provider may use Customer data for any reason whatsoever."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_keep_following_expiry_flagged(self):
+        # Regression: "Following expiry of the agreement, the vendor may keep
+        # Customer information" must fire R-DATA-5.
+        r = score_document(
+            ["Following expiry of the agreement, the vendor may keep Customer information."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_terminate_without_reason_flagged(self):
+        # Regression: "may terminate the agreement at any time without reason"
+        # is a one-sided termination right and must fire R-COMM-2 (alongside
+        # "without assigning any reason").
+        r = score_document(
+            ["Company may terminate the agreement at any time without reason."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)

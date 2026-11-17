@@ -67,6 +67,18 @@ SHOULD_NOT_FIRE = [
     ("E-3 neg: no re-export without authorisation", "Buyer shall not re-export the software to any country without the prior written authorisation of the Licensor."),
     # cycle 7 R-DATA-2 over-fire
     ("D-2 neg: SCC transfer processed", "Customer data is transferred to the affiliate subject to the Standard Contractual Clauses approved by the European Commission."),
+    # cycle 8 R-EXP-3 over-fire
+    ("E-3 neg: end users", "Provider delivers the software for use by end users across the globe."),
+    # cycle 8 R-LIAB-2 over-fire
+    ("L-2 neg: cap on amounts paid by other party", "In no event shall either party's aggregate liability arising out of this agreement exceed the amounts actually paid by the other party in the preceding twelve months."),
+    # cycle 8 R-COMM-5 over-fire
+    ("C-5 neg: parties amend by mutual written agreement", "The parties may amend these terms at any time by mutual written agreement."),
+    # cycle 8 R-EXP-2 over-fire
+    ("E-2 neg: not for delivery to Cuba/Iran", "All goods are strictly not for delivery to Cuba or Iran under any circumstances."),
+    # cycle 8 R-COMM-1 over-fire
+    ("C-1 neg: renew unless terminated in writing", "The term shall automatically renew for successive one-year periods unless terminated in writing by either party."),
+    # cycle 8 R-EXP-1 over-fire
+    ("E-1 neg: exports under valid licence", "All exports shall be made under a valid export licence obtained by the exporter."),
 ]
 
 SHOULD_FIRE = [
@@ -135,6 +147,14 @@ SHOULD_FIRE = [
     ("C-4 pos: novate no consent", "Customer may novate this agreement to any third party without the prior written consent of Provider."),
     # cycle 7 R-DATA-3 under-fire
     ("D-3 pos: marketing use", "Provider may use Customer data for marketing purposes."),
+    # cycle 8 R-DATA-5 under-fire
+    ("D-5 pos: retain after termination date", "After the termination date, Provider shall retain Customer data."),
+    # cycle 8 R-DATA-3 under-fire
+    ("D-3 pos: any reason whatsoever", "Provider may use Customer data for any reason whatsoever."),
+    # cycle 8 R-DATA-5 under-fire
+    ("D-5 pos: keep following expiry", "Following expiry of the agreement, the vendor may keep Customer information."),
+    # cycle 8 R-COMM-2 under-fire
+    ("C-2 pos: terminate without reason", "Company may terminate the agreement at any time without reason."),
 ]
 
 

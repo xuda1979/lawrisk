@@ -96,7 +96,11 @@ RULES: List[Rule] = [
             r"\b(?:either party|neither party)[^.;]{0,80}"
             r"(?:may|shall|will)?\s*(?:give(?:s|n)?|deliver(?:s|ed)?|provide(?:s|d)?)"
             r"\b[^.;]{0,40}written notice of (?:termination|cancellation)[^.;]{0,40}"
-            r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry))",
+            r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry)|"
+            r"(?:automatically\s+renew|auto[- ]?renew(?:s|al)?|automatic renewal)"
+            r"[^.;]{0,60}(?:unless|except|provided\s+(?:that|it))[^.;]{0,60}"
+            r"(?:terminated?(?: in writing)?|notices? in writing|written notice)"
+            r"(?: by either party)?)",
             re.IGNORECASE,
         ),
         severity=20,
@@ -111,7 +115,7 @@ RULES: List[Rule] = [
             r"\b(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?|terminab(?:le|ility))\b[^.]{0,40}"
             r"(?:without cause|for any(?: reason| purpose)?|for no reason|at will|"
             r"(?:at|for)\s+(?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience|"
-            r"for convenience|without assigning any reason)",
+            r"for convenience|without assigning any reason|without (?:any )?reason\b)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(r"(?:{})|(?:{})".format(_CARVEOUT.pattern, _MUTUAL.pattern), re.IGNORECASE),
@@ -190,7 +194,15 @@ RULES: List[Rule] = [
             r"unilaterally|from time to time)",
             re.IGNORECASE,
         ),
-        exclusion=_MUTUAL,
+        exclusion=re.compile(
+            r"(?:{}|"
+            r"by mutual (?:written )?(?:agreement|consent)|"
+            r"mutual written consent|"
+            r"with (?:the )?(?:prior )?written consent of (?:both|either|each) parties?)".format(
+                _MUTUAL.pattern
+            ),
+            re.IGNORECASE,
+        ),
         severity=20,
         reason="Unilateral amendment of the agreement or its terms without mutual written consent",
         mitigation="Require amendments to be agreed in writing by both parties; allow only limited, notice-based administrative changes.",
@@ -323,8 +335,10 @@ RULES: List[Rule] = [
             r"(?:(?:total |aggregate )?liability[^.;]{0,30}(?:of|for) "
             r"(?:each party|either party|both parties)"
             r"|(?:each party|either party|both parties)'?s?[^.;]{0,30}(?:total |aggregate |maximum )?liability)"
-            r"[^.;]{0,60}"
-            r"(?:paid (?:or|and) received|received (?:or|and) paid)",
+            r"[^.;]{0,120}"
+            r"(?:paid (?:or|and) received|received (?:or|and) paid|"
+            r"(?:paid|received)\s+(?:by|from)\s+(?:the )?(?:other|either|each|any) party|"
+            r"amounts? actually paid)",
             re.IGNORECASE,
         ),
         severity=25,
@@ -434,6 +448,13 @@ RULES: List[Rule] = [
             r"(?:(?:shall|may|will|can) (?:be )?(?:retained?|kept|maintain(?:s|ed)?|store[sd]?)|"
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store))\b"
             r"[^.]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
+            r"(?:after|following|upon) (?:the )?(?:termination(?: date)?|expiration|expiry|"
+            r"such termination|termination of (?:this|the) agreement)"
+            r"[^.;]{0,60}(?:provider|vendor|supplier|company|licensor)?[^.;]{0,60}"
+            r"(?:shall|may|will|can|must|is (?:required|obligated) to)[^.;]{0,20}"
+            r"(?:retain|keep|maintain|store)\s+(?:any |all |the )?(?:backup )?"
+            r"(?:copies?|extracts?|records?)?\s*(?:of\s+)?"
+            r"(?:customer )?(?:personal )?(?:data|information)|"
             r"(?:shall|may|will|can) (?:retain|keep|maintain|store)\s+"
             r"(?:any |all |the )?(?:backup )?(?:copies?|extracts?|records?)?\s*(?:of\s+)?"
             r"(?:customer )?(?:personal )?(?:data|information)"
@@ -554,7 +575,8 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"(?:process|use|sell|disclos|retain)(?:ing|es|ed|s)?"
             r"[^.]{0,30}data[^.]{0,20}"
-            r"(?:for any purpose|for any other purpose|for any (?:and all|other) purposes?|"
+            r"(?:for any (?:purpose|reason)(?: whatsoever)?|for any other purpose|"
+            r"for any (?:and all|other) purposes?|"
             r"for (?:its|our) own(?: independent)?(?: business)? purposes|"
             r"for (?:marketing|advertising|commercial|unrelated) purposes|"
             r"for purposes? other than|unlimited|without limitation)",
@@ -606,7 +628,9 @@ RULES: List[Rule] = [
             r"(?:sanctioned|prohibited|restricted)[^.;]{0,20}"
             r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies))|"
             r"(?:excluding|excluded|exclude|except\b)[^.;]{0,80}"
-            r"(?:regions?|territor(?:y|ies)|jurisdiction(?:s)?|countr(?:y|ies)|sanctioned))",
+            r"(?:regions?|territor(?:y|ies)|jurisdiction(?:s)?|countr(?:y|ies)|sanctioned)|"
+            r"\bunder (?:a |the )?(?:valid |applicable |appropriate |current )?"
+            r"(?:export|re[- ]?export) licen[cs]e\b)",
             re.IGNORECASE,
         ),
         severity=25,
@@ -628,6 +652,8 @@ RULES: List[Rule] = [
             r"\b(cuba|iran|syria|north korea|crimea|sudan|myanmar)\b", re.IGNORECASE
         ),
         exclusion=re.compile(
+            r"\bnot(?:\s+be)?\s+for\s+(?:delivery|sale|export|shipment|transfer)"
+            r"(?:\s+(?:to|into|in))?[^.;]{0,40}\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
             r"(?:shall|will|must|may) not (?:be )?(?:export(?:ed)?|ship(?:ped)?|"
             r"transfer(?:red)?|sell|sold|deliver(?:ed)?|provide(?:d)?|distribute(?:d)?"
             r"|fulfil(?:l)?(?:ed)?)\b|"
@@ -658,7 +684,7 @@ RULES: List[Rule] = [
         rule_id="R-EXP-3",
         dimension=Dimension.EXPORT,
         condition=re.compile(r"deliver|ship|supply|technology|software", re.IGNORECASE),
-        pattern=re.compile(r"(?:re[- ]?export|diversion|end[- ]?use(?!r\b))", re.IGNORECASE),
+        pattern=re.compile(r"(?:re[- ]?export|diversion|end[- ]?use(?!r(?:s)?\b))", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:require[sd]?[^.]{0,30}(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
             r"obtain[^.]{0,30}authori[sz]|obtain[^.]{0,50}(?:approval|permission|consent|licen[cs]e)|"
