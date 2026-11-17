@@ -3370,3 +3370,79 @@ class TestCycle18Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle19Precision:
+    """Cycle-19 precision: attributive retention forms ("customer data
+    retention") in R-DATA-5. The attributive noun form ("data retention after
+    termination.") without a preposition ("retention of data") or a retention
+    verb was silent even for UNBOUNDED retention. Two paired branches now fire
+    the attributive form (forward + leading/reversed order), and the exclusion
+    gained the "no customer data retention" attributive denial mirror. The
+    paragraph-wide bound idioms already silence the bounded attributive forms.
+    """
+
+    def test_attributive_unbounded_retention_flagged(self):
+        flagged = [
+            "Customer data retention after termination.",
+            "Customer data retention following termination of this agreement.",
+            "Personal data retention after the expiry of this agreement.",
+            "Data retention after termination of this agreement.",
+            "Customer data storage following termination is unrestricted.",
+            "After termination of this agreement, customer data retention is permitted.",
+            "After termination, customer data retention shall be permitted.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_bounded_retention_not_flagged(self):
+        benign = [
+            "Customer data retention for up to 90 days after termination.",
+            "Customer data retention shall not exceed 90 days after termination.",
+            "Data retention for a period of 12 months following termination.",
+            "Customer data retention following termination is capped at twelve months.",
+            "Customer data retention is limited to 60 days after termination.",
+            "Customer data retention shall not exceed 90 days, after which it shall be deleted.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_topic_only_not_flagged(self):
+        # A bare mention of a retention policy with no termination anchor is
+        # not post-termination retention beyond a bound.
+        t = "Provider has a comprehensive customer data retention policy."
+        r = score_document([t], "d")
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_attributive_no_retention_denial_not_flagged(self):
+        # "No customer data retention" is the attributive mirror of the
+        # noun-led "no retention of customer data" and must stay silent.
+        benign = [
+            "No customer data retention after termination.",
+            "No data storage following termination.",
+            "No personal data preservation upon termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_controls_unchanged(self):
+        # Controls: noun-led and verb-led retention behavior is unchanged
+        # after adding the attributive branch.
+        flagged = [
+            "Retention of customer data after termination.",
+            "Customer data shall be retained after termination for seven years.",
+            "Provider may keep personal information following termination of this agreement.",
+        ]
+        benign = [
+            "Provider may keep customer data for up to 12 months after expiry of this agreement.",
+            "Provider shall delete all customer data upon termination of this agreement.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t

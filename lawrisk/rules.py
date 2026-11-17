@@ -528,13 +528,18 @@ RULES: List[Rule] = [
             r"(?:the )?(?:retention|storage|preservation) of (?:customer )?(?:personal )?(?:data|information)"
             r"[^.;]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
             r"(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)"
-            r"[^.;]{0,40}(?:the )?(?:retention|storage|preservation) of (?:customer )?(?:personal )?(?:data|information)",
+            r"[^.;]{0,40}(?:the )?(?:retention|storage|preservation) of (?:customer )?(?:personal )?(?:data|information)|"
+            r"(?:customer )?(?:personal )?(?:data|information) (?:retention|storage|preservation)"
+            r"[^.;]{0,40}(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)|"
+            r"(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)"
+            r"[^.;]{0,40}(?:customer )?(?:personal )?(?:data|information) (?:retention|storage|preservation)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:require|required|obligat|as (?:required|needed)|in accordance with|"
             r"only for|solely|necessary to (?:comply|fulfil|fulfill)|legal obligation|"
             r"not (?:be )?(?:retained|kept)|no (?:retention|storage|preservation) of\b|"
+            r"\bno (?:customer )?(?:personal )?(?:data|information) (?:retention|storage|preservation)\b|"
             r"until[^.;]{0,40}(?:deleted|removed|purged|destroyed|returned)|"
             r"deleted[^.;]{0,30}within|removed[^.;]{0,30}within|returned[^.;]{0,30}within|"
             r"within (?:a period of|ninety|[0-9]+|thirty|sixty|seven|\w+)\s*(?:\(?\s*[0-9]+\s*\)?)?\s*"
