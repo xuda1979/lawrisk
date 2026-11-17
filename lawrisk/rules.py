@@ -445,7 +445,8 @@ RULES: List[Rule] = [
             r"(?:notwithstanding|except as (?:set forth|provided)|provided\s+that\b|however|but)\b"
             r"[^.;]{0,80}warrant|"
             r"(?:each|either|both|neither) party[^.;]{0,50}(?:makes?|gives?|offers?)?\s*"
-            r"no\s+(?:warrant(?:y|ies)|representation(?:s)?)\b)",
+            r"no\s+(?:warrant(?:y|ies)|representation(?:s)?)\b|"
+            r"\bas (?:is )?(?:necessary|required|needed|appropriate)\b)",
             re.IGNORECASE,
         ),
         severity=30,
@@ -537,7 +538,14 @@ RULES: List[Rule] = [
         ),
         exclusion=re.compile(
             r"(?:require|required|obligat|as (?:required|needed)|in accordance with|"
-            r"only for|solely|necessary to (?:comply|fulfil|fulfill)|legal obligation|"
+            r"only for|solely|necessary to (?:comply|fulfil|fulfill)|"
+            r"necessary for (?:the )?(?:regulatory |applicable |statutory |legal )?"
+            r"(?:compliance|fulfil(?:l)?ment)|as necessary for compliance|"
+            r"in compliance with (?:applicable |statutory |legal )?"
+            r"(?:laws?|regulations?|requirements?|obligations?)|"
+            r"for compliance with (?:applicable |statutory |legal )?"
+            r"(?:laws?|regulations?|requirements?|obligations?)|"
+            r"required for (?:regulatory |applicable |statutory )?(?:compliance|purposes)|legal obligation|"
             r"not (?:be )?(?:retained|kept)|no (?:retention|storage|preservation) of\b|"
             r"\bno (?:customer )?(?:personal )?(?:data|information) (?:retention|storage|preservation)\b|"
             r"\b(?:no|none of)(?: |,)(?:customer |personal )?(?:data|information)\b"
@@ -545,7 +553,10 @@ RULES: List[Rule] = [
             r"(?:retained?|kept|stored|maintained|preserv(?:ed|ing)?)\b|"
             r"\b(?:no (?:party|provider|vendor|supplier|company|licensor|customer|client|person)|"
             r"none of (?:the )?(?:parties|providers|vendors|suppliers|companies|licensors|"
-            r"customers|clients|persons))\b"
+            r"customers|clients|persons)|"
+            r"neither (?:party|provider|vendor|supplier|company|licensor|customer|client|person)|"
+            r"neither (?:the )?(?:provider|vendor|supplier|company|licensor|customer|client)"
+            r" nor (?:the )?(?:provider|vendor|supplier|company|licensor|customer|client))\b"
             r"[^.;]{0,30}(?:shall|will|may|can|must)[^.;]{0,20}"
             r"(?:retain|keep|store|maintain|preserve)\b|"
             r"(?:after|following|upon) (?:the )?(?:termination|such termination|expiration|expiry)"

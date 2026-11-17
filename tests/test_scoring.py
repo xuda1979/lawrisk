@@ -3601,3 +3601,76 @@ class TestCycle21Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle22Precision:
+    """Cycle-22 precision: neither-party denials + compliance carve-outs in
+    R-DATA-5, and an as-is relative-clause guard in R-LIAB-4.
+
+    R-DATA-5: the cycle-21 exclusion family covered "no party / none of the
+    parties ... shall retain" but the "neither party" and
+    "neither A nor B shall retain" forms still over-fired. The exclusion's
+    legal-basis family covered "necessary to comply" but not
+    "necessary for compliance" / "in compliance with" / "as necessary for
+    compliance", so bounded legal-necessity retention still over-fired.
+    R-LIAB-4: the bare "as is" pattern also matched relative clauses like
+    "data as is necessary / as is required for ...", so a genuine as-is
+    disclaimer remains discredited by unrelated relative-clause wording.
+    Positive unbounded retention and genuine as-is disclaimers still flag.
+    """
+
+    def test_neither_party_denials_not_flagged(self):
+        benign = [
+            "Neither party may retain customer data after termination of the Agreement.",
+            "Neither party shall keep any customer data after expiry.",
+            "Neither party will store customer data following termination.",
+            "Neither party shall maintain any records of customer data after termination.",
+            "Neither Provider nor Customer shall retain customer data after termination of the Agreement.",
+            "After termination, neither party may retain customer data.",
+            "No party shall retain customer data after termination of the Agreement.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_compliance_carve_outs_not_flagged(self):
+        benign = [
+            "Customer data shall be retained after termination only where necessary for "
+            "compliance with applicable regulations.",
+            "Customer data may be retained after termination in compliance with applicable law.",
+            "Customer data may be retained after termination as necessary for compliance "
+            "with applicable law.",
+            "Provider shall retain customer data after termination only to the extent "
+            "required by applicable law.",
+            "Retention of customer data after termination is necessary for compliance "
+            "with statutory obligations.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_as_is_relative_clause_not_flagging_liab4(self):
+        benign = [
+            "Customer data as is necessary for the provision of services may be retained "
+            "after termination.",
+            "Such information as is required to resolve disputes may be kept after termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-4" for p in r.penalties), t
+
+    def test_positive_controls_still_flagged(self):
+        flagged = [
+            "Customer data shall be retained by Provider after termination of the Agreement.",
+            "After termination, Provider shall retain any customer data.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+        flagged_as_is = [
+            "The software is provided as is.",
+            "The software is provided as is, without warranty of any kind.",
+        ]
+        for t in flagged_as_is:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-4" for p in r.penalties), t
