@@ -3210,3 +3210,83 @@ class TestCycle16Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-3" for p in r.penalties), t
+
+
+class TestCycle17Precision:
+    """Cycle-17 precision: R-COMM-5's discretion tail now covers possessive
+    role-noun forms ("in Provider's sole discretion", "at the Vendor's sole
+    discretion"), reversed-order "at the sole discretion of X" tails, and the
+    bare plural "terms"/"conditions" object across all three branches."""
+
+    # ------------------------------------------------------------------ R-COMM-5
+
+    def test_possessive_noun_discretion_flagged(self):
+        # Regression: "'s" possessive role-noun discretion ("in Provider's
+        # sole discretion", "at the Vendor's discretion", "in Licensor's
+        # absolute discretion") must fire R-COMM-5 in the active branches.
+        flagged = [
+            "Provider may modify this agreement in Provider's sole discretion.",
+            "Provider may amend terms at Provider's sole discretion.",
+            "We may change the terms at the Vendor's sole discretion.",
+            "Licensor may modify this agreement in Licensor's absolute discretion.",
+            "Provider may amend terms at the sole discretion of the Vendor.",
+            "Licensor may change these terms at the sole discretion of Licensor.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-5" for p in r.penalties), t
+
+    def test_possessive_noun_discretion_passive_flagged(self):
+        # Regression: the passive branch accepts the same possessive and
+        # reversed-order tails when the amendment is done "by the [role]".
+        flagged = [
+            "These terms may be changed by the Company at the Company's sole discretion.",
+            "The terms and conditions may be changed by the Provider at the Provider's absolute discretion.",
+            "These terms may be revised by the Provider at the sole discretion of the provider.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-5" for p in r.penalties), t
+
+    def test_bare_terms_object_flagged(self):
+        # Regression: the bare plural object ("terms"/"conditions" without a
+        # determiner) is a unilateral-amendment target and must fire R-COMM-5
+        # across the discretion/tail family.
+        flagged = [
+            "Provider may amend terms at Provider's sole discretion.",
+            "Provider may change conditions at the Vendor's sole discretion.",
+            "Provider may vary terms at the sole discretion of the vendor.",
+            "Provider may amend conditions at any time.",
+            "Provider may revise terms without notice.",
+            "Provider may change terms unilaterally.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-5" for p in r.penalties), t
+
+    def test_possessive_shields_unchanged(self):
+        # Controls: mutual/consent/notice-bound amendments keep silencing
+        # R-COMM-5 even with the new bare-object and possessive tails.
+        benign = [
+            "Either party may amend terms by mutual written agreement.",
+            "Provider may amend terms with the prior written consent of both parties.",
+            "Provider may amend terms with thirty days' notice.",
+            "Neither party may amend the terms without the written consent of the other.",
+            "The parties may change conditions by mutual agreement.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-5" for p in r.penalties), t
+
+    def test_unqualified_discretion_still_silent(self):
+        # Precision: the unqualified form (pronoun or possessive role noun,
+        # "at its/Vendor's discretion" without sole/absolute) stays out of
+        # scope — the discriminator is the sole/absolute qualifier or the
+        # notice-free tail.
+        benign = [
+            "Provider may amend terms at its discretion.",
+            "Provider may amend terms at the Vendor's discretion.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-5" for p in r.penalties), t
