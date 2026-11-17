@@ -699,12 +699,16 @@ RULES: List[Rule] = [
         exclusion=re.compile(
             r"(?:comply (?:with|ing)|in compliance|"
             r"subject to (?:[^.]{0,20})?(?:export|sanction)s?|"
+            r"subject to (?:the )?(?:prior |written |express ){0,2}"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent)|"
             r"responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|"
             r"applicable (?:export control|sanctions?|export) laws|"
-            r"with(out)? (?:the )?(?:prior |written ){0,2}"
+            r"(?:with|upon|without) (?:the )?(?:prior |written |express ){0,2}"
             r"(?:authori[sz](?:ation)?|approval|permission|consent)|"
             r"require(?:s|d|ing)?[^.;]{0,40}(?:prior |written |express ){0,2}"
             r"(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
+            r"obtain(?:s|ed|ing)?[^.;]{0,40}(?:prior |written |express ){0,2}"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent)|"
             r"(?:re[- ]?export|export|transfer)\w*[^.;]{0,60}"
             r"\bwith(?: the)? [^.;]{0,25}(?:prior |written ){0,2}"
             r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
@@ -722,8 +726,10 @@ RULES: List[Rule] = [
             r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies))|"
             r"(?:excluding|excluded|exclude|except\b)[^.;]{0,80}"
             r"(?:regions?|territor(?:y|ies)|jurisdiction(?:s)?|countr(?:y|ies)|sanctioned)|"
-            r"\bunder (?:a |the )?(?:valid |applicable |appropriate |current )?"
-            r"(?:export|re[- ]?export) licen[cs]e\b)",
+            r"(?:\bunder|pursuant to) (?:a |the |an |valid |applicable |appropriate |current "
+            r"|export |re[- ]?export |sanctions? ){0,3}licen[cs]e(?:s)?\b|"
+            r"\blicen[cs]ed[^.;]{0,40}(?:under|pursuant to)[^.;]{0,25}"
+            r"(?:export|sanction|licen[cs]e)s?\b)",
             re.IGNORECASE,
         ),
         severity=25,
@@ -860,11 +866,23 @@ ABSENCE_RULES: List[Rule] = [
             r"(?:with|in)[^.;]{0,30}sanctioned|"
             r"(?:shall|will|must) not (?:engage in|conduct|enter into|do)[^.;]{0,40}"
             r"(?:business|dealings|transactions?)?[^.;]{0,20}(?:with|in)[^.;]{0,30}sanctioned|"
+            r"subject to (?:the )?(?:prior |written |express ){0,2}"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
+            r"(?:with|upon|without) (?:the )?(?:prior |written |express ){0,2}"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
+            r"require(?:s|d|ing)?[^.;]{0,40}(?:prior |written |express ){0,2}"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)\b|"
+            r"obtain(?:s|ed|ing)?[^.;]{0,40}(?:prior |written |express ){0,2}"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
             r"only[^.;]{0,45}(?:with|upon)[^.;]{0,25}(?:prior |written |express )?"
             r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
             r"(?:may|shall|will|must|can) not (?:be )?(?:export(?:ed|ing)?|re[- ]?export(?:ed|ing)?)"
             r"[^.;]{0,50}without[^.;]{0,40}"
-            r"(?:prior |written |express )?(?:authori[sz](?:ation)?|approval|permission|consent)",
+            r"(?:prior |written |express )?(?:authori[sz](?:ation)?|approval|permission|consent)|"
+            r"(?:\bunder|pursuant to) (?:a |the |an |valid |applicable |appropriate |current "
+            r"|export |re[- ]?export |sanctions? ){0,3}licen[cs]e(?:s)?\b|"
+            r"\blicen[cs]ed[^.;]{0,40}(?:under|pursuant to)[^.;]{0,25}"
+            r"(?:export|sanction|licen[cs]e)s?\b",
             re.IGNORECASE,
         ),
         severity=25,

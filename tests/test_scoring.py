@@ -3446,3 +3446,87 @@ class TestCycle19Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle20Precision:
+    """Cycle-20 precision: positive authorization-grant export wording.
+
+    Export clauses that *require* or *grant* authorization before export are
+    compliance controls, but the coupled pair R-EXP-1 (exclusion) and R-EXP-4
+    (pattern) only knew a few of their phrasings. "Exports are subject to the
+    prior written authorization of the relevant authorities." fired both rules,
+    and "Exports are subject to obtaining the approval of the relevant
+    authority." fired R-EXP-1 + R-EXP-4 because the `obtain ... approval`
+    idiom existed only in R-EXP-3's exclusion. The grant-language family
+    (`with|upon|without`, `require`, `obtain`, `subject to`) is now encoded
+    identically on both coupled sides.
+    """
+
+    def test_positive_grant_forms_silent(self):
+        # Authorization-grant wording is a control: neither R-EXP-1 nor
+        # R-EXP-4 should fire.
+        benign = [
+            "Software may be exported with prior written authorization from the applicable authorities.",
+            "The software shall be exported upon written consent of the licensor.",
+            "Exports are subject to the prior written authorization of the relevant authorities.",
+            "Customer shall not transfer or export the software without the approval of Provider.",
+            "Exports are subject to obtaining the approval of the relevant authority.",
+            "The software may be delivered with permission of the export licensing body.",
+            "Provider shall require the prior written consent of the licensor before any export.",
+            "Each export shall require a valid export license from the applicable authorities.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties), t
+
+    def test_cycle16_export_shield_controls_unchanged(self):
+        # Cycle-16 controls: restricted export wording stays silent, bare
+        # export wording keeps firing R-EXP-4.
+        benign = [
+            "Software may be exported only with prior written authorization.",
+            "Exports shall be made only upon written approval from Provider.",
+            "The software may be exported only with the prior written consent of the vendor.",
+        ]
+        flagged = [
+            "Customer may export the software to any country.",
+            "The technology is exported to customers worldwide without restriction.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-EXP-4" for p in r.penalties), t
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-EXP-4" for p in r.penalties), t
+
+    def test_sanctions_clauses_stay_silent(self):
+        # R-EXP-2 controls: sanctioned-jurisdiction carve-outs keep their
+        # compliance shields after the R-EXP-1/R-EXP-4 edits.
+        benign = [
+            "No exports to Iran or Syria unless licensed under applicable sanctions.",
+            "The company does not permit sales to Cuba.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in ("R-EXP-1", "R-EXP-2", "R-EXP-4") for p in r.penalties), t
+
+    def test_reexport_controls_unchanged(self):
+        # R-EXP-3 controls: diversion wording with a control stays silent,
+        # unrestricted re-export wording keeps firing.
+        unflagged = [
+            "The company shall maintain re-export and diversion controls.",
+        ]
+        for t in unflagged:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-EXP-3" for p in r.penalties), t
+        t = "The software may be re-exported to any country without restriction."
+        r = score_document([t], "d")
+        assert any(p.rule_id == "R-EXP-3" for p in r.penalties), t
+
+    def test_uncontrolled_export_topic_still_flagged(self):
+        # Controls: trade terms with no visible control retain R-EXP-1.
+        flagged = [
+            "The parties will arrange for bribery insurance on all shipments.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-EXP-1" for p in r.penalties), t
