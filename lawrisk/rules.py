@@ -199,7 +199,7 @@ RULES: List[Rule] = [
             r"(?:this agreement|these presents|these terms|the terms|the terms and conditions|"
             r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof)"
             r"[^.]{0,35}"
-            r"(?:at any time|at (?:its|his|their)? ?(?:own )?(?:sole|absolute) discretion|"
+            r"(?:at any time|(?:at|in) (?:its|his|their|our)? ?(?:own )?(?:sole|absolute) discretion|"
             r"without (?:prior )?(?:notice|consent|approval)|unilaterally|from time to time)"
             r")|"
             r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
@@ -207,12 +207,12 @@ RULES: List[Rule] = [
             r"(?:this agreement|these presents|these terms|the terms|the terms and conditions|"
             r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof|"
             r"such (?:terms|conditions))"
-            r"[^.]{0,15}(?:at (?:its|his|their)? ?(?:own )?(?:sole|absolute) discretion)|"
+            r"[^.]{0,15}(?:(?:at|in) (?:its|his|their|our)? ?(?:own )?(?:sole|absolute) discretion)|"
             r"(?:these terms|the terms and conditions|the terms|this agreement)"
             r"[^.]{0,35}(?:may|can|shall|will) be (?:amended|modified|altered|varied|changed|revised|updated)"
             r"[^.]{0,25}(?:by(?: the)? (?:provider|company|vendor|licensor|supplier))"
             r"[^.]{0,40}(?:at any time|without (?:prior )?(?:notice|consent|approval)|"
-            r"at (?:its|their|the (?:provider|company|vendor))? ?(?:own )?(?:sole|absolute) discretion|"
+            r"(?:at|in) (?:its|their|our|the (?:provider|company|vendor))? ?(?:own )?(?:sole|absolute) discretion|"
             r"unilaterally|from time to time)",
             re.IGNORECASE,
         ),
@@ -318,18 +318,18 @@ RULES: List[Rule] = [
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
             r"(?:suspend|deactivate)[^.]{0,60}"
-            r"(?:the services|services|access|the account|any account)"
+            r"(?:the services|services|access|the account|any account|your account)"
             r"[^.]{0,50}"
             r"(?:without (?:prior )?(?:notice|consent|warning)|"
             r"at any time|"
             r"at (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute)[^.]{0,15}(?:discretion)|"
-            r"with immediate effect)"
+            r"with immediate effect|immediately\b)"
             r"|"
             r"(?:without (?:prior )?(?:notice|consent|warning)|at any time|"
             r"at (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute)[^.]{0,15}(?:discretion)|"
-            r"with immediate effect)"
+            r"with immediate effect|immediately\b)"
             r"[^.]{0,50}(?:suspend|deactivate)[^.]{0,60}"
-            r"(?:the services|services|access|the account|any account)",
+            r"(?:the services|services|access|the account|any account|your account)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -373,12 +373,16 @@ RULES: List[Rule] = [
             r"nothing in (?:this|any) (?:clause|section|agreement)[^.;]{0,40}(?:limits?|caps?|excludes?)|"
             r"without limitation of liability|"
             r"not subject to any (?:limitation|cap)|"
-            r"(?:(?:total |aggregate )?liability[^.;]{0,30}(?:of|for) "
-            r"(?:each party|either party|both parties)"
-            r"|(?:each party|either party|both parties)'?s?[^.;]{0,30}(?:total |aggregate |maximum )?liability)"
+            r"(?:(?:total |aggregate )?liability[^.;]{0,30}(?:of|for)\s+"
+            r"(?:(?:each party|either party|both parties)|"
+            r"(?:the )?(?:provider|company|vendor|licensor|supplier|customer|client))"
+            r"|(?:(?:each party|either party|both parties)|"
+            r"(?:the )?(?:provider|company|vendor|licensor|supplier|customer|client))'?s?"
+            r"[^.;]{0,30}(?:total |aggregate |maximum )?liability)"
             r"[^.;]{0,120}"
             r"(?:paid (?:or|and) received|received (?:or|and) paid|"
-            r"(?:paid|received)\s+(?:by|from)\s+(?:the )?(?:other|either|each|any|such) party|"
+            r"(?:paid|received)\s+(?:by|from)\s+(?:the )?(?:other|either|each|any|such|a|the)?\s*"
+            r"(?:party|customer|client|provider|company|vendor|supplier|licensor)|"
             r"amounts? actually paid)",
             re.IGNORECASE,
         ),
@@ -636,6 +640,13 @@ RULES: List[Rule] = [
             r"for any (?:and all|other) purposes?|"
             r"for (?:its|our) own(?: independent)?(?: business)? purposes|"
             r"for (?:marketing|advertising|commercial|unrelated) purposes|"
+            r"for purposes? other than|unlimited|without limitation)|"
+            r"data[^.]{0,25}(?:may|can|shall|will|is|are)(?: not)?\s+be\s+"
+            r"(?:used|processed|sold|disclosed|retained)[^.]{0,15}(?:as\s+)?"
+            r"(?:for any (?:purpose|reason)(?: whatsoever)?|for any other purpose|"
+            r"for any (?:and all|other) purposes?|"
+            r"for (?:its|our) own(?: independent)?(?: business)? purposes|"
+            r"for (?:marketing|advertising|commercial|unrelated) purposes|"
             r"for purposes? other than|unlimited|without limitation)",
             re.IGNORECASE,
         ),
@@ -666,7 +677,7 @@ RULES: List[Rule] = [
             r"(?:comply (?:with|ing)|in compliance|"
             r"subject to (?:[^.]{0,20})?(?:export|sanction)s?|"
             r"responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|"
-            r"applicable (?:export control|sanctions) laws|"
+            r"applicable (?:export control|sanctions?|export) laws|"
             r"with(out)? (?:the )?(?:prior |written ){0,2}"
             r"(?:authori[sz](?:ation)?|approval|permission|consent)|"
             r"require(?:s|d|ing)?[^.;]{0,40}(?:prior |written |express ){0,2}"
@@ -825,7 +836,12 @@ ABSENCE_RULES: List[Rule] = [
             r"(?:engage|deal|transact|do business)[^.;]{0,30}"
             r"(?:with|in)[^.;]{0,30}sanctioned|"
             r"(?:shall|will|must) not (?:engage in|conduct|enter into|do)[^.;]{0,40}"
-            r"(?:business|dealings|transactions?)?[^.;]{0,20}(?:with|in)[^.;]{0,30}sanctioned",
+            r"(?:business|dealings|transactions?)?[^.;]{0,20}(?:with|in)[^.;]{0,30}sanctioned|"
+            r"only[^.;]{0,45}(?:with|upon)[^.;]{0,25}(?:prior |written |express )?"
+            r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
+            r"(?:may|shall|will|must|can) not (?:be )?(?:export(?:ed|ing)?|re[- ]?export(?:ed|ing)?)"
+            r"[^.;]{0,50}without[^.;]{0,40}"
+            r"(?:prior |written |express )?(?:authori[sz](?:ation)?|approval|permission|consent)",
             re.IGNORECASE,
         ),
         severity=25,

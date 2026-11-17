@@ -3060,3 +3060,153 @@ class TestCycle15Precision:
             ["The Services will be available 99.9% of the time; guaranteed response times apply."], "d"
         )
         assert all(p.rule_id != "R-LIAB-5" for p in r.penalties)
+
+
+class TestCycle16Precision:
+    """Cycle-16 precision: first-person "in/at our sole discretion" and bare
+    "immediately" suspension fire R-COMM-5/-8; fee-keyed one-sided liability
+    caps and "export laws" compliance are protective; prior-authorization
+    export wording shields R-EXP-4; data-led passive purposes fire R-DATA-3."""
+
+    # ------------------------------------------------------------------ R-COMM-5
+
+    def test_our_discretion_in_variant_flagged(self):
+        # Regression: "in our sole/absolute discretion" (first person,
+        # preposition "in") must fire R-COMM-5.
+        flagged = [
+            "Provider may modify this agreement in our sole discretion.",
+            "We may update the terms in our own absolute discretion.",
+            "These terms may be updated by Provider in its sole discretion.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-5" for p in r.penalties), t
+
+    def test_our_discretion_at_variant_flagged(self):
+        # Regression: the at-variant keeps firing after the "in" preposition
+        # was added to the shared alternation.
+        r = score_document(["We may update the terms at our absolute discretion."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_notice_based_amendment_shield(self):
+        # Precision: amendment upon thirty days' notice stays protective.
+        r = score_document(["Provider may modify this agreement with thirty days' notice."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    # ------------------------------------------------------------------ R-COMM-8
+
+    def test_bare_immediately_suspension_flagged(self):
+        # Regression: bare "immediately" as the suspension qualifier (no
+        # notice/consent/effect phrasing) must fire R-COMM-8.
+        flagged = [
+            "Provider may suspend your account immediately.",
+            "Provider may suspend the account immediately.",
+            "Provider may immediately suspend the account.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-8" for p in r.penalties), t
+
+    def test_suspension_immediately_notice_shield(self):
+        # Precision: suspension "immediately upon written notice" is
+        # notice-based and mutually qualified, hence protective.
+        r = score_document(
+            ["Either party may suspend the account immediately upon written notice."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-8" for p in r.penalties)
+
+    def test_suspension_grounds_shield(self):
+        # Precision: suspension for stated material-breach grounds stays
+        # protective for R-COMM-8.
+        r = score_document(
+            ["Provider may suspend the account if Customer materially breaches this agreement."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-8" for p in r.penalties)
+
+    # ------------------------------------------------------------------ R-LIAB-2
+
+    def test_one_sided_fee_keyed_cap_shield(self):
+        # Regression: a liability cap keyed to fees actually paid by the
+        # customer / received by the provider is balanced and must not fire
+        # R-LIAB-2.
+        benign = [
+            "The aggregate liability of each party shall not exceed the fees paid by Customer under this agreement.",
+            "Provider's aggregate liability shall not exceed the fees received by Provider.",
+            "The aggregate liability of each party shall not exceed the fees paid by the customer in the prior twelve months.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-2" for p in r.penalties), t
+
+    def test_fixed_amount_cap_still_flagged(self):
+        # Controls: a plain fixed-dollar cap retains risk and must keep firing
+        # R-LIAB-2 despite the fee-keyed shields being added.
+        flagged = [
+            "Provider's aggregate liability shall not exceed $50,000.",
+            "The aggregate liability of each party shall not exceed one million dollars.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-2" for p in r.penalties), t
+
+    # ------------------------------------------------------------------ R-EXP-1 / R-EXP-4
+
+    def test_export_laws_compliance_shield(self):
+        # Regression: "applicable export laws" is the plain-law form of the
+        # exclusion and must not fire R-EXP-1.
+        benign = [
+            "Licensed software may be exported in accordance with applicable export laws.",
+            "All exports shall comply with applicable export laws and regulations.",
+            "Dealings shall be subject to applicable sanctions and export laws.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-EXP-1" for p in r.penalties), t
+
+    def test_prior_written_authorization_export_shield(self):
+        # Regression: prior-written-authorization-only export wording is a
+        # compliance control and must not fire the absence rule R-EXP-4.
+        benign = [
+            "Software may be exported only with prior written authorization.",
+            "Exports shall be made only upon written approval from Provider.",
+            "The software may be exported only with the prior written consent of the vendor.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-EXP-4" for p in r.penalties), t
+
+    def test_export_obligation_without_control_still_flagged(self):
+        # Controls: export wording without any compliance control keeps firing
+        # R-EXP-4 (and R-EXP-1 by topic).
+        flagged = [
+            "Customer may export the software to any country.",
+            "The company licenses software for international sale and shipment.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-EXP-4" for p in r.penalties), t
+
+    # ------------------------------------------------------------------ R-DATA-3
+
+    def test_data_led_passive_purpose_flagged(self):
+        # Regression: data-led passive constructions with an open-ended purpose
+        # must fire R-DATA-3.
+        flagged = [
+            "Data may be used for our own business purposes.",
+            "Customer data shall be used for any other purpose for which it was not collected.",
+            "Personal data may be disclosed for marketing purposes.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-3" for p in r.penalties), t
+
+    def test_data_led_purpose_limited_shield(self):
+        # Precision: data-led passive phrasing with a purpose-limited
+        # qualification stays protective for R-DATA-3.
+        benign = [
+            "Data may be used only for the purpose of performing this agreement.",
+            "Data will not be used for any purpose other than providing the services.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-3" for p in r.penalties), t
