@@ -65,6 +65,7 @@ RULES: List[Rule] = [
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|"
             r"renew(?:s|ed|ing)?[^.;]{0,40}automatically|"
             r"(?:is|shall|will|may) be (?:extended|renewed)[^.;]{0,40}automatically|"
+            r"(?:is|shall|will|may) automatically (?:be )?(?:extended|renewed)[^.;]{0,15}|"
             r"automatically extend(?:s|ed|ing)?|automatic(?:al)? extension(?:s)?",
             re.IGNORECASE,
         ),
@@ -84,7 +85,12 @@ RULES: List[Rule] = [
             r"(?:either party|neither party|no party)[^.;]{0,80}"
             r"(?:elect(?:s|ing)?|choos(?:es|e|ing)?|opt(?:s|ing)?|intend(?:s|ing)?) not to renew|"
             r"(?:auto[- ]?renew|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|automatic renewal)"
-            r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew))",
+            r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew)|"
+            r"(?:is|shall|will|may) automatically (?:be )?(?:extended|renewed)"
+            r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew|"
+            r"object(?:s|ing)? in writing|written objection)|"
+            r"(?:either party|neither party)[^.;]{0,80}object(?:s|ing)? in writing|"
+            r"(?:either party|neither party)[^.;]{0,80}written objection)",
             re.IGNORECASE,
         ),
         severity=20,
@@ -96,8 +102,8 @@ RULES: List[Rule] = [
         rule_id="R-COMM-2",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"(?:terminate|end|cancel)[^.]{0,40}"
-            r"(?:without cause|for any(?: reason| purpose)?|for no reason|"
+            r"\b(?:terminate|end|cancel|terminab(?:le|ility))\b[^.]{0,40}"
+            r"(?:without cause|for any(?: reason| purpose)?|for no reason|at will|"
             r"(?:at|for)\s+(?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience|"
             r"for convenience|without assigning any reason)",
             re.IGNORECASE,
@@ -112,12 +118,12 @@ RULES: List[Rule] = [
         rule_id="R-COMM-3",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"(?:reserves the right to (?:adjust|increase|change|modify)|"
-            r"may (?:adjust|increase|change|modify)|(?:can|may) adjust)"
+            r"(?:reserves the right to (?:adjust|increase|change|modify|revise)|"
+            r"may (?:adjust|increase|change|modify|revise)|(?:can|may) adjust|(?:can|may) revise)"
             r" (?:the )?(?:(?:monthly|annual|yearly|service|platform|subscription|"
             r"license|licence|usage)\s+)?(?:price|prices|fees|fee|pricing)"
             r"|(?:price|prices|fees|fee)\s+(?:may|shall|will|can) be "
-            r"(?:adjusted|increased|changed|modified)|price (?:increase|escalation)",
+            r"(?:adjusted|increased|changed|modified|revised)|price (?:increase|escalation)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -135,7 +141,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-4",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"assign\s*:\s*|assign(?: this agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without|(?:may|can)\s+assign this agreement\s+at any time|this agreement (?:may|shall) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without", re.IGNORECASE),
+        pattern=re.compile(r"assign\s*:\s*|assign(?: (?:this agreement|all (?:of )?its? rights?(?: and obligations)?(?: and interests?)?|its? rights? and obligations under (?:this agreement|the agreement)|its? interests? (?:under|in) (?:this agreement|the agreement)))?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without|(?:may|can)\s+assign this agreement\s+at any time|this agreement (?:may|shall) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without", re.IGNORECASE),
         exclusion=re.compile(
             r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? assign|"
             r"(?:may|shall|will) not assign(?: this agreement)?|"
@@ -456,7 +462,12 @@ RULES: List[Rule] = [
             r"[^.]{0,20}(?:the )?"
             r"(?:united states|u\.?s\.?a?\.?\b|e\.?u\.?\b|eea\b|third[ -]countr(?:y|ies)|"
             r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
-            r"third[ -]parti(?:es|y)|outside|abroad)"
+            r"third[ -]parti(?:es|y)|outside|abroad|"
+            r"\b(?:india|china|brazil|canada|mexico|japan|australia|singapore|south korea|"
+            r"hong kong|israel|russia|south africa|philippines|indonesia|vietnam|malaysia|"
+            r"thailand|taiwan|argentina|chile|colombia|nigeria|kenya|new zealand|turkey|"
+            r"united arab emirates|u\.?a\.?e\.?\b|saudi arabia|qatar|pakistan|bangladesh|"
+            r"egypt|morocco|ukraine)\b)"
             r")|(?:"
             # data-led: {data} {modal?} {passive verb} {outbound}
             r"(?:personal )?(?:data|information)[^.]{0,15}"
@@ -469,7 +480,12 @@ RULES: List[Rule] = [
             r"[^.]{0,20}(?:the )?"
             r"(?:united states|u\.?s\.?a?\.?\b|e\.?u\.?\b|eea\b|third[ -]countr(?:y|ies)|"
             r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
-            r"third[ -]parti(?:es|y)|outside|abroad)"
+            r"third[ -]parti(?:es|y)|outside|abroad|"
+            r"\b(?:india|china|brazil|canada|mexico|japan|australia|singapore|south korea|"
+            r"hong kong|israel|russia|south africa|philippines|indonesia|vietnam|malaysia|"
+            r"thailand|taiwan|argentina|chile|colombia|nigeria|kenya|new zealand|turkey|"
+            r"united arab emirates|u\.?a\.?e\.?\b|saudi arabia|qatar|pakistan|bangladesh|"
+            r"egypt|morocco|ukraine)\b)"
             r")"
             r")",
             re.IGNORECASE,
@@ -532,7 +548,16 @@ RULES: List[Rule] = [
             r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
             r"(?:may|shall|will|must|can) not (?:be )?(?:re[- ]?export(?:ed|ing)?|export(?:ed|ing)?)"
             r"[^.;]{0,60}without[^.;]{0,40}"
-            r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e))",
+            r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
+            r"(?:may|shall|will|must|can) not (?:be )?(?:fulfil(?:l)?(?:ed)?|export(?:ed)?|ship(?:ped)?|"
+            r"sell|sold|deliver(?:ed)?|transfer(?:red)?|provide(?:d)?|distribute(?:d)?)"
+            r"[^.;]{0,60}(?:to|into|in)[^.;]{0,30}(?:any )?"
+            r"(?:sanctioned|prohibited|restricted)[^.;]{0,20}"
+            r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies))|"
+            r"\bno (?:orders?|fulfil(?:l)?ment|exports?|shipments?|sales?|deliver(?:ies|y))"
+            r"[^.;]{0,40}(?:to|into)[^.;]{0,30}(?:any )?"
+            r"(?:sanctioned|prohibited|restricted)[^.;]{0,20}"
+            r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies)))",
             re.IGNORECASE,
         ),
         severity=25,

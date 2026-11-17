@@ -245,6 +245,30 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
 
+    def test_objects_in_writing_opt_out_not_flagged(self):
+        # Regression: an opt-out action expressed as "objects in writing" (no
+        # "notice of non-renewal" phrasing) with a written objection window must
+        # suppress R-COMM-1, not fire it.
+        r = score_document(
+            [
+                "This agreement shall be automatically renewed for successive one-year "
+                "periods unless either party objects in writing at least sixty days "
+                "prior to expiration."
+            ],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_shall_automatically_be_extended_detected(self):
+        # Regression: "shall automatically be extended" places the adverb between
+        # the modal and "be extended"; that passive roll-over with no opt-out must
+        # fire R-COMM-1.
+        r = score_document(
+            ["The term of this agreement shall automatically be extended for successive one-year periods."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
     def test_mutual_termination_not_flagged(self):
         r = score_document(
             ["Either party may terminate this agreement for convenience."], "d"
@@ -256,6 +280,31 @@ class TestRuleMeshes:
             ["Provider may terminate this agreement without cause at any time."], "d"
         )
         assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_terminate_at_will_flagged(self):
+        # Regression: "terminate ... at will" is a one-sided no-cause termination
+        # right and must fire R-COMM-2 (the "at will" tail was missing).
+        r = score_document(
+            ["Provider may terminate this agreement at will upon 30 days notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_terminable_at_will_flagged(self):
+        # Regression: the adjective form "terminable at will" is the same
+        # one-sided no-cause right and must fire R-COMM-2.
+        r = score_document(
+            ["This agreement is terminable at will by the provider."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_vendor_not_responsible_not_flagged(self):
+        # Regression: "vendor" contains the substring "end"; without a word
+        # boundary the R-COMM-2 pattern matched "vENDor" plus "for any ..." and
+        # fired a one-sided-termination finding on a liability disclaimer.
+        r = score_document(
+            ["The vendor shall not be responsible for any indirect or consequential losses."], "d"
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
 
     def test_unilateral_amendment_flagged(self):
         r = score_document(
@@ -289,6 +338,16 @@ class TestRuleMeshes:
         )
         assert all(p.rule_id != "R-EXP-1" for p in r.penalties)
 
+    def test_no_fulfilment_to_sanctioned_jurisdiction_not_flagged(self):
+        # Regression: a prohibition-form clause refusing fulfilment to a
+        # sanctioned jurisdiction is a compliance control, not a claim to trade
+        # there; R-EXP-1 must stay silent (R-EXP-2 already excludes it).
+        r = score_document(
+            ["Orders shall not be fulfilled to any sanctioned jurisdiction, including Cuba, Iran and Syria."],
+            "d",
+        )
+        assert all(p.rule_id != "R-EXP-1" for p in r.penalties)
+
     def test_reexport_diversion_compliance_not_flagged(self):
         # Regression: an affirmative re-export/diversion control clause must not
         # trigger the absence rule R-EXP-4.
@@ -308,6 +367,19 @@ class TestRuleMeshes:
             ["Neither party may assign this agreement without the consent of the other party."], "d"
         )
         assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_assign_rights_and_obligations_flagged(self):
+        # Regression: "assign its rights and obligations under this agreement"
+        # puts an intervening object between the verb and "this agreement"; that
+        # unrestricted third-party assignment must fire R-COMM-4.
+        r = score_document(
+            [
+                "Customer may assign its rights and obligations under this agreement "
+                "to any third party without the prior written consent of Provider."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
 
     def test_affiliate_assignment_not_flagged(self):
         r = score_document(
@@ -816,6 +888,17 @@ class TestRuleMeshes:
         )
         assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
 
+    def test_stored_on_servers_in_named_country_flagged(self):
+        # Regression: a named non-EEA country (India) as a data-location
+        # statement is the same cross-border location risk as "hosted in the
+        # United States" and must fire R-DATA-2. This only fired R-DATA-1
+        # because the destination list lacked generic country names.
+        r = score_document(
+            ["Personal information will be stored on servers located in India."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
     def test_eu_storage_location_not_transfer_flagged(self):
         # Regression: "the European Union" (EU-as-region, not the "EU" shorthand)
         # must not count as a cross-border transfer destination for R-DATA-2.
@@ -1246,6 +1329,18 @@ class TestRuleMeshes:
             assert all(p.rule_id != "R-COMM-6" for p in r.penalties), paras
         r = score_document(["Late payments attract interest at 2% per month."], "d")
         assert any(p.rule_id == "R-COMM-6" for p in r.penalties)
+
+    def test_may_revise_fees_flagged(self):
+        # Regression: "may revise the service fees" is a unilateral price right
+        # that "revise" (absent from the R-COMM-3 verb list) failed to catch.
+        risky = [
+            ["Provider may revise the service fees at any time upon 30 days written notice."],
+            ["The service fees may be revised by Provider from time to time during the term."],
+        ]
+        for paras in risky:
+            r = score_document(paras, "d")
+            assert any(p.rule_id == "R-COMM-3" for p in r.penalties), paras
+
 
     def test_end_without_cause_termination_flagged(self):
         # Regression: "end the agreement without cause" and "terminate without
