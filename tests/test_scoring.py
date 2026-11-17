@@ -3871,3 +3871,100 @@ class TestCycle24Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle25Precision:
+    """Cycle-25 precision: bare-copula passive retention and
+    as/so-long-as legal conditioning in R-DATA-5, plus R-LIAB-4
+    adverb-intervened as-is guards.
+
+    Two asymmetry gaps and one guard gap:
+    (1) R-DATA-5 reversed-order branch covered "is required to be retained"
+        and "must be retained" but not the bare copula fact-state passive
+        ("customer data is maintained / kept / stored ... after
+        termination"); the data-led forward branch had the same gap for
+        "is retained".
+    (2) Legal-conditioned "as long as" retention ("for as long as legally
+        required / statutorily required / otherwise permitted by law / laws
+        and regulations require") fired R-DATA-5; the new exclusion tail
+        silences it while deliberately leaving business-need conditioning
+        ("for as long as necessary", "as is necessary for the provision of
+        services") flagged.
+    (3) The R-LIAB-4 relative-clause guard ("as is necessary | required |
+        needed | appropriate") failed when an adverb intervened ("as is
+        strictly required"); the guard now allows a legally/otherwise/
+        reasonably/lawfully adverb between "as is" and the adjective.
+
+    Boundaries preserved: copula-passive denials ("is not retained") stay
+    silent via pattern gap — the copula branch requires the retention verb
+    to immediately follow the copula, so "not" blocks it; no optional
+    negation was added.
+    """
+
+    def test_bare_copula_passive_retention_flagged(self):
+        flagged = [
+            "Customer data is retained after termination.",
+            "Customer data is kept following expiration of the agreement.",
+            "Information is stored upon termination.",
+            "Following expiration, customer data is maintained.",
+            "After termination, all customer data is preserved.",
+            "Upon termination, personal data is retained by the provider.",
+            "Customer information is stored after the termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_copula_passive_denials_not_flagged(self):
+        benign = [
+            "Customer data is not retained after termination.",
+            "After termination, customer data is not maintained.",
+            "Customer data is never kept following termination.",
+            "Customer data is not stored after the termination.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_as_long_as_legal_conditioning_not_flagged(self):
+        benign = [
+            "Customer data may be retained for as long as legally required after termination.",
+            "Customer data may be kept for as long as statutorily required.",
+            "Data may be retained for as long as otherwise permitted by law after termination.",
+            "Data is retained for as long as laws and regulations require.",
+            "Data may be retained for as long as is strictly required after termination.",
+            "Data may be kept for as long as is legally necessary.",
+            "Data will be retained for as long as is otherwise appropriate.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_business_need_conditioning_still_flagged(self):
+        flagged = [
+            "Customer data may be retained for as long as necessary after termination.",
+            "Customer data as is necessary for the provision of services may be retained after termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_as_long_as_adverb_guards_not_flagged(self):
+        benign = [
+            "Customer data may be retained for as long as is strictly required after termination.",
+            "Such information as is required to resolve disputes may be retained.",
+            "Data will be retained for as long as is otherwise appropriate.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-4" for p in r.penalties), t
+
+    def test_genuine_asiab_disclaimers_still_flagged(self):
+        flagged = [
+            "The software is provided as is.",
+            "All services are delivered as-is without warranty.",
+            "Customer data is shared as is on an as-is basis.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-4" for p in r.penalties), t
