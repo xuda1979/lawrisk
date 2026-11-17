@@ -250,7 +250,11 @@ RULES: List[Rule] = [
             r"[^.;]{0,40}(?:on|for)[^.;]{0,20}(?:overdue|delinquent|late|unpaid)|"
             r"(?:late fee(?:s)?|late charge(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|"
             r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?|service charge(?:s)?)"
-            r"[^.;]{0,20}(?:of|=|at|:)\s*\$[0-9][0-9,]*(?:\.\d+)?[^.;]{0,25}"
+            r"[^.;]{0,20}(?:of|=|at|:)\s*(?:"
+            r"(?:\$|\u20ac|\u00a3|\u00a5)\s?[0-9][0-9,]*(?:\.\d+)?|"
+            r"(?:USD|EUR|GBP|JPY|CNY|AUD|CAD|CHF|HKD|SGD|NZD|INR|KRW|SEK)\s?[0-9][0-9,]*(?:\.\d+)?|"
+            r"[0-9][0-9,]*(?:\.\d+)?\s?(?:USD|EUR|GBP|JPY|CNY|AUD|CAD|CHF|HKD|SGD|NZD|INR|KRW|SEK|euros?|dollars?|pounds?)"
+            r")[^.;]{0,25}"
             r"(?:per |for each |for every |each |weekly |daily |monthly |annually|accrues|accruing|accrual)|"
             r"(?:late fee(?:s)?|late charge(?:s)?|penalty charge(?:s)?|delinquency (?:fee|charge)|"
             r"overdue (?:fee|charge)|finance charge(?:s)?|carrying charge(?:s)?|service charge(?:s)?)"
@@ -536,19 +540,21 @@ RULES: List[Rule] = [
             r"purpose of performing|"
             r"solely to (?:provide|perform|fulfil|fulfill)|"
             r"(?:only|solely|strictly) (?:as|to)[^.]{0,20}(?:necessary|required) (?:for|to)|"
+            r"only[^.;]{0,35}necessary (?:for|to)|necessary (?:for|to) (?:the )?purpose|"
+            r"minimi[sz](?:ation|e[ds]?|ing)?|"
             r"for no other purpose|no other purpose|"
             r"no (?:transfer|processing|collection|sharing|disclosure)(?:s)? of (?:personal )?(?:data|information)|"
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
             r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain|transfer|disclose)"
             r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
-            r"\s+personal (?:data|information)|"
+            r"\s+(?:any |all (?:the )?|the )?personal (?:data|information)|"
             r"personal (?:data|information)[^.;]{0,20}"
             r"(?:is|are|shall|will|may|cannot?|must) not (?:be )?"
             r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b|"
             r"(?:neither|no (?:party|person))[^.;]{0,40}"
             r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
             r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
-            r"\s+personal (?:data|information))",
+            r"\s+(?:any |all (?:the )?|the )?personal (?:data|information))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -599,9 +605,10 @@ RULES: List[Rule] = [
             re.IGNORECASE,
         ),
         exclusion=re.compile(
-            r"(?:shall (?:not|never) (?:be )?transferred?|"
+            r"(?:(?:shall|will|does|do|must|may) (?:not|never) (?:be )?transfer(?:red)?|"
             r"no (?:transfer|transfers) of (?:personal )?data[^.;]{0,50}shall|"
             r"shall not (?:occur|take place)|"
+            r"(?:within|in|to|into)\s+(?:the\s+)?(?:e\.?u\.?\b|eea\b|european (?:union|economic area))\b|"
             r"(?:with|upon|subject to|in accordance with|pursuant to|following)\s+"
             r"(?:adequate|appropriate|standard contractual|sccs?|"
             r"the (?:standard )?(?:contractual clauses|sccs?)|"
@@ -634,7 +641,9 @@ RULES: List[Rule] = [
             r"legal (?:and regulatory )?obligations?|"
             r"(?:shall|will|may|must)\s+not[^.;]{0,60}"
             r"(?:process|use|sell|disclos|retain)(?:ing|e|es|s)?"
-            r"[^.;]{0,40}(?:for|to)\s+(?:any\s+)?purpose)",
+            r"[^.;]{0,40}(?:for|to)\s+(?:any\s+)?purpose|"
+            r"(?:for|to)\s+(?:any\s+)?purpose(?:s)?\s+(?:other than|except\b)"
+            r"(?![^.;]{0,40}\b(?:including|such as)\b))",
             re.IGNORECASE,
         ),
         severity=25,
@@ -765,14 +774,16 @@ ABSENCE_RULES: List[Rule] = [
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
             r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain|transfer|disclose)"
             r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
-            r"\s+personal (?:data|information)|"
+            r"\s+(?:any |all (?:the )?|the )?personal (?:data|information)|"
             r"(?:neither|no (?:party|person))[^.;]{0,40}"
             r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
             r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
-            r"\s+personal (?:data|information)|"
+            r"\s+(?:any |all (?:the )?|the )?personal (?:data|information)|"
             r"personal (?:data|information)[^.;]{0,20}"
             r"(?:is|are|shall|will|may|cannot?|must) not (?:be )?"
-            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b",
+            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b|"
+            r"only[^.;]{0,35}necessary (?:for|to)|necessary (?:for|to) (?:the )?purpose|"
+            r"minimi[sz](?:ation|e[ds]?|ing)?",
             re.IGNORECASE,
         ),
         severity=20,

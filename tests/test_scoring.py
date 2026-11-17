@@ -2785,3 +2785,153 @@ class TestCycle13Precision:
             "d",
         )
         assert any(p.rule_id == "R-DATA-1" for p in r.penalties)
+
+class TestCycle14Precision:
+    """Cycle-14 precision: quantifier/minimisation denials, non-USD flat fees,
+    intra-EEA/EU data flows, and purpose-restriction silencing for R-DATA-3."""
+
+    # ------------------------------------------------------------------ R-COMM-6
+
+    def test_non_usd_flat_late_fee_flagged(self):
+        # Regression: fixed-amount late fees denominated in foreign currencies
+        # or currency symbols are as one-sided as USD ones and must fire.
+        flagged = [
+            "Late fee of EUR 100 is payable per overdue invoice.",
+            "A late fee of GBP 100 applies for each overdue invoice.",
+            "A late fee of 100 euros applies to each late payment.",
+            "Late fee of 1000 CNY is charged per day past due.",
+            "Overdue accounts accrue a finance charge of AUD 25 per month.",
+            "A penalty charge of £500 accrues weekly.",
+            "A delinquency fee of €100 per week applies.",
+            "A carrying charge of 25 dollars per month applies.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-6" for p in r.penalties), t
+
+    def test_non_usd_plain_fee_not_flagged(self):
+        # Precision: an ordinary one-off fee (no late-payment/penalty context)
+        # stays silent even when denominated in a foreign currency.
+        benign = [
+            "Customer shall pay a setup fee of EUR 100,000 upon signature.",
+            "Customer shall pay an annual licence fee of JPY 500,000.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-6" for p in r.penalties), t
+
+    def test_round_flat_amount_without_periodicity_not_flagged(self):
+        # Precision: a flat penalty amount without any periodic accrual suffix
+        # (like the existing USD branch) must not fire.
+        r = score_document(["A penalty charge of EUR 500."], "d")
+        assert all(p.rule_id != "R-COMM-6" for p in r.penalties)
+
+    # ------------------------------------------------------------------ R-DATA-1 / R-DATA-4
+
+    def test_quantified_denials_not_flagged(self):
+        # Regression: active denials with quantifier objects ("any", "all the")
+        # are protective and must suppress R-DATA-1 and R-DATA-4.
+        benign = [
+            "We shall not collect any personal data from end users.",
+            "The company does not collect any personal information.",
+            "Provider shall not transfer any personal data to third parties.",
+            "The parties do not collect all the personal data they process.",
+            "We will not transfer any personal information to third parties.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+
+    def test_minimisation_wording_not_flagged(self):
+        # Regression: data-minimisation obligations and necessary-for-purpose
+        # processing are protective and must suppress R-DATA-1 / R-DATA-4.
+        benign = [
+            "The parties will minimize the personal data they process.",
+            "The parties will minimise personal data.",
+            "The parties will process only the personal data necessary for the "
+            "purpose of the services.",
+            "We retain only the personal data necessary to provide the service.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+
+    # ------------------------------------------------------------------ R-DATA-2
+
+    def test_active_transfer_denials_not_flagged(self):
+        # Regression: active ("will not transfer") or modal ("may not use")
+        # denials are protective and must suppress R-DATA-2.
+        benign = [
+            "We will not transfer any personal information to third parties.",
+            "The parties may not transfer personal data to any party.",
+            "Provider shall not transfer personal data outside the EEA.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-2" for p in r.penalties), t
+
+    def test_intra_regional_eu_eea_flow_not_flagged(self):
+        # Regression: processing, storage, or transfer confined to the EEA/EU
+        # is not a cross-border transfer and must suppress R-DATA-2.
+        benign = [
+            "Personal data transferred within the EEA.",
+            "Customer data stored in the EU data centres.",
+            "Personal data transferred to the EEA.",
+            "Personal data will be transferred within the European Union.",
+            "Data is processed in the EEA.",
+            "All Customer data is stored on servers located within the "
+            "European Economic Area (EEA).",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-2" for p in r.penalties), t
+
+    def test_cross_border_controls_still_flagged(self):
+        # Controls: outbound flows from the EEA/EU must keep firing.
+        flagged = [
+            "Personal data may be transferred from the EEA to the United States.",
+            "Customer data is processed within the United States.",
+            "Personal data is stored on servers located in the United States.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-2" for p in r.penalties), t
+
+    # ------------------------------------------------------------------ R-DATA-3
+
+    def test_purpose_restrictions_not_flagged(self):
+        # Regression: genuine utilisation restrictions ("other than",
+        # "except") bound the purpose and must suppress R-DATA-3.
+        benign = [
+            "Neither party shall use any personal data for any purpose other "
+            "than performing the services.",
+            "Provider may use the data for any purpose except marketing.",
+            "Provider may use data for any purpose other than those specified "
+            "in Schedule A.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-3" for p in r.penalties), t
+
+    def test_restriction_with_expansion_clause_still_flagged(self):
+        # Control: "other than ... including X" enlarges the purpose and the
+        # exclusion's negative lookahead must let R-DATA-3 keep firing.
+        r = score_document(
+            [
+                "Provider may process the personal data for purposes other "
+                "than those specified in this agreement, including for its own "
+                "product development."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_unbounded_purposes_still_flagged(self):
+        # Controls: unrestricted purpose clauses must keep firing R-DATA-3.
+        flagged = [
+            "Provider may use the data for any purpose whatsoever.",
+            "Provider may use the data for its own business purposes.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-3" for p in r.penalties), t
