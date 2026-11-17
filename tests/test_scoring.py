@@ -2718,3 +2718,70 @@ class TestCycle12Precision:
             "d",
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+
+class TestCycle13Precision:
+    """Cycle-13 precision regression: cross-border / data-protection
+    phrasing coverage for R-DATA-1 and R-DATA-4.
+
+    A privacy statement or notice is protective wording that must suppress
+    the open-ended-processing rule R-DATA-1 and the absence rule R-DATA-4;
+    an active denial ("shall not transfer / disclose personal data") is a
+    protective statement and must suppress both rules too.
+    """
+
+    def test_privacy_statement_not_flagged(self):
+        # Regression: "privacy statement" is protective wording (same weight
+        # as a privacy policy) and must suppress R-DATA-1 and R-DATA-4.
+        r = score_document(
+            ["The parties shall handle personal data in accordance with the Provider's privacy statement."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties)
+
+    def test_privacy_notice_not_flagged(self):
+        # Regression: "privacy notice" must suppress R-DATA-1 and R-DATA-4
+        # just like a privacy policy does.
+        r = score_document(
+            ["Personal data is handled in accordance with this privacy notice."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties)
+
+    def test_does_not_transfer_personal_data_not_flagged(self):
+        # Regression: an active denial of transfer must suppress R-DATA-1 and
+        # R-DATA-4 (the transfer/disclose verbs were previously missing from
+        # the active-denial branch).
+        r = score_document(
+            ["Provider does not transfer personal data to any third party."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties)
+
+    def test_does_not_disclose_personal_data_not_flagged(self):
+        # Regression: an active denial of disclosure is protective and must
+        # suppress R-DATA-1 and R-DATA-4.
+        r = score_document(
+            ["Provider does not disclose personal data under this agreement."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties)
+
+    def test_shall_not_transfer_or_disclose_not_flagged(self):
+        # Regression: a "shall not transfer or disclose" denial with a
+        # conjunctive verb list must suppress both rules.
+        r = score_document(
+            ["Provider shall not transfer or disclose personal data under this agreement."],
+            "d",
+        )
+        assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties)
+
+    def test_open_ended_personal_data_processing_still_flagged(self):
+        # Control: a genuine open-ended processing statement must still fire
+        # R-DATA-1 (and R-DATA-4 stays silent because the topic is already
+        # covered by a paragraph rule).
+        r = score_document(
+            ["The company may use personal data for any purpose."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-1" for p in r.penalties)

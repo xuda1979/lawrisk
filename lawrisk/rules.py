@@ -529,7 +529,7 @@ RULES: List[Rule] = [
         dimension=Dimension.DATA,
         pattern=re.compile(r"personal (?:data|information)|personally identifiable|\bpii\b", re.IGNORECASE),
         exclusion=re.compile(
-            r"(?:gdpr|ccpa|data protection|privacy policy|dpa\b|data processing agreement|"
+            r"(?:gdpr|ccpa|data protection|privacy (?:policy|statement|notice)|dpa\b|data processing agreement|"
             r"standard contractual clauses|sccs?|adequacy (?:decision|determination|finding|adoption)|appropriate safeguards|"
             r"comply (?:with|ing)|consent|lawful basis|"
             r"(?:shall|will) only be (?:used|processed)|(?:only|solely) for the purpose|"
@@ -539,8 +539,9 @@ RULES: List[Rule] = [
             r"for no other purpose|no other purpose|"
             r"no (?:transfer|processing|collection|sharing|disclosure)(?:s)? of (?:personal )?(?:data|information)|"
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
-            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain)\s+"
-            r"personal (?:data|information)|"
+            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain|transfer|disclose)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
+            r"\s+personal (?:data|information)|"
             r"personal (?:data|information)[^.;]{0,20}"
             r"(?:is|are|shall|will|may|cannot?|must) not (?:be )?"
             r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b|"
@@ -759,11 +760,12 @@ ABSENCE_RULES: List[Rule] = [
             r"personal (?:data|information)|personally identifiable",
             re.IGNORECASE,
         ),
-        pattern=re.compile(r"data (?:protection|controller|processor)|GDPR|CCPA|privacy policy|data processing agreement|DPA\b", re.IGNORECASE),
+        pattern=re.compile(r"data (?:protection|controller|processor)|GDPR|CCPA|privacy (?:policy|statement|notice)|data processing agreement|DPA\b", re.IGNORECASE),
         exclusion=re.compile(
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
-            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain)\s+"
-            r"personal (?:data|information)|"
+            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain|transfer|disclose)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
+            r"\s+personal (?:data|information)|"
             r"(?:neither|no (?:party|person))[^.;]{0,40}"
             r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
             r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
