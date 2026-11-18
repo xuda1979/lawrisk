@@ -5527,3 +5527,115 @@ class TestCycle39Precision:
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
 
 
+class TestCycle40Precision:
+    r"""Cycle-40 precision: R-DATA-5 ten-word pre-data qualifier boundary.
+
+    Cycle-39 widened the pre-data modifier slot to "(?:\w+ ){0,9}" in all six
+    sites, covering up to NINE qualifier words (plus the optional "customer "
+    prefix). A TEN-word phrase ("customer online account historical usage audit
+    event trail access control log data") sat beyond the {0,9} boundary: tight
+    object tails went silent while nominal/verb-form denials still over-fired
+    R-DATA-5, and the reversed-passive form sat beyond branch 8's "[^.;]{0,77}"
+    window (probe53 pre-fix failures all at 10w).
+
+    Fix: widen the slot to "(?:\w+ ){0,10}" in the same six sites (the four
+    pattern tails + nominal and verb-form denial branches) and widen the
+    branch-8 window to "[^.;]{0,83}" so the TEN-word reversed-passive (78-char
+    gap) flags again (rules.py:537/544/550/558/600/605/572).
+
+    TEN-word phrases now flag on both sides; ELEVEN-word phrases sit beyond the
+    new boundary: tight positives go silent and reversed-passive (84-char gap)
+    stays silent, while denials keep over-firing (probe53 post-fix: 23/23;
+    window threshold 10w=78 char gap FLAG, 11w=84 char gap SILENT).
+    """
+
+    SEVEN = "customer online account historical usage audit event log "
+    EIGHT = "customer online account historical usage audit event trail log "
+    NINE = "customer online account historical usage audit event trail access log "
+    TEN = "customer online account historical usage audit event trail access control log "
+    ELEVEN = "customer online account historical usage audit event trail access control audit log "
+
+    def test_ten_word_pre_data_denials_not_flagged(self):
+        benign = [
+            f"No {self.TEN}data retention beyond the applicable retention period shall occur.",
+            f"No {self.TEN}data shall be retained beyond the applicable retention period.",
+            f"After the latest permitted period, no {self.TEN}data storage shall occur.",
+            f"{self.TEN}data retention shall not occur beyond the applicable retention period.",
+            f"No {self.TEN}data backup copies retention beyond the applicable retention period shall occur.",
+            f"No copies of {self.TEN}data retention beyond the applicable retention period shall occur.",
+            f"No copies of {self.TEN}data shall be retained beyond the applicable retention period.",
+            f"No {self.TEN}data retention for a period of 90 days shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_ten_word_tight_object_position_still_flagged(self):
+        flagged = [
+            f"Provider shall retain {self.TEN}data beyond the applicable retention period.",
+            f"Retention of {self.TEN}data beyond the applicable retention period.",
+            f"After the applicable retention period, Provider shall retain {self.TEN}data.",
+            f"Retention of copies of {self.TEN}data beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_ten_word_attributive_still_flagged(self):
+        flagged = [
+            f"{self.TEN}data retention beyond the applicable retention period.",
+            f"{self.TEN}data backup copies retention beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_ten_word_reversed_passive_still_flagged(self):
+        # TEN-word reversed-passive sits at a 78-char gap, inside the {0,83}
+        # window: flags.
+        r = score_document(
+            [f"After the applicable retention period, {self.TEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_eleven_word_pre_data_denials_still_flagged(self):
+        # Eleven-word phrases sit beyond the {0,10} boundary: denials over-fire.
+        flagged = [
+            f"No {self.ELEVEN}data retention beyond the applicable retention period shall occur.",
+            f"No {self.ELEVEN}data shall be retained beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_eleven_word_tight_object_position_still_silent(self):
+        # Eleven-word pre-data phrases sit beyond the {0,10} boundary: the tight
+        # object tails go silent, while attributive mid-phrase still flags.
+        benign = [
+            f"Provider shall retain {self.ELEVEN}data beyond the applicable retention period.",
+            f"Retention of {self.ELEVEN}data beyond the applicable retention period.",
+            f"After the applicable retention period, Provider shall retain {self.ELEVEN}data.",
+            f"Retention of copies of {self.ELEVEN}data beyond the applicable retention period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+        r = score_document(
+            [f"{self.TEN}data retention beyond the applicable retention period."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_eleven_word_reversed_passive_still_silent(self):
+        # Branch 8's "[^.;]{0,83}" window covers the 10-word reversed-passive
+        # (78-char gap): flags. At ELEVEN words (84-char gap) the data noun sits
+        # beyond the window and goes silent.
+        r = score_document(
+            [f"After the applicable retention period, {self.TEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            [f"After the applicable retention period, {self.ELEVEN}data shall be retained by the Provider."], "d"
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+
