@@ -4595,9 +4595,10 @@ class TestCycle33Precision:
 
     Fix: widen the slot to "(?:\w+ ){0,3}" in both the nominal-denial and
     verb-form-denial exclusion branches, so three-word pre-data denials stay
-    silent. FOUR-word phrases sit beyond the boundary and still flag. The
-    "shall not occur / take place / happen" branch is anchored on the retention
-    word and stays qualifier-agnostic.
+    silent. FIVE-word phrases now sit beyond the widened boundary and still
+    flag (cycle-34 widened the boundary itself to four words; see
+    TestCycle34Precision). The "shall not occur / take place / happen"
+    branch is anchored on the retention word and stays qualifier-agnostic.
 
     Pattern side: the object-position positive branches (verb-led, noun-led,
     reversed active) ended their object tails at "(?:customer )?(?:personal )?
@@ -4628,11 +4629,11 @@ class TestCycle33Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
 
-    def test_four_word_pre_data_denials_still_flagged(self):
-        # Four-word phrases sit beyond the {0,3} boundary and must keep flagging.
+    def test_five_word_pre_data_denials_still_flagged(self):
+        # Five-word phrases sit beyond the {0,4} boundary and must keep flagging.
         flagged = [
-            "No customer online account historical usage data retention beyond the applicable retention period shall occur.",
-            "No customer online account historical usage data shall be retained beyond the applicable retention period.",
+            "No customer online account historical usage log data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage log data shall be retained beyond the applicable retention period.",
         ]
         for t in flagged:
             r = score_document([t], "d")
@@ -4680,5 +4681,127 @@ class TestCycle33Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle34Precision:
+    r"""Cycle-34 precision: R-DATA-5 four-word pre-data qualifier boundary.
+
+    Cycle-33 widened the pre-data modifier slot to "(?:\w+ ){0,3}" on both the
+    exclusion denial branches and the four tightly-wrapped object-position
+    pattern tails (verb-led/noun-led/reversed-active), covering up to THREE
+    qualifier words. A FOUR-word phrase ("customer online account historical
+    usage data") still broke the slot: denials over-fired R-DATA-5 and the
+    tightly-wrapped unbounded positives went silent.
+
+    Fix: widen the slot to "(?:\w+ ){0,4}" in the same six sites, so four-word
+    pre-data qualifiers are covered on both sides. FIVE-word phrases now sit
+    beyond the boundary and keep flagging for denials / go silent for the
+    tightly-wrapped positives (attributive and reversed-passive stay robust at
+    any width via their mid-phrase match / absorbing window). Also give the two
+    denial branches the pattern-side's doubled "copies of"-chain so a leading
+    pre-head "copies of / extracts of / records of" group no longer needs to
+    consume the word slot.
+    """
+
+    def test_four_word_pre_data_denials_not_flagged(self):
+        benign = [
+            "No customer online account historical usage data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage data shall be retained beyond the applicable retention period.",
+            "After the latest permitted period, no customer online account historical usage data storage shall occur.",
+            "No customer online account usage history data storage beyond the applicable retention period shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_four_word_verb_form_denials_not_flagged(self):
+        benign = [
+            "No customer online account historical usage data shall be retained beyond the applicable retention period.",
+            "Beyond the applicable retention period, no personal sensitive financial card transaction data shall be stored by the provider.",
+            "After the latest permitted period, no customer recorded payment method sensitive data shall be preserved.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_five_word_pre_data_denials_still_flagged(self):
+        # Five-word phrases sit beyond the {0,4} boundary and must keep flagging.
+        # (Cycle-33 already carries the identical five-word case; keep both.)
+        flagged = [
+            "No customer online account historical usage log data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage log data shall be retained beyond the applicable retention period.",
+            "No copies of customer online account historical usage log data shall be retained beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_four_word_qualified_bounded_not_flagged(self):
+        benign = [
+            "No customer online account historical usage data retention beyond the permitted period of 90 days shall occur.",
+            "Provider may retain customer online account historical usage data for a period of 90 days.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_object_position_four_word_qualified_unbounded_still_flagged(self):
+        # Pattern-side fix: tight object tails now absorb a 4-word pre-data
+        # qualifier; attributive/reversed-passive stay robust at any width.
+        flagged = [
+            "Provider shall retain customer online account historical usage data beyond the applicable retention period.",
+            "Retention of customer online account historical usage data beyond the applicable retention period.",
+            "After the applicable retention period, Provider shall retain customer online account historical usage data.",
+            "After the applicable retention period, customer online account historical usage data shall be retained by the Provider.",
+            "Customer online account historical usage data retention beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_five_word_tight_object_position_still_silent(self):
+        # Five-word pre-data phrases sit beyond the {0,4} boundary: the tight
+        # object tails go silent, while window/mid-phrase orders still flag.
+        r = score_document(
+            ["Provider shall retain customer online account historical usage log data beyond the applicable retention period."], "d"
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            ["After the applicable retention period, Provider shall retain customer online account historical usage log data."], "d"
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            ["After the applicable retention period, customer online account historical usage log data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_four_word_pre_head_copies_denials_not_flagged(self):
+        # Leading pre-head "copies of"-chain absorbed by the denial branches.
+        benign = [
+            "No copies of customer online account historical usage data shall be retained beyond the applicable retention period.",
+            "No copies of customer online account historical usage data retention beyond the applicable retention period shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_copies_of_controls_unchanged(self):
+        # Positive copies-of controls keep flagging; natural noun-led denial
+        # and unqualified copies-denials stay silent.
+        flagged = [
+            "Provider shall retain copies of customer online account historical usage data beyond the applicable retention period.",
+            "Retention of copies of customer online account historical usage data beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+        benign = [
+            "No retention of copies of customer online account historical usage data beyond the applicable retention period.",
+            "No copies of customer data shall be retained beyond the applicable retention period.",
+            "No copies of customer data retention beyond the applicable retention period shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
 
 
