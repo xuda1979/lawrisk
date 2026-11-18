@@ -4585,3 +4585,100 @@ class TestCycle32Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
 
+class TestCycle33Precision:
+    r"""Cycle-33 precision: R-DATA-5 three-word pre-data qualifier boundary.
+
+    Cycle-32 widened the exclusion denial branches' pre-data modifier slot to
+    "(?:\w+ ){0,2}", covering up to TWO qualifier words ("customer online account
+    data"). A THREE-word phrase ("customer online account usage data", "personal
+    sensitive financial card data") still broke the denial and over-fired R-DATA-5.
+
+    Fix: widen the slot to "(?:\w+ ){0,3}" in both the nominal-denial and
+    verb-form-denial exclusion branches, so three-word pre-data denials stay
+    silent. FOUR-word phrases sit beyond the boundary and still flag. The
+    "shall not occur / take place / happen" branch is anchored on the retention
+    word and stays qualifier-agnostic.
+
+    Pattern side: the object-position positive branches (verb-led, noun-led,
+    reversed active) ended their object tails at "(?:customer )?(?:personal )?
+    (?:data|information)" with no absorbing window, so ANY pre-data qualifier
+    word made an unbounded retention clause go silent. Widen the object tail on
+    branches 2/3/4/5 with "(?:\w+ ){0,3}" mirroring the exclusion, so qualified
+    unbounded positives flag at every width while denial/bound/mandate forms
+    stay silent via the paragraph-wide exclusion.
+    """
+
+    def test_three_word_pre_data_denials_not_flagged(self):
+        benign = [
+            "No customer online account usage data retention beyond the applicable retention period shall occur.",
+            "After the latest permitted period, no personal sensitive financial card data storage shall occur.",
+            "No customer archived payment method information preservation following the permitted retention window shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_three_word_pre_data_verb_denials_not_flagged(self):
+        benign = [
+            "No customer online account usage data shall be retained beyond the applicable retention period.",
+            "Beyond the applicable retention period, no personal sensitive financial card data shall be stored by the provider.",
+            "No customer archived payment method information shall be preserved after the latest permitted period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_four_word_pre_data_denials_still_flagged(self):
+        # Four-word phrases sit beyond the {0,3} boundary and must keep flagging.
+        flagged = [
+            "No customer online account historical usage data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage data shall be retained beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_three_word_shall_not_occur_denials_not_flagged(self):
+        # Anchored on the retention word, so qualifier-agnostic at any width.
+        benign = [
+            "Customer online account usage data retention shall not occur beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal sensitive financial card data storage shall not take place.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_three_word_qualified_bounded_not_flagged(self):
+        benign = [
+            "Customer online account usage data shall be retained for no more than 12 months beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal sensitive financial card data storage for a period of 90 days.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_object_position_qualified_unbounded_still_flagged(self):
+        # Pattern-side fix: qualified object-position positives now flag at
+        # every pre-data qualifier width (verb-led, noun-led, reversed active).
+        flagged = [
+            "Provider shall retain customer backup data beyond the applicable retention period.",
+            "Retention of customer online account data beyond the applicable retention period.",
+            "After the applicable retention period, Provider shall retain customer online account usage data.",
+            "After the applicable retention period, personal sensitive financial card data shall be retained by the Provider.",
+            "Customer online account usage data retention beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_qualified_unbounded_stacked_controls(self):
+        # Unbounded positives without denial/bound/mandate context keep flagging.
+        flagged = [
+            "Notwithstanding anything stated elsewhere, customer online account usage data retention beyond the applicable retention period shall occur.",
+            "Beyond the applicable retention period, personal sensitive financial card data storage.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
