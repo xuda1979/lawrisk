@@ -4442,3 +4442,77 @@ class TestCycle30Precision:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
+class TestCycle31Precision:
+    r"""Cycle-31 precision: R-DATA-5 pre-data-modifier attributive denials.
+
+    Cycle-30's attributive branches already cover a pre-data modifier such as
+    "customer backup data retention beyond ...": the optional customer/personal
+    prefixes let the match start at the data noun mid-phrase. So the hazard
+    shape flags correctly. But the exclusion's denial branches required the
+    data/information noun to directly follow the customer/personal prefixes, so
+    a modifier interposed between them ("no customer BACKUP data retention
+    ...") broke the denial and the sentence over-fired. Additionally, the
+    "retention shall NOT OCCUR / NOT TAKE PLACE / NOT HAPPEN" construction was
+    never excluded, with or without the modifier.
+
+    Fix: insert an optional single-word modifier "(?:\w+ )?" between the
+    customer/personal prefix and the data noun in both the nominal-denial and
+    verb-form-denial exclusion branches, and add a new exclusion branch for
+    "shall not occur / take place / happen". Positive unbounded controls must
+    keep flagging.
+    """
+
+    def test_attributive_denials_not_flagged(self):
+        benign = [
+            "No customer backup data retention beyond the applicable retention period shall occur.",
+            "No personal encrypted data storage after the latest permitted period shall occur.",
+            "No customer archived information preservation following the permitted retention window shall occur.",
+            "After the latest permitted period, no personal encrypted data storage shall occur.",
+            "Beyond the applicable retention period, no customer backup data retention shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_verb_form_denials_not_flagged(self):
+        benign = [
+            "No customer backup data shall be retained beyond the applicable retention period.",
+            "Beyond the applicable retention period, no personal encrypted data shall be stored by the provider.",
+            "No customer archived information shall be preserved after the latest permitted period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_shall_not_occur_denials_not_flagged(self):
+        benign = [
+            "Customer backup data retention shall not occur beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal encrypted data storage shall not take place.",
+            "Customer archived information preservation will not happen following the permitted retention window.",
+            "Personal data storage beyond the applicable retention period shall not occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_bare_denial_families_still_flagged(self):
+        flagged = [
+            "Customer data retention beyond the applicable retention period.",
+            "Customer backup data retention beyond the applicable retention period.",
+            "After the latest permitted period, personal encrypted data storage.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_denial_decoy_does_not_suppress_flag(self):
+        # The "shall not occur" applies to a different subject; the retention
+        # clause itself still unboundedly retains, so it must keep flagging.
+        flagged = [
+            "Cancellation of the agreement shall not occur until customer backup data retention beyond the applicable retention period is completed.",
+            "Notwithstanding anything stated elsewhere, customer backup data retention beyond the applicable retention period shall occur.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
