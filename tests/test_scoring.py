@@ -4241,3 +4241,104 @@ class TestCycle28Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle29Precision:
+    r"""Cycle-29 precision: R-DATA-5 noun-led branches with object-group qualifiers.
+
+    The cycle-28 fix widened R-DATA-5's retention ANCHOR family to include
+    period/window anchors, but the noun-led branches ("retention/storage/
+    preservation of customer data after ...") still required the data/
+    information noun to follow "of" directly. Object-group qualifiers
+    ("retention of copies of customer data after the latest permitted
+    period") broke the match — a genuine miss: unbounded retention of
+    customer-data copies is the same R-DATA-5 hazard. Fix: the noun-led
+    forward branch (rules.py ~547) and reversed-order branch (~555) gained
+    the same optional qualifier chain the object-led branches carry
+    ((?:any |all |the )?(?:backup )?(?:copies?|extracts?|records?|possession)?
+    \s*(?:of\s+)? doubled), so "retention of copies of customer data" matches
+    with or without qualifiers. Bounded ("for a period not exceeding 90 days"),
+    denial ("no retention of copies of ... shall occur") and legal-mandate
+    carve-outs must stay silent through the existing paragraph-wide branches.
+    """
+
+    def test_noun_led_object_group_forward_flagged(self):
+        flagged = [
+            "Retention of copies of customer data after the latest permitted period.",
+            "Storage of backup records of personal information beyond the applicable retention period.",
+            "Preservation of all extracts of customer data following the permitted retention window.",
+            "Retention of copies of customer data after termination.",
+            "Storage of backup records of personal data upon expiration of the Agreement.",
+            "Provider shall retain copies of customer data after the latest permitted period.",
+            "Provider may keep backup records of personal information beyond the applicable retention period.",
+            "Provider shall retain any backup copies of all records of personal information beyond the retention period.",
+            "Provider must preserve possession of customer information after the retention period has expired.",
+            "Provider shall preserve records of personal data beyond the applicable period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_noun_led_object_group_reversed_flagged(self):
+        flagged = [
+            "After the latest permitted period, retention of copies of customer data.",
+            "Beyond the applicable retention period, storage of backup records of personal information.",
+            "After termination, retention of copies of customer data.",
+            "Following expiration, storage of backup records of personal data.",
+            "After the latest permitted period, Provider shall retain copies of customer data.",
+            "Beyond the retention period, Provider shall also retain copies of customer data.",
+            "After the latest permitted period, copies of customer data may be retained by Provider.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_noun_led_object_group_bounded_not_flagged(self):
+        benign = [
+            "Retention of copies of customer data for a period of 90 days after the latest permitted period.",
+            "After the latest permitted period, preservation of copies of customer data for no more than 12 months.",
+            "Provider may retain copies of customer data for a period of 90 days after the latest permitted period.",
+            "Provider may keep backup records of personal information for up to 6 months beyond the applicable retention period.",
+            "Provider shall retain copies of customer data for no more than 12 months after the retention period has expired.",
+            "Retention of copies of customer data for a period not exceeding 90 days after the latest permitted period.",
+            "After the latest permitted period, retention of copies of customer data for a period not exceeding 90 days.",
+            "Preservation of all extracts of customer data for no more than 6 months following the permitted retention window.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_noun_led_object_group_denials_not_flagged(self):
+        benign = [
+            "After the latest permitted period, Provider shall not retain copies of customer data.",
+            "Beyond the applicable retention period, Provider may not keep backup records of personal information.",
+            "Following the permitted retention window, Company will not store copies of customer data.",
+            "Provider must not preserve possession of customer information after the retention period has expired.",
+            "No retention of copies of customer data after the latest permitted period shall occur.",
+            "After the latest permitted period, no storage of backup records of personal information shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_noun_led_object_group_legal_mandate_not_flagged(self):
+        benign = [
+            "Provider shall retain copies of customer data as required by applicable law after the latest permitted period.",
+            "Provider shall retain backup records of personal information in accordance with statutory requirements beyond the applicable period.",
+            "Beyond the applicable period, Provider shall retain records of personal data in accordance with statutory requirements.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_noun_led_unbounded_controls_still_flagged(self):
+        flagged = [
+            "After termination, Provider shall retain copies of customer data.",
+            "Beyond the expiry of the Agreement, Provider shall retain copies of customer data.",
+            "Following termination, Provider shall store all extracts of customer data.",
+            "Retention of copies of customer data and storage of backup records of personal information after the latest permitted period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
