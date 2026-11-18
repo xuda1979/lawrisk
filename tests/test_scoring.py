@@ -4629,11 +4629,11 @@ class TestCycle33Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
 
-    def test_seven_word_pre_data_denials_still_flagged(self):
-        # Seven-word phrases sit beyond the {0,6} boundary and must keep flagging.
+    def test_eight_word_pre_data_denials_still_flagged(self):
+        # Eight-word phrases sit beyond the {0,7} boundary and must keep flagging.
         flagged = [
-            "No customer online account historical usage audit event log data retention beyond the applicable retention period shall occur.",
-            "No customer online account historical usage audit event log data shall be retained beyond the applicable retention period.",
+            "No customer online account historical usage audit event trail log data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage audit event trail log data shall be retained beyond the applicable retention period.",
         ]
         for t in flagged:
             r = score_document([t], "d")
@@ -4724,13 +4724,13 @@ class TestCycle34Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
 
-    def test_seven_word_pre_data_denials_still_flagged(self):
-        # Seven-word phrases sit beyond the {0,6} boundary and must keep flagging.
-        # (Cycle-33 already carries the identical seven-word case; keep both.)
+    def test_eight_word_pre_data_denials_still_flagged(self):
+        # Eight-word phrases sit beyond the {0,7} boundary and must keep flagging.
+        # (Cycle-33 already carries the identical eight-word case; keep both.)
         flagged = [
-            "No customer online account historical usage audit event log data retention beyond the applicable retention period shall occur.",
-            "No customer online account historical usage audit event log data shall be retained beyond the applicable retention period.",
-            "No copies of customer online account historical usage audit event log data shall be retained beyond the applicable retention period.",
+            "No customer online account historical usage audit event trail log data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage audit event trail log data shall be retained beyond the applicable retention period.",
+            "No copies of customer online account historical usage audit event trail log data shall be retained beyond the applicable retention period.",
         ]
         for t in flagged:
             r = score_document([t], "d")
@@ -4759,19 +4759,19 @@ class TestCycle34Precision:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
-    def test_seven_word_tight_object_position_still_silent(self):
-        # Seven-word pre-data phrases sit beyond the {0,6} boundary: the tight
+    def test_eight_word_tight_object_position_still_silent(self):
+        # Eight-word pre-data phrases sit beyond the {0,7} boundary: the tight
         # object tails go silent, while window/mid-phrase orders still flag.
         r = score_document(
-            ["Provider shall retain customer online account historical usage audit event log data beyond the applicable retention period."], "d"
+            ["Provider shall retain customer online account historical usage audit event trail log data beyond the applicable retention period."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
         r = score_document(
-            ["After the applicable retention period, Provider shall retain customer online account historical usage audit event log data."], "d"
+            ["After the applicable retention period, Provider shall retain customer online account historical usage audit event trail log data."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
         r = score_document(
-            ["After the applicable retention period, customer online account historical usage audit event log data shall be retained by the Provider."], "d"
+            ["Customer online account historical usage audit event trail log data retention beyond the applicable retention period."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
@@ -4845,12 +4845,12 @@ class TestCycle35Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
 
-    def test_seven_word_pre_data_denials_still_flagged(self):
-        # Seven-word phrases sit beyond the {0,6} boundary and must keep flagging.
+    def test_eight_word_pre_data_denials_still_flagged(self):
+        # Eight-word phrases sit beyond the {0,7} boundary and must keep flagging.
         flagged = [
-            "No customer online account historical usage audit event log data retention beyond the applicable retention period shall occur.",
-            "No customer online account historical usage audit event log data shall be retained beyond the applicable retention period.",
-            "No copies of customer online account historical usage audit event log data shall be retained beyond the applicable retention period.",
+            "No customer online account historical usage audit event trail log data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage audit event trail log data shall be retained beyond the applicable retention period.",
+            "No copies of customer online account historical usage audit event trail log data shall be retained beyond the applicable retention period.",
         ]
         for t in flagged:
             r = score_document([t], "d")
@@ -4879,19 +4879,19 @@ class TestCycle35Precision:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
-    def test_seven_word_tight_object_position_still_silent(self):
-        # Seven-word pre-data phrases sit beyond the {0,6} boundary: the tight
+    def test_eight_word_tight_object_position_still_silent(self):
+        # Eight-word pre-data phrases sit beyond the {0,7} boundary: the tight
         # object tails go silent, while window/mid-phrase orders still flag.
         r = score_document(
-            ["Provider shall retain customer online account historical usage audit event log data beyond the applicable retention period."], "d"
+            ["Provider shall retain customer online account historical usage audit event trail log data beyond the applicable retention period."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
         r = score_document(
-            ["After the applicable retention period, Provider shall retain customer online account historical usage audit event log data."], "d"
+            ["After the applicable retention period, Provider shall retain customer online account historical usage audit event trail log data."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
         r = score_document(
-            ["After the applicable retention period, customer online account historical usage audit event log data shall be retained by the Provider."], "d"
+            ["Customer online account historical usage audit event trail log data retention beyond the applicable retention period."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
@@ -4937,10 +4937,14 @@ class TestCycle36Precision:
     prefix-shape asymmetry in mind — the four pattern tails and the nominal
     denial branch use "(?:customer )?(?:personal )?" while the verb-form denial
     branch uses "(?:customer |personal )?" and needs its own targeted edit.
-    SIX-word phrases now flag on both sides; SEVEN-word phrases sit beyond the
-    new boundary and keep over-firing for denials / going silent for the tight
-    positives (attributive and reversed-passive stay robust at any width via
-    their mid-phrase match / absorbing window).
+    SIX-word phrases now flag on both sides; SEVEN-word phrases sat beyond the
+    {0,6} boundary and kept over-firing for denials / going silent for the tight
+    positives. Cycle-37 widened the slot to {0,7} in the same six sites, so the
+    seven-word boundary phrases below were bumped to EIGHT words ("audit event
+    trail log") to stay on the far side of the new boundary; attributive stays
+    robust at any width via its mid-phrase match, while reversed-passive is
+    capped at ~7 pre-data words by branch 8's [^.;]{0,60} window (see
+    TestCycle37Precision).
     """
 
     def test_six_word_pre_data_denials_not_flagged(self):
@@ -4964,12 +4968,12 @@ class TestCycle36Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
 
-    def test_seven_word_pre_data_denials_still_flagged(self):
-        # Seven-word phrases sit beyond the {0,6} boundary and must keep flagging.
+    def test_eight_word_pre_data_denials_still_flagged(self):
+        # Eight-word phrases sit beyond the {0,7} boundary and must keep flagging.
         flagged = [
-            "No customer online account historical usage audit event log data retention beyond the applicable retention period shall occur.",
-            "No customer online account historical usage audit event log data shall be retained beyond the applicable retention period.",
-            "No copies of customer online account historical usage audit event log data shall be retained beyond the applicable retention period.",
+            "No customer online account historical usage audit event trail log data retention beyond the applicable retention period shall occur.",
+            "No customer online account historical usage audit event trail log data shall be retained beyond the applicable retention period.",
+            "No copies of customer online account historical usage audit event trail log data shall be retained beyond the applicable retention period.",
         ]
         for t in flagged:
             r = score_document([t], "d")
@@ -4998,19 +5002,19 @@ class TestCycle36Precision:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
-    def test_seven_word_tight_object_position_still_silent(self):
-        # Seven-word pre-data phrases sit beyond the {0,6} boundary: the tight
+    def test_eight_word_tight_object_position_still_silent(self):
+        # Eight-word pre-data phrases sit beyond the {0,7} boundary: the tight
         # object tails go silent, while window/mid-phrase orders still flag.
         r = score_document(
-            ["Provider shall retain customer online account historical usage audit event log data beyond the applicable retention period."], "d"
+            ["Provider shall retain customer online account historical usage audit event trail log data beyond the applicable retention period."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
         r = score_document(
-            ["After the applicable retention period, Provider shall retain customer online account historical usage audit event log data."], "d"
+            ["After the applicable retention period, Provider shall retain customer online account historical usage audit event trail log data."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
         r = score_document(
-            ["After the applicable retention period, customer online account historical usage audit event log data shall be retained by the Provider."], "d"
+            ["Customer online account historical usage audit event trail log data retention beyond the applicable retention period."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
@@ -5036,6 +5040,147 @@ class TestCycle36Precision:
         flagged = [
             "Customer online account historical usage audit log data backup copies retention beyond the applicable retention period.",
             "Retention of copies of customer online account historical usage audit log data beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle37Precision:
+    r"""Cycle-37 precision: R-DATA-5 seven-word pre-data qualifier boundary.
+
+    Cycle-36 widened the pre-data modifier slot to "(?:\w+ ){0,6}" in all six
+    sites (four tight object tails + nominal and verb-form denial branches),
+    covering up to SIX qualifier words. A SEVEN-word phrase ("customer online
+    account historical usage audit event log data") sat beyond the {0,6}
+    boundary: tight object tails went silent while nominal/verb-form denials
+    still over-fired R-DATA-5 (probe50 pre-fix: 13/23, the 9 FAILs all at 7w).
+
+    Fix: widen the slot to "(?:\w+ ){0,7}" in the same six sites, keeping the
+    prefix-shape asymmetry in mind — the four pattern tails and the nominal
+    denial branch use "(?:customer )?(?:personal )?" (5 sites via replace_all,
+    incl. both trailing-"|" branch tails) while the verb-form denial branch uses
+    "(?:customer |personal )?" and needs its own targeted edit (rules.py:605).
+    SEVEN-word phrases now flag on both sides; EIGHT-word phrases sit beyond the
+    new boundary and keep over-firing for denials / going silent for the tight
+    positives.
+
+    NEW discovery at the 8w boundary: reversed-passive ("After ... <phrase>
+    data shall be retained by the Provider.") goes SILENT at 8w. Branch 8
+    positions the data noun via "[^.;]{0,60}" (~60 chars ~= 7 pre-data words),
+    so the reversed-passive form is robust through ~7 pre-data words only —
+    earlier cycle docstrings' claim that "reversed-passive is robust at any
+    width" is FALSE beyond 7 words. Attributive (mid-phrase bare-data-noun,
+    "data retention") stays robust at any width. This reversed-passive window
+    cap becomes a target of cycle-38 (the 8w boundary).
+    """
+
+    SEVEN = "customer online account historical usage audit event log "
+    EIGHT = "customer online account historical usage audit event trail log "
+
+    def test_seven_word_pre_data_denials_not_flagged(self):
+        benign = [
+            f"No {self.SEVEN}data retention beyond the applicable retention period shall occur.",
+            f"No {self.SEVEN}data shall be retained beyond the applicable retention period.",
+            f"No {self.SEVEN}data storage shall occur beyond the applicable retention period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_seven_word_verb_form_denials_not_flagged(self):
+        benign = [
+            f"No copies of {self.SEVEN}data shall be retained beyond the applicable retention period.",
+            f"Beyond the applicable retention period, no {self.SEVEN}data shall be stored by the provider.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_eight_word_pre_data_denials_still_flagged(self):
+        # Eight-word phrases sit beyond the {0,7} boundary and must keep flagging.
+        flagged = [
+            f"No {self.EIGHT}data retention beyond the applicable retention period shall occur.",
+            f"No {self.EIGHT}data shall be retained beyond the applicable retention period.",
+            f"No copies of {self.EIGHT}data shall be retained beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_seven_word_qualified_bounded_not_flagged(self):
+        benign = [
+            f"No {self.SEVEN}data retention for a period of 90 days shall occur.",
+            f"Provider may retain {self.SEVEN}data for a period of 90 days.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_object_position_seven_word_qualified_unbounded_still_flagged(self):
+        # Pattern-side fix: tight object tails now absorb a 7-word pre-data
+        # qualifier; attributive stays robust at any width.
+        flagged = [
+            f"Provider shall retain {self.SEVEN}data beyond the applicable retention period.",
+            f"Retention of {self.SEVEN}data beyond the applicable retention period.",
+            f"After the applicable retention period, Provider shall retain {self.SEVEN}data.",
+            f"After the applicable retention period, {self.SEVEN}data shall be retained by the Provider.",
+            f"{self.SEVEN}data retention beyond the applicable retention period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_eight_word_tight_object_position_still_silent(self):
+        # Eight-word pre-data phrases sit beyond the {0,7} boundary: the tight
+        # object tails go silent, while attributive mid-phrase still flags.
+        benign = [
+            f"Provider shall retain {self.EIGHT}data beyond the applicable retention period.",
+            f"After the applicable retention period, Provider shall retain {self.EIGHT}data.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+        r = score_document(
+            [f"{self.EIGHT}data retention beyond the applicable retention period."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_eight_word_reversed_passive_still_silent(self):
+        # Branch 8's "[^.;]{0,60}" window caps the pre-data phrase at ~7 words:
+        # at EIGHT words the data noun sits beyond the window and goes silent.
+        benign = [
+            f"After the applicable retention period, {self.EIGHT}data shall be retained by the Provider.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+        # At SEVEN words the window still covers the data noun: flags.
+        r = score_document(
+            [f"After the applicable retention period, {self.SEVEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_seven_word_pre_head_copies_denials_not_flagged(self):
+        benign = [
+            f"No copies of {self.SEVEN}data shall be retained beyond the applicable retention period.",
+            f"No copies of {self.SEVEN}data retention beyond the applicable retention period shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_stacked_interposed_seven_word_combos(self):
+        benign = [
+            f"No {self.SEVEN}data backup copies retention beyond the applicable retention period shall occur.",
+            f"No {self.SEVEN}data retention beyond the applicable retention period shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+        flagged = [
+            f"{self.SEVEN}data backup copies retention beyond the applicable retention period.",
+            f"Retention of copies of {self.SEVEN}data beyond the applicable retention period.",
         ]
         for t in flagged:
             r = score_document([t], "d")
