@@ -4342,3 +4342,103 @@ class TestCycle29Precision:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
+
+class TestCycle30Precision:
+    r"""Cycle-30 precision: R-DATA-5 attributive branches with interposed object qualifiers.
+
+    The cycle-29 fix covered the noun-led ("retention of copies of customer
+    data") object-groups, but the ATTRIBUTIVE branches ("customer data
+    retention beyond ...") still required the data/information noun to
+    directly precede the retention noun. A qualifier interposed between them
+    ("customer data backup retention beyond ...") broke the match — the same
+    R-DATA-5 hazard. Fix: widen both attributive branches (forward and
+    reversed) with an optional object-group chain ("backup copies of", a bare
+    modifier "backup", "the possession", etc.) interposed between the data
+    noun and the retention verb-noun, and mirror the shape into the
+    exclusion's attributive denial branch.
+
+    The widening must not over-fire: bounded retention stays silent in all
+    qualifier shapes, denials (both orders), legal mandates (including
+    multi-qualifier "pursuant to applicable tax laws"), and consent/policy
+    text remain silent.
+    """
+
+    def test_attributive_interposed_qualifier_flagged(self):
+        flagged = [
+            "Customer data backup retention beyond the applicable retention period.",
+            "Personal information copies storage after the latest permitted period.",
+            "Customer data extracts preservation following the permitted retention window.",
+            "Personal data records retention after the retention period has expired.",
+            "Customer data all backup copies retention after the retention period has expired.",
+            "Customer data the possession retention following the permitted retention window.",
+            "Customer data backup retention after the applicable retention period has expired.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_interposed_qualifier_reversed_flagged(self):
+        flagged = [
+            "Beyond the applicable retention period, customer data backup retention.",
+            "After the latest permitted period, personal information copies storage.",
+            "Beyond the applicable retention period, personal data backup copies preservation.",
+            "After the latest permitted period, customer data the possession retention.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_bounded_not_flagged(self):
+        benign = [
+            "Customer data backup retention for a period of 90 days beyond the applicable retention period.",
+            "Personal data records storage for no more than 12 months after the latest permitted period.",
+            "Customer data copies retention for a period not exceeding 6 months after termination.",
+            "Personal information backup storage for up to one year after the retention period has expired.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_denials_not_flagged(self):
+        benign = [
+            "No customer data backup retention beyond the applicable retention period shall occur.",
+            "Beyond the applicable retention period, no customer data backup retention shall occur.",
+            "After the latest permitted period, provider shall not retain copies of customer data.",
+            "No retention of copies of customer data beyond the applicable retention period shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_legal_mandate_not_flagged(self):
+        benign = [
+            "Customer data backup retention as required by applicable law beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal data copies storage in accordance with statutory requirements.",
+            "Customer data backup retention pursuant to applicable tax laws after the latest permitted period.",
+            "Customer data backup retention pursuant to applicable law after the latest permitted period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_unbounded_controls_still_flagged(self):
+        flagged = [
+            "Customer data retention beyond the applicable retention period.",
+            "Retention of copies of customer data beyond the applicable retention period.",
+            "Provider shall retain copies of customer data beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal data storage.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_attributive_modifier_only_chains_flagged(self):
+        flagged = [
+            "Customer data backup retention beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal information backup storage.",
+            "Customer data all retention after the retention period has expired.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
