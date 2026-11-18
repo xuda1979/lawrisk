@@ -4516,3 +4516,72 @@ class TestCycle31Precision:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
+
+class TestCycle32Precision:
+    r"""Cycle-32 precision: R-DATA-5 two-word pre-data qualifier denials.
+
+    Cycle-31 added an optional single-word modifier slot "(?:\w+ )?" between the
+    customer/personal prefix and the data noun in the exclusion's nominal-denial
+    and verb-form-denial branches, covering "no customer BACKUP data retention".
+    A TWO-word pre-data qualifier phrase ("customer online account data", "personal
+    sensitive financial data") still broke the denial and over-fired R-DATA-5.
+
+    Fix: widen the single-word slot to "(?:\w+ ){0,2}" in both branches, covering
+    up to two interposed qualifier words. The "shall not occur / take place /
+    happen" branch is anchored on the retention word, not the data noun, so it is
+    qualifier-agnostic and needs no widening. Positive unbounded controls and the
+    decoy "shall not occur" must keep flagging; bounded variants must stay silent.
+    """
+
+    def test_two_word_pre_data_denials_not_flagged(self):
+        benign = [
+            "No customer online account data retention beyond the applicable retention period shall occur.",
+            "After the latest permitted period, no personal sensitive financial data storage shall occur.",
+            "No customer archived payment information preservation following the permitted retention window shall occur.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_two_word_pre_data_verb_denials_not_flagged(self):
+        benign = [
+            "No customer online account data shall be retained beyond the applicable retention period.",
+            "Beyond the applicable retention period, no personal sensitive financial data shall be stored by the provider.",
+            "No customer archived payment information shall be preserved after the latest permitted period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_two_word_shall_not_occur_denials_not_flagged(self):
+        # Anchored on the retention word, so qualifier-agnostic with or without
+        # up to two pre-data qualifier words.
+        benign = [
+            "Customer online account data retention shall not occur beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal sensitive financial data storage shall not take place.",
+            "Customer archived payment information preservation will not happen following the permitted retention window.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_two_word_qualified_bounded_not_flagged(self):
+        benign = [
+            "Customer online account data shall be retained for no more than 12 months beyond the applicable retention period.",
+            "Beyond the applicable retention period, personal sensitive financial data storage for a period of 90 days.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_two_word_qualified_unbounded_still_flagged(self):
+        flagged = [
+            "Customer online account data retention beyond the applicable retention period.",
+            "After the latest permitted period, personal sensitive financial data storage.",
+            "Notwithstanding anything stated elsewhere, customer online account data retention beyond the applicable retention period shall occur.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
