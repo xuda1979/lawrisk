@@ -4125,3 +4125,119 @@ class TestCycle27Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle28Precision:
+    """Cycle-28 precision: R-DATA-5 period/window-anchored retention.
+
+    R-DATA-5's pattern anchored retention only after termination events
+    (termination/expiration/expiry); retention anchored on a retention
+    *period* or *window* ("after the latest permitted period", "beyond
+    the retention period", "after the retention period has expired")
+    was a genuine miss — the unbounded retention hazard is the same even
+    when the anchor is a period rather than a termination event. The
+    shape also exposed that "beyond" was a missing termination anchor
+    entirely ("Provider may retain customer data beyond termination."),
+    and that post-termination numeric bounds ("for up to N years after
+    the latest permitted period") must stay silent via the existing
+    paragraph-wide bound branches. Fix: every R-DATA-5 anchor widens
+    (?:after|following|upon|beyond) (?:the )?(?:termination|such
+    termination|expiration|expiry|(?:latest |permitted |applicable |
+    retention ){0,2}(?:period|window)) in the pattern's data-led,
+    reversed-order, noun-led and attributive branches, and in the
+    exclusion's reversed-order denial branch (so period/beyond-anchored
+    denials stay silent). The consent-based controls ("for the permitted
+    period only", "during the term") and "beyond the retention period"
+    denials rely on pattern anchors/denial branches and must not regress.
+    """
+
+    def test_period_window_retention_flagged(self):
+        flagged = [
+            "Customer data may be retained by Provider after the latest permitted period.",
+            "Customer data may be preserved by Provider following the latest permitted period.",
+            "Customer data shall be kept after the latest permitted period.",
+            "Provider may store customer data following the latest permitted period.",
+            "Customer data may be retained beyond the retention period.",
+            "Provider may store customer data after the applicable retention period.",
+            "Provider may retain customer data after the retention period has expired.",
+            "Customer data may be kept following the permitted retention window.",
+            "Provider may preserve customer data beyond the applicable period.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_beyond_termination_anchor_flagged(self):
+        flagged = [
+            "Provider may retain customer data beyond termination.",
+            "Provider may retain customer data beyond the expiry of the Agreement.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_period_window_noun_and_attributive_flagged(self):
+        flagged = [
+            "Retention of customer data after the latest permitted period.",
+            "Customer data retention beyond the applicable retention period.",
+            "After the retention period has expired, Provider may retain customer data.",
+            "Beyond the permitted retention period, customer data may be retained by Provider.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_period_window_bounded_not_flagged(self):
+        benign = [
+            "Provider may retain customer data for up to 2 years after the latest permitted period.",
+            "Customer data may be retained for a period not exceeding one year after the latest permitted period.",
+            "Provider may keep customer data for no more than 12 months after the latest permitted period.",
+            "Customer data may be retained for a period of 6 months after the latest permitted period.",
+            "Provider may store customer data for up to 90 days after the latest permitted period.",
+            "Customer data may be retained for a period not exceeding one year after the retention period has expired.",
+            "Provider may keep customer data for no more than 6 months following the permitted retention window.",
+            "Customer data may be retained for a period of 90 days beyond the applicable period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_period_denials_not_flagged(self):
+        benign = [
+            "Provider shall not retain customer data beyond the retention period.",
+            "Customer data may not be retained after the latest permitted period.",
+            "No retention of customer data after the latest permitted period shall occur.",
+            "No customer data is retained beyond the applicable period.",
+            "The parties shall not retain customer data for more than 2 years after the latest permitted period.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_consent_controls_still_silent(self):
+        benign = [
+            "Provider may retain customer data for the permitted period only.",
+            "Customer data may be processed during the term of this Agreement for the provision of services.",
+            "Provider must return customer data within the retention window.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_unbounded_termination_controls_still_flagged(self):
+        flagged = [
+            "Provider may retain customer data for seven years after termination.",
+            "Provider may retain customer data after termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_bounded_termination_controls_still_silent(self):
+        benign = [
+            "Provider may retain customer data for up to 90 days after termination.",
+            "Customer data may be kept for up to 6 months following expiration of the Agreement.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
