@@ -4066,3 +4066,62 @@ class TestCycle26Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+
+class TestCycle27Precision:
+    """Cycle-27 precision: R-DATA-5 perfect-aspect modal retention.
+
+    Cycle-26 covered only "will have been retained"; the sibling
+    perfect-aspect modals ("shall/may/might/could/should/would/must
+    have") stayed silent in R-DATA-5 in both the data-led forward
+    branch and the reversed-order branch, so unbounded "Customer data
+    shall have been retained by Provider after termination." was a
+    genuine miss (the R-DATA-5 hazard is the perfect aspect itself,
+    not the specific modal). The copula alternatives in both branches
+    gain the full perfect-modal family with the optional "been";
+    bounded controls stay silent (paragraph-wide bound branches) and
+    denials ("shall not have been retained") stay silent via pattern
+    gap — the interposed "not" blocks the immediate modal-have
+    sequence, no optional negation added.
+    """
+
+    def test_perfect_modal_retention_flagged(self):
+        flagged = [
+            "Customer data shall have been retained by Provider after termination of the agreement.",
+            "After termination, customer data shall have been retained by Provider.",
+            "Customer data may have been retained by Provider following termination.",
+            "After expiry, customer data may have been stored by Provider for seven years.",
+            "The parties agree that customer data shall have been preserved by Provider after termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
+
+    def test_perfect_modal_retention_bounded_not_flagged(self):
+        benign = [
+            "Customer data may have been retained by Provider after termination for up to 90 days.",
+            "Customer data shall have been retained by Provider for a period of 6 months after termination.",
+            "After termination, customer data may have been retained for no more than 12 months.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_perfect_modal_denials_not_flagged(self):
+        benign = [
+            "Customer data shall not have been retained by Provider after termination.",
+            "After termination, customer data may not have been retained by Provider.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
+
+    def test_prior_perfect_and_copula_controls_still_flagged(self):
+        flagged = [
+            "Customer data will have been retained by Provider after termination.",
+            "Customer data will have been stored by Provider for seven years after termination.",
+            "Customer data is retained by Provider after termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
