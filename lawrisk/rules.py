@@ -176,7 +176,25 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-COMM-4",
         dimension=Dimension.COMMERCIAL,
-        pattern=re.compile(r"assign\s*:\s*|assign(?: (?:this agreement|all (?:of )?its? rights?(?: and obligations)?(?: and interests?)?|its? rights? and obligations under (?:this agreement|the agreement)|its? interests? (?:under|in) (?:this agreement|the agreement)))?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer(?: (?:all|any) (?:of )?its? rights?(?: and obligations)?(?: under (?:this |the )?agreement|in(?:to| under) this agreement)?)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|transfer this agreement[^.]{0,30}without|(?:may|can)\s+assign this agreement\s+at any time|this agreement (?:may|shall) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without|novat(?:e|es|ed|ing)?\s+(?:this agreement|the agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)", re.IGNORECASE),
+        pattern=re.compile(
+            r"assign\s*:\s*|"
+            r"assign(?: (?:this agreement|all (?:of )?its? rights?(?: and obligations)?(?: and interests?)?|"
+            r"any (?:of )?its? (?:rights?|obligations)|"
+            r"its? rights? and obligations under (?:this agreement|the agreement)|"
+            r"its? interests? (?:under|in) (?:this agreement|the agreement)))?"
+            r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
+            r"assign[, ]+(?:or )?(?:transfer|delegate|subcontract)[^.]{0,70}without[^.]{0,30}consent|"
+            r"(?:may|can|shall have the right to|reserves? the right to|is (?:entitled|authorised|authorized) to)"
+            r"[^.]{0,15}(?:make (?:any |an )?)?assignment(?: of (?:this|these(?:\s+presents)?|the) agreement)?"
+            r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
+            r"transfer(?: (?:all|any) (?:of )?its? rights?(?: and obligations)?(?: under (?:this |the )?agreement|in(?:to| under) this agreement)?)?"
+            r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
+            r"transfer this agreement[^.]{0,30}without|"
+            r"(?:may|can)\s+assign this agreement\s+at any time|"
+            r"this agreement (?:may|shall|will|can) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without|"
+            r"novat(?:e|es|ed|ing)?\s+(?:this agreement|the agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? assign|"
             r"(?:may|shall|will) not assign(?: this agreement)?|"
