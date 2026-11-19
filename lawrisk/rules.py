@@ -438,18 +438,20 @@ RULES: List[Rule] = [
         rule_id="R-LIAB-3",
         dimension=Dimension.LIABILITY,
         pattern=re.compile(
-            r"(?:indemnif(?:y|ies)[^.]{0,60}(?:against|from|for)[^.]{0,60}"
+            r"(?:indemnif(?:y|ies|ied|ying)[^.]{0,60}"
+            r"(?:against|from|for|in respect of)[^.]{0,60}"
             r"(?:all|any|third[ -]party|losses|damages|claims)|"
-            r"(?:held|hold(?:s|ing)?)[^.]{0,25}harmless)",
+            r"(?:held|kept|hold(?:s|ing)?|keep(?:s|ing)?)[^.]{0,25}harmless)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:each party[^.;]{0,25}indemnif|either party[^.;]{0,25}indemnif|"
-            r"each party hold|either party hold|"
-            r"each party[^.;]{0,25}(?:hold|held)|"
+            r"each party (?:hold|keep)|either party (?:hold|keep)|"
+            r"each party[^.;]{0,25}(?:hold|held|keep|kept)|"
             r"(?:the parties|both parties)[^.;]{0,25}(?:mutually |cross-? )?indemnif"
             r"[^.;]{0,25}each other|"
-            r"(?:the parties|both parties)[^.;]{0,25}(?:hold|held)[^.]{0,40}harmless|"
+            r"(?:the parties|both parties)[^.;]{0,25}(?:hold|held|keep|kept)"
+            r"[^.]{0,40}harmless|"
             r"mutual(?:ly)? indemnif|"
             r"arising (?:out of|from) (?:its own|the indemnifying party's own|"
             r"such party's own|each party's own) (?:breach|negligence)|"
@@ -457,10 +459,14 @@ RULES: List[Rule] = [
             r"(?:each|either|both) party[^.;]{0,40}for its own (?:breach|negligence)|"
             r"(?:(?:the|this)\s+)?(?P<pidty>[a-z]{2,})\s+(?:"
             r"shall\s+|will\s+|hereby\s+|agrees?\s+to\s+|has\s+agreed\s+to\s+)?"
-            r"(?:indemnif(?:y|ies)?|(?:hold|held)[^.]{0,25}harmless)"
+            r"(?:indemnif(?:y|ies|ied|ying)?|(?:hold|held|keep|kept)[^.]{0,25}harmless)"
             r"[^.]{0,120}(?:arising (?:out of|from)|(?:to the extent\s+)?"
             r"(?:caused by|arising from))\s+(?:the\s+)?"
-            r"(?P=pidty)(?:'s|s)?\s+own\s+(?:breach|negligence))",
+            r"(?P=pidty)(?:'s|s)?\s+own\s+(?:breach|negligence)|"
+            r"be\s+(?:indemnif[a-z]+|(?:hold|held|keep|kept)[^.]{0,25}harmless)"
+            r"[^.]{0,40}by\s+(?P<impty>[a-z]{2,})[^.]{0,120}"
+            r"(?:arising (?:out of|from)|(?:to the extent\s+)?(?:caused by|arising from))"
+            r"\s+(?:the\s+)?(?P=impty)(?:'s|s)?\s+own\s+(?:breach|negligence))",
             re.IGNORECASE,
         ),
         severity=30,
