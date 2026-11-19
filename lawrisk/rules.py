@@ -329,16 +329,25 @@ RULES: List[Rule] = [
             r"(?:suspend|deactivate)[^.]{0,60}"
             r"(?:the services|services|access|the account|any account|your account)"
             r"[^.]{0,50}"
-            r"(?:without (?:prior )?(?:notice|consent|warning)|"
+            r"(?:without (?:prior |any )?(?:notice|consent|warning)|"
+            r"with ?no (?:prior )?(?:notice|consent|warning)|"
             r"at any time|"
-            r"at (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute)[^.]{0,15}(?:discretion)|"
+            r"(?:at|in) (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute|complete)[^.]{0,15}(?:discretion)|"
             r"with immediate effect|immediately\b)"
             r"|"
-            r"(?:without (?:prior )?(?:notice|consent|warning)|at any time|"
-            r"at (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute)[^.]{0,15}(?:discretion)|"
+            r"(?:without (?:prior |any )?(?:notice|consent|warning)|with ?no (?:prior )?(?:notice|consent|warning)|at any time|"
+            r"(?:at|in) (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute|complete)[^.]{0,15}(?:discretion)|"
             r"with immediate effect|immediately\b)"
             r"[^.]{0,50}(?:suspend|deactivate)[^.]{0,60}"
-            r"(?:the services|services|access|the account|any account|your account)",
+            r"(?:the services|services|access|the account|any account|your account)"
+            r"|"
+            r"(?:the services|services|access|the account|any account|your account)"
+            r"[^.]{0,60}(?:shall|will|may|can|to)\s+be\s+(?:immediately\s+)?(?:suspended|deactivated)"
+            r"[^.]{0,50}(?:without (?:prior |any )?(?:notice|consent|warning)|"
+            r"with ?no (?:prior )?(?:notice|consent|warning)|"
+            r"at any time|"
+            r"(?:at|in) (?:its|our|provider'?s)[^.]{0,15}(?:sole|absolute|complete)[^.]{0,15}(?:discretion)|"
+            r"with immediate effect|immediately\b)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
