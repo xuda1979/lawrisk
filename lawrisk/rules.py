@@ -569,7 +569,7 @@ RULES: List[Rule] = [
             r"(?:after|following|upon|beyond) (?:the )?(?:termination(?: date)?|expiration|expiry|"
             r"such termination|termination of (?:this|the) agreement|"
             r"(?:latest |permitted |applicable |retention ){0,2}(?:period|window))"
-            r"[^.;]{0,118}(?:customer |personal )?(?:data|information)"
+            r"[^.;]{0,120}(?:customer |personal )?(?:data|information)"
             r"[^.;]{0,40}"
             r"(?:(?:is|are|was|were|(?:will|shall|may|might|could|should|would|must) have) (?:required|obligated|compelled|bound) to (?:be )?|"
             r"(?:is|are|was|were|(?:will|shall|may|might|could|should|would|must) have)\s+(?:been )?|"
