@@ -27,6 +27,12 @@ SHOULD_NOT_FIRE = [
     # R-LIAB-1 over-fire
     ("L-1 neg: mutual disclaimer", "Neither party shall be liable to the other for indirect or consequential losses, save for fraud, wilful misconduct and breach of confidentiality."),
     ("L-1 neg: exclusion carve-out", "In no event shall the provider be liable for indirect damages; nothing in this clause excludes liability for death or personal injury."),
+    # cycle 46 R-LIAB-1 over-fire (modal-less + verb-form disclaimers)
+    ("L-1 neg: either party is not liable", "Either party is not liable for any indirect or consequential damages."),
+    ("L-1 neg: each party has no liability", "Each party shall have no liability to the other for indirect damages."),
+    ("L-1 neg: both parties not liable each other", "Both parties shall not be liable to each other for consequential damages arising from use of the services."),
+    ("L-1 neg: carve-out fraud present tense", "The provider is not liable for consequential damages, except in cases of fraud or gross negligence."),
+    ("L-1 neg: carve-out gross negligence accepts", "The vendor accepts no liability for indirect damages other than for losses caused by the supplier's gross negligence."),
     # R-LIAB-3 over-fire
     ("L-3 neg: each party indemnifies own breach", "Each party indemnifies the other against claims arising out of its own breach of this agreement."),
     ("L-3 neg: mutual indemnity", "The parties shall mutually indemnify each other against third-party claims to the extent caused by the indemnifying party's own negligence."),
@@ -239,6 +245,15 @@ SHOULD_FIRE = [
     ("D-2 pos: process through subprocessors in US", "Provider may process Customer data through subprocessors located in the United States."),
     # cycle 10 R-LIAB-1 under-fire
     ("L-1 pos: lost profits disclaimer", "Provider shall not be liable for any indirect damages, including lost profits, revenue, or business interruption."),
+    # cycle 46 R-LIAB-1 under-fire (modal-less + verb-form disclaimers)
+    ("L-1 pos: present is not liable for", "Provider is not liable for consequential damages of any kind."),
+    ("L-1 pos: has no liability for", "Provider has no liability for consequential damages."),
+    ("L-1 pos: shall have no responsibility", "The provider shall have no responsibility for consequential damages."),
+    ("L-1 pos: accepts no liability", "Provider accepts no liability for any indirect damages."),
+    ("L-1 pos: disclaims all liability", "Vendor disclaims all liability for consequential damages."),
+    ("L-1 pos: disclaims liability for", "The licensor disclaims liability for indirect or consequential losses."),
+    ("L-1 pos: excludes all liability", "Provider excludes all liability for consequential damages."),
+    ("L-1 pos: shall bear no liability", "Vendor shall bear no liability for consequential damages."),
     # cycle 11 R-COMM-3 under-fire
     ("C-3 pos: prices may increase", "Prices may increase at any time upon 30 days' prior written notice to Customer."),
     ("C-3 pos: fees will increase annually", "The fees will increase annually upon 60 days' written notice."),

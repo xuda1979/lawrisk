@@ -6447,3 +6447,75 @@ class TestCycle45Precision:
         for t in flagged:
             r = score_document([t], "d")
             assert any(p.rule_id == "R-LIAB-3" for p in r.penalties), t
+
+
+class TestCycle46Precision:
+    """Cycle-46 precision regression: R-LIAB-1 modal-less and verb-form
+    disclaimers (present-tense 'is not liable', 'has/accepts/bears no
+    liability', 'disclaims/excludes liability', 'shall have no
+    responsibility') fire; mutual-party and carve-out constructions stay
+    silent."""
+
+    def test_present_tense_not_liable_flagged(self):
+        r = score_document(
+            ["Provider is not liable for consequential damages of any kind."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_has_no_liability_flagged(self):
+        r = score_document(
+            ["Provider has no liability for consequential damages."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_shall_have_no_responsibility_flagged(self):
+        r = score_document(
+            ["The provider shall have no responsibility for consequential damages."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_accepts_no_liability_flagged(self):
+        r = score_document(
+            ["Provider accepts no liability for any indirect damages."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_disclaims_liability_flagged(self):
+        flagged = [
+            "Vendor disclaims all liability for consequential damages.",
+            "The licensor disclaims liability for indirect or consequential losses.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-1" for p in r.penalties), t
+
+    def test_excludes_liability_flagged(self):
+        r = score_document(
+            ["Provider excludes all liability for consequential damages."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_shall_bear_no_liability_flagged(self):
+        r = score_document(
+            ["Vendor shall bear no liability for consequential damages."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-1" for p in r.penalties)
+
+    def test_mutual_present_tense_not_liable_silent(self):
+        benign = [
+            "Either party is not liable for any indirect or consequential damages.",
+            "Each party shall have no liability to the other for indirect damages.",
+            "Both parties shall not be liable to each other for consequential damages arising from use of the services.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-1" for p in r.penalties), t
+
+    def test_carve_out_modal_less_silent(self):
+        benign = [
+            "The provider is not liable for consequential damages, except in cases of fraud or gross negligence.",
+            "The vendor accepts no liability for indirect damages other than for losses caused by the supplier's gross negligence.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-1" for p in r.penalties), t
