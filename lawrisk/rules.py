@@ -64,14 +64,21 @@ RULES: List[Rule] = [
             r"auto[- ]?renew(?:s|al)?|automatic renewal(?:s)?|"
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|"
             r"renew(?:s|ed|ing)?[^.;]{0,40}automatically|"
-            r"(?:is|shall|will|may) be (?:extended|renewed)[^.;]{0,40}automatically|"
+            r"roll(?:s|ed|ing)?[ -]?over[^.;]{0,50}(?:successive|additional|further|"
+            r"anniversary|renewal (?:terms?|periods?)|consecutive|from term to term|"
+            r"for (?:a |an |another |each )?(?:further |new |successive |additional |"
+            r"subsequent |consecutive )?(?:[a-z0-9]+-)?(?:[a-z0-9]+ )?(?:term|period)s?)|"
+            r"(?:is|are|was|were|has been|have been|shall|will|may) (?:be )?"
+            r"(?:extended|renewed)[^.;]{0,40}automatically|"
             r"(?:be )?deemed (?:to be )?(?:extended|renewed)[^.;]{0,40}automatically|"
             r"(?:be )?deemed (?:to be )?automatically (?:extended|renewed)[^.;]{0,15}|"
-            r"(?:is|shall|will|may) automatically (?:be )?(?:extended|renewed)[^.;]{0,15}|"
+            r"(?:is|are|was|were|has been|have been|shall|will|may) automatically (?:be )?"
+            r"(?:extended|renewed)[^.;]{0,15}|"
             r"automatically extend(?:s|ed|ing)?|automatic(?:al)? extension(?:s)?|"
-            r"(?:shall|will|may) continue (?:in effect|in force|for)[^.;]{0,40}"
-            r"(?:successive|from term to term|renewal (?:terms?|periods?)|"
-            r"additional (?:successive )?(?:terms?|periods?))",
+            r"(?:(?:shall|will|may|does|did)\s+)?continue(?:s)? (?:in effect|in force|for)"
+            r"[^.;]{0,40}(?:successive|consecutive|from term to term|"
+            r"renewal (?:terms?|periods?)|further (?:terms?|periods?)|"
+            r"additional (?:successive|consecutive )?(?:terms?|periods?))",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -79,6 +86,10 @@ RULES: List[Rule] = [
             r"(?:no|without) automatic renewal|"
             r"(?:does|shall|will|may) not (?:be )?(?:auto[- ]?renew|"
             r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?)|"
+            r"(?:does|shall|will|may) not (?:be )?renew(?:s|ed|ing)?[^.;]{0,40}automatically|"
+            r"nothing\b[^.;]{0,80}(?:cause|causes|caused|requires?|required|"
+            r"permit(?:s|ted)?|allow(?:s|ed)?|entitle(?:s|d)?|deem(?:s|ed)?)\b"
+            r"[^.;]{0,50}automatically|"
             r"(?:does|shall|will|may) not (?:be )?renewed automatically|"
             r"(?:is|shall|will|may) not (?:be )?deemed (?:to be )?(?:extended|renewed) automatically|"
             r"(?:shall|will|may) (?:be )?deemed (?:to be )?not (?:extended|renewed)|"
@@ -87,8 +98,9 @@ RULES: List[Rule] = [
             r"(?:is|shall|will|may) be automatically (?:extended|renewed)"
             r"[^.;]{0,80}(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew)|"
             r"shall be deemed not renewed|"
-            r"(?:neither party|no party)[^.;]{0,60}"
-            r"(?:auto[- ]?renew|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?)|"
+            r"(?:neither party|no party)[^.;]{0,60}(?:auto[- ]?renew|"
+            r"renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|deemed "
+            r"(?:to (?:have|be) )?(?:been )?renewed[^.;]{0,40}automatically)|"
             r"(?:either party|neither party|no party)[^.;]{0,80}"
             r"(?:elect(?:s|ing)?|choos(?:es|e|ing)?|opt(?:s|ing)?|intend(?:s|ing)?) not to renew|"
             r"(?:auto[- ]?renew|renew(?:s|ed|ing)? automatically|automatically renew(?:s|ed|ing)?|automatic renewal)"
@@ -98,8 +110,9 @@ RULES: List[Rule] = [
             r"object(?:s|ing)? in writing|written objection|"
             r"written notice of (?:termination|cancellation)[^.;]{0,40}"
             r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry))|"
-            r"(?:either party|neither party)[^.;]{0,80}object(?:s|ing)? in writing|"
-            r"(?:either party|neither party)[^.;]{0,80}written objection|"
+            r"(?:either party|each party|neither party)[^.;]{0,80}"
+            r"object(?:s|ing)? in writing|"
+            r"(?:either party|each party|neither party)[^.;]{0,80}written objection|"
             r"\b(?:either party|neither party)[^.;]{0,80}"
             r"(?:may|shall|will)?\s*(?:give(?:s|n)?|deliver(?:s|ed)?|provide(?:s|d)?)"
             r"\b[^.;]{0,40}written notice of (?:termination|cancellation)[^.;]{0,40}"
@@ -112,7 +125,9 @@ RULES: List[Rule] = [
             r"(?:notice of non[- ]renewal|notice[^.;]{0,35}not to renew|"
             r"object(?:s|ing)? in writing|written objection|"
             r"written notice of (?:termination|cancellation)[^.;]{0,40}"
-            r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry)))",
+            r"(?:prior to|before)[^.;]{0,25}(?:expiration|expiry))|"
+            r"(?:deemed|continue (?:in effect|in force|for))[^.;]{0,80}(?:[,;]\s*)?"
+            r"(?:unless|except|provided\s+(?:that|it))[^.;]{0,45}written notice)",
             re.IGNORECASE,
         ),
         severity=20,
