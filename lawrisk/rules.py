@@ -967,7 +967,8 @@ RULES: List[Rule] = [
         condition=re.compile(
             r"export|sanction|embargo|"
             r"ship(?:s|ped|ping|ment|ments)?\b|deliver(?:ies|y|ed)?\b|"
-            r"order(?:s|ed|ing)?\b|sold\b|sell\b|distribut(?:e|es|ed|ing|ion)\b|"
+            r"order(?:s|ed|ing)?\b|sold\b|sell(?:s|ing)?\b|sales\b|"
+            r"distribut(?:e|es|ed|ing|ion|or|ors?)?\b|"
             r"fulfil(?:l)?(?:s|led|lment)?\b",
             re.IGNORECASE,
         ),
@@ -978,13 +979,13 @@ RULES: List[Rule] = [
             r"\bnot(?:\s+be)?\s+for\s+(?:delivery|sale|export|shipment|transfer)"
             r"(?:\s+(?:to|into|in))?[^.;]{0,40}\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
             r"(?:shall|will|must|may) not (?:be )?(?:export(?:ed)?|ship(?:ped)?|"
-            r"transfer(?:red)?|sell|sold|deliver(?:ed)?|provide(?:d)?|distribute(?:d)?"
+            r"transfer(?:red)?|sell(?:s|ing)?|sold|deliver(?:ed)?|provide(?:d)?|distribute(?:d)?"
             r"|fulfil(?:l)?(?:ed)?)\b|"
             r"(?:are|is|were|do|does)\s+not\s+(?:be\s+)?(?:exported|shipped|transferred|sold|delivered|"
             r"provided|distributed|fulfil(?:l)?ed)\b|"
             r"\bno (?:export|shipment|transfer|sale|sales|fulfil(?:l)?ment)[^.;]{0,40}(?:to|into)\b|"
             r"(?:neither party|no party)[^.;]{0,40}(?:shall|will|may|must)?[^.;]{0,15}"
-            r"(?:export(?:ed)?|ship(?:ped)?|transfer(?:red)?|sell|sold|deliver(?:ed)?|provide(?:d)?|"
+            r"(?:export(?:ed)?|ship(?:ped)?|transfer(?:red)?|sell(?:s|ing)?|sold|deliver(?:ed)?|provide(?:d)?|"
             r"distribute(?:d)?|fulfil(?:l)?(?:ed)?)\b|"
             r"no (?:goods?|products?|software|technology|materials?|items?)\b"
             r"[^.;]{0,30}(?:shall|will|may)?[^.;]{0,10}be (?:exported|shipped|transferred|sold|delivered|"
@@ -995,7 +996,25 @@ RULES: List[Rule] = [
             r"[^.;]{0,80}(?:including|such as|applicable to|covering|that apply to|covering)"
             r"[^.;]{0,80}\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
             r"(?:excluding|excluded|exclude|except\b)[^.;]{0,80}"
-            r"\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b",
+            r"\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
+            r"\b(?:shall|will|must|may|does|do)?[^.;]{0,40}(?:require(?:s|d)?|obtain(?:s|ed|ing)?)"
+            r"[^.;]{0,40}(?:a |an |the |valid |applicable |appropriate |export |sanctions? ){0,3}"
+            r"licen[cs]e(?:s)?\b|"
+            r"\bnothing in (?:this|the) (?:agreement|contract|clause|section|document)"
+            r"[^.;]{0,40}(?:shall|will|may|must)?[^.;]{0,15}"
+            r"(?:permit|allow|direct|authori[sz]e|sanction)"
+            r"[^.;]{0,40}\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
+            r"\b(?:does|do|shall|will|may|must)?[^.;]{0,25}not (?:apply|applicable)"
+            r"[^.;]{0,40}\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
+            r"\b(?:does|do) not (?:permit|allow)"
+            r"[^.;]{0,60}\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
+            r"\b(?:only|solely|exclusively|strictly)?[^.;]{0,30}(?:under|pursuant to) "
+            r"(?:a |an |the |valid |applicable |appropriate |export |sanctions? ){0,3}"
+            r"licen[cs]e(?:s)?\b[^.;]{0,40}\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b|"
+            r"\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b"
+            r"[^.;]{0,60}(?:under|pursuant to) "
+            r"(?:a |an |the |valid |applicable |appropriate |export |sanctions? ){0,3}"
+            r"licen[cs]e(?:s)?\b",
             re.IGNORECASE,
         ),
         severity=50,
@@ -1006,8 +1025,16 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-EXP-3",
         dimension=Dimension.EXPORT,
-        condition=re.compile(r"deliver|ship|supply|technology|software", re.IGNORECASE),
-        pattern=re.compile(r"(?:re[- ]?export|diversion|end[- ]?use(?!r(?:s)?\b))", re.IGNORECASE),
+        condition=re.compile(
+            r"deliver|ship|supply|technology|software|re[- ]?export|divert(?:s|ed|ing)?\b|"
+            r"resell\b|re[- ]?sell\b|relay(?:ed|ing)?\b|end[- ]?use\b",
+            re.IGNORECASE,
+        ),
+        pattern=re.compile(
+            r"(?:re[- ]?export|resell\b|re[- ]?sell\b|divert(?:s|ed|ing)?\b|relay(?:ed|ing)?\b|"
+            r"diversion|end[- ]?use(?!r(?:s)?\b))",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"(?:require[sd]?[^.]{0,30}(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
             r"obtain[^.]{0,30}authori[sz]|obtain[^.]{0,50}(?:approval|permission|consent|licen[cs]e)|"
@@ -1016,10 +1043,17 @@ RULES: List[Rule] = [
             r"(?:re[- ]?export|export)\w*[^.;]{0,60}"
             r"\bwith(?: the)? [^.;]{0,25}(?:prior |written ){0,2}"
             r"(?:authori[sz](?:ation)?|approval|permission|consent)\b|"
-            r"(?:may|shall|will|must|can) not (?:be )?(?:re[- ]?export(?:ed|ing)?|export(?:ed|ing)?)"
+            r"(?:may|shall|will|must|can) not (?:be )?(?:re[- ]?export(?:ed|ing)?|export(?:ed|ing)?|"
+            r"divert(?:ed)?|resell|re[- ]?sell|relay(?:ed)?)"
             r"[^.;]{0,40}without[^.;]{0,40}"
             r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
-            r"subject to|comply|controls|restrictions|screening)",
+            r"\bno (?:re[- ]?export(?:s)?|export(?:s)?|diversion|diverting|resale|reselling)\b"
+            r"[^.;]{0,60}(?:shall|will|may|must)?[^.;]{0,15}(?:be )?(?:occurs?|made|permitted)\b"
+            r"[^.;]{0,40}without[^.;]{0,40}"
+            r"(?:prior |written )?(?:authori[sz](?:ation)?|approval|permission|consent|licen[cs]e)|"
+            r"subject to|comply|controls|screening|"
+            r"(?:export|sanction|trade|re[- ]?export|diversion)[ -]?(?:control|controls|"
+            r"law|laws|regulation|regulations))",
             re.IGNORECASE,
         ),
         severity=30,
