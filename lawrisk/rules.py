@@ -545,13 +545,23 @@ RULES: List[Rule] = [
         pattern=re.compile(
             r"(?:does not|will not|shall not|makes? no|gives? no|offers? no|provides? no|"
             r"disclaim(?:s|ing|ed)?)[^.]{0,40}"
-            r"(?:warrant(?:y|ies?)?|guarantee|represent)[^.]{0,40}"
-            r"(?:uninterrupted|error[- ]?free|available|availability|reliab|"
+            r"(?:warrant(?:y|ies?)?|guarantee|represent)[^.]{0,60}"
+            r"(?:uninterrupted|error[- ]?free|free from errors|free of errors|available|availability|reliab|"
             r"fit for|fitness for|merchantab|suitab|"
+            r"(?:provided|performed|operated|delivered)\s+without\s+interruption|"
+            r"(?:operate|works?|function\w*)\s+without\s+error|"
             r"meet(?:s|ing)?[^.]{0,25}(?:requirements?|expectations?|specifications?)|"
             r"particular purpose)|"
-            r"(?:availability|reliab\w*|error[- ]?free (?:operation|performance)|"
-            r"uninterrupted (?:operation|performance|service))[^.;]{0,45}"
+            r"(?:no|neither)\s+(?:assurance|warrant(?:y|ies)?|guarantee|representation)[^.]{0,40}"
+            r"(?:is|are|shall be|will be)\s+(?:given|made)[^.]{0,70}"
+            r"(?:available|availability|uninterrupted|error[- ]?free|free from errors|free of errors|reliab|interruption|"
+            r"(?:operate|works?|function\w*)\s+without\s+error)|"
+            r"disclaim(?:s|ing|ed)?[^.;]{0,80}\s+will\s+be\s+(?:error[- ]?free|uninterrupted|available|reliable)|"
+            r"(?:provided|offered|furnished|delivered)\s+without\s+(?:any\s+|a\s+)?"
+            r"(?:warrant(?:y|ies)?|guarantee)[^.]{0,30}"
+            r"(?:availability|reliab|fitness|suitab|error[- ]?free|interruption|uninterrupted)|"
+            r"(?:availability|reliab\w*|fitness for|suitab\w*|error[- ]?free (?:operation|performance)|"
+            r"uninterrupted (?:operation|performance|service)|free from errors|free of errors)[^.;]{0,45}"
             r"(?:is|are|shall be|will be|can be|may be)\s+not\s+guaranteed",
             re.IGNORECASE,
         ),
@@ -559,6 +569,20 @@ RULES: List[Rule] = [
         reason="Availability / quality of services is disclaimed (interruption or error-free operation not warranted)",
         mitigation="Add service-level and availability commitments with remedies for sustained downtime.",
         description="Flags disclaimers of service availability or error-free, uninterrupted operation.",
+        exclusion=re.compile(
+            r"(?:during|in the event of|in case of|in the event|if|where|when|unless|except|"
+            r"to the extent|due to)[^.;]{0,40}"
+            r"(?:force majeure|scheduled maintenance|maintenance|network outage|repair)"
+            r"|"
+            r"(?:customer|client|licensee|recipient|subscriber)[^.;]{0,40}"
+            r"(?:fails? (?:to|does)|breach(?:es|ing)?|default(?:s|ing)?|modif(?:ies|ied|ying|ication)|"
+            r"chang(?:es|ing|ed)|alter(?:s|ing|ed)|customiz|provided|supplied|furnished|arranged)"
+            r"|"
+            r"(?:internet|third[ -]?part(?:y|ies)|carrier|public network|subscriber network)"
+            r"|"
+            r"(?:scheduled|planned|emergency) maintenance",
+            re.IGNORECASE,
+        ),
     ),
     Rule(
         rule_id="R-LIAB-6",
