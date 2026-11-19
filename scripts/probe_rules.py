@@ -30,6 +30,15 @@ SHOULD_NOT_FIRE = [
     # R-LIAB-3 over-fire
     ("L-3 neg: each party indemnifies own breach", "Each party indemnifies the other against claims arising out of its own breach of this agreement."),
     ("L-3 neg: mutual indemnity", "The parties shall mutually indemnify each other against third-party claims to the extent caused by the indemnifying party's own negligence."),
+    # cycle 45 R-LIAB-3 over-fire (named-party own-fault)
+    ("L-3 neg: buyer own breach", "Buyer shall indemnify Seller against claims arising out of Buyer's own breach of contract."),
+    ("L-3 neg: customer own negligence hold", "Customer shall hold Provider harmless against any claims arising from Customer's own negligence."),
+    ("L-3 neg: vendor to extent caused by own", "Vendor shall indemnify Purchaser to the extent caused by Vendor's own negligence."),
+    # cycle 45 R-LIAB-3 over-fire (mutual 'for' connector own-fault)
+    ("L-3 neg: each party for its own negligence", "Each party shall indemnify the other for any loss or damage caused by its own negligence."),
+    ("L-3 neg: the parties for their own", "The parties shall indemnify each other for any loss caused by their own negligence."),
+    ("L-3 neg: both parties respective own acts", "Both parties shall indemnify each other for any claims arising from their respective own acts."),
+    ("L-3 neg: cross-indemnify own breach", "The parties shall cross-indemnify each other for losses caused by the indemnifying party's own breach."),
     # R-DATA-1 over-fire
     ("D-1 neg: GDPR clause", "The parties shall comply with GDPR and the UK Data Protection Act 2018 when processing personal data under this agreement."),
     ("D-1 neg: denial of processing", "Neither party shall collect, process, use, share, or store personal data except as strictly necessary for performing this agreement."),
@@ -208,6 +217,12 @@ SHOULD_FIRE = [
     ("C-6 pos: finance charge $25/month", "Accounts paid late shall incur a finance charge of $25 per month."),
     # cycle 9 R-LIAB-3 under-fire
     ("L-3 pos: held harmless from third-party claims", "Provider shall be held harmless from any claims by third parties arising out of Customer's use of the services."),
+    # cycle 45 R-LIAB-3 under-fire ('for' connector + fault controls)
+    ("L-3 pos: indemnify for any claims it may suffer", "Supplier agrees to indemnify Customer for any claims or losses it may suffer."),
+    ("L-3 pos: indemnify for any claims", "Supplier shall indemnify Customer for any claims."),
+    ("L-3 pos: indemnitee-fault control", "Customer shall indemnify Provider against any claims arising from Provider's own negligence."),
+    ("L-3 pos: third-party own breach control", "Customer shall indemnify the Provider against all claims arising from a third party's own breach."),
+    ("L-3 pos: hold harmless indemnitee-fault", "Customer shall hold Provider harmless against any claims arising from Provider's own negligence."),
     # cycle 9 R-LIAB-5 under-fire
     ("L-5 pos: availability not guaranteed", "The availability of the services at all times is not guaranteed by Provider."),
     # cycle 9 R-DATA-2 under-fire

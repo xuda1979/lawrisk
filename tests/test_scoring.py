@@ -6364,3 +6364,86 @@ class TestCycle44Precision:
             [f"After the applicable retention period, {self.SIXTEEN}data shall be retained by the Provider."], "d"
         )
         assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+
+class TestCycle45Precision:
+    r"""Cycle-45 precision: R-LIAB-3 broad-indemnification fault attribution.
+
+    R-LIAB-3 flags one-sided, broad indemnification obligations. Earlier
+    regression work silenced mutual indemnities ("each/either party ... own
+    breach", "mutual(ly) indemnif") and narrow own-fault constructions. Two
+    residuals remained in cycle-44 code:
+
+    1. "for"-connector under-fire: the pattern's connector set was
+       "(?:against|from)", so one-sided "indemnify ... for any claims" clauses
+       went unflagged. Fix: "(?:against|from|for)".
+    2. Named-party own-fault over-fire: "Buyer shall indemnify Seller against
+       claims arising out of Buyer's own breach" flagged even though the fault
+       owner is the indemnitor (a mutual-carve-out pattern). Widening the
+       "arising from/out of ... its own" plurals did not cover named-party
+       constructions, and admitting "for" to the pattern re-opened the mutual
+       "for"-connector phrases.
+
+    Fix (rules.py:403-431): windowed mutual branches
+    ("(?:the parties|both parties)[^.;]{0,25}(?:mutually |cross-? )?indemnif
+    [^.;]{0,25}each other" plus hold/held-harmless heads), plural "each party's
+    own", a "caused by" tail variant, and a named-party fault-owner
+    backreference branch: "(?P<pidty>[a-z]{2,})\s+(?:shall\s+|will\s+|hereby\s+|
+    agrees?\s+to\s+|has\s+agreed\s+to\s+)?(?:indemnif(?:y|ies)?|(?:hold|held)
+    [^.]{0,25}harmless)[^.]{0,120}(?:arising (?:out of|from)|(?:to the extent
+    \s+)?(?:caused by|arising from))\s+(?:the\s+)?(?P=pidty)'?s?\s+own\s+
+    (?:breach|negligence)".
+
+    The backreference requires the SAME party who is the subject of the
+    indemnification verb to own the fault: indemnitee-fault ("... arising from
+    Provider's own negligence") and third-party-fault ("... from a third
+    party's own breach") phrases still flag.
+    """
+
+    def test_named_party_own_breach_not_flagged(self):
+        benign = [
+            f"Buyer shall indemnify Seller against claims arising out of Buyer's own breach of contract.",
+            f"Customer shall hold Provider harmless against any claims arising from Customer's own negligence.",
+            f"Vendor shall indemnify Purchaser to the extent caused by Vendor's own negligence.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-3" for p in r.penalties), t
+
+    def test_named_party_indemnitee_fault_still_flagged(self):
+        flagged = [
+            f"Customer shall indemnify Provider against any claims arising from Provider's own negligence.",
+            f"Customer shall hold Provider harmless against any claims arising from Provider's own negligence.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-3" for p in r.penalties), t
+
+    def test_third_party_fault_still_flagged(self):
+        r = score_document(
+            ["Customer shall indemnify the Provider against all claims arising from a third party's own breach."], "d"
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
+
+    def test_mutual_for_connector_own_fault_not_flagged(self):
+        benign = [
+            f"Each party shall indemnify the other for any loss or damage caused by its own negligence.",
+            f"The parties shall indemnify each other for any loss caused by their own negligence.",
+            f"Both parties shall indemnify each other for any claims arising from their respective own acts.",
+            f"Each party shall indemnify the other for any claims caused by the indemnifying party's own gross negligence.",
+            f"The parties shall cross-indemnify each other for losses caused by the indemnifying party's own breach.",
+            f"Either party shall indemnify the other for any claims arising from its own breach.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-3" for p in r.penalties), t
+
+    def test_one_sided_for_connector_still_flagged(self):
+        flagged = [
+            f"Supplier agrees to indemnify Customer for any claims or losses it may suffer.",
+            f"Supplier shall indemnify Customer for any claims.",
+            f"Vendor shall indemnify Buyer for any losses arising from the services.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-3" for p in r.penalties), t
