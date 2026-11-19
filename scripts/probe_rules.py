@@ -108,6 +108,16 @@ SHOULD_NOT_FIRE = [
     ("C-8 neg: in its sole discretion carve", "Provider may suspend the services in its sole discretion unless Customer cures the breach within 10 days."),
     ("C-8 neg: any warning provided gives notice", "Provider may suspend the services without any warning provided it gives written notice of the non-payment."),
     ("C-8 neg: no notice provided written notice", "Provider may suspend the services with no notice provided it gives Customer prior written notice."),
+    # cycle 48 R-COMM-4 over-fire (delegate/subcontract/verb-list shields)
+    ("C-4 neg: neither party may transfer", "Neither party may transfer this agreement without the prior written consent of the other party."),
+    ("C-4 neg: shall not transfer agreement", "A party shall not transfer this agreement without the other party's consent."),
+    ("C-4 neg: transfer to affiliate", "Customer may transfer all of its rights under this agreement to an affiliate without consent."),
+    ("C-4 neg: neither party may delegate", "Neither party may delegate any of its obligations under this agreement without the prior written consent of the other party."),
+    ("C-4 neg: delegate to affiliate", "Provider may delegate its obligations to an affiliate without consent."),
+    ("C-4 neg: delegate upon written consent", "Provider may delegate its obligations upon the prior written consent of Customer."),
+    ("C-4 neg: neither party verb list", "Neither party may assign, transfer or delegate any of its obligations under this agreement without the prior written consent of the other party."),
+    ("C-4 neg: subcontract to affiliate", "Provider may subcontract the provision of the services to an affiliate without consent."),
+    ("C-4 neg: subcontract upon written consent", "Provider may subcontract the provision of the services upon the prior written consent of Customer."),
     # cycle 9 R-COMM-2 over-fire
     ("C-2 neg: terminate required by law", "Company may terminate this agreement without cause where required by applicable law."),
     # cycle 9 R-COMM-3 over-fire
@@ -253,6 +263,13 @@ SHOULD_FIRE = [
     ("C-7 pos: payments final, no credits returns refunds", "All payments are final and no credits, returns, or refunds will be given once services have commenced."),
     # cycle 10 R-COMM-4 under-fire
     ("C-4 pos: transfer all rights to third party", "Customer may transfer all of its rights under this agreement to any third party without consent."),
+    # cycle 48 R-COMM-4 under-fire (verb-list grants + delegate/subcontract)
+    ("C-4 pos: assign transfer delegate subcontract verbs", "Provider may assign, transfer, delegate or subcontract any of its obligations under this agreement to any third party without the prior written consent of Customer."),
+    ("C-4 pos: delegate obligations to third party", "Provider may delegate its obligations under this agreement to any third party without the prior written consent of Customer."),
+    ("C-4 pos: delegate obligations no consent", "Customer may delegate its obligations under this agreement to any third party without the consent of Provider."),
+    ("C-4 pos: subcontract services to third party", "Provider may subcontract the provision of the services to any third party without notice."),
+    ("C-4 pos: will be assigned by provider", "This agreement will be assigned by Provider to a third party without notice."),
+    ("C-4 pos: make any assignment no consent", "Customer may make any assignment of this agreement to any third party without the prior written consent of Provider."),
     # cycle 10 R-COMM-3 under-fire
     ("C-3 pos: have the right to change fees", "Provider shall have the right to change the fees upon 30 days' written notice."),
     # cycle 10 R-COMM-6 under-fire

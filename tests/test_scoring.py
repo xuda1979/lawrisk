@@ -6591,3 +6591,106 @@ class TestCycle47Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-COMM-8" for p in r.penalties), t
 
+
+class TestCycle48Precision:
+    # R-COMM-4 cycle-48 precision: verb-list grants + delegate/subcontract
+
+    def test_assign_transfer_delegate_subcontract_verbs_flagged(self):
+        r = score_document(
+            [
+                "Provider may assign, transfer, delegate or subcontract any of its obligations "
+                "under this agreement to any third party without the prior written consent of Customer."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_delegate_obligations_to_third_party_flagged(self):
+        flagged = [
+            "Provider may delegate its obligations under this agreement to any third party "
+            "without the prior written consent of Customer.",
+            "Customer may delegate its obligations under this agreement to any third party "
+            "without the consent of Provider.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-4" for p in r.penalties), t
+
+    def test_subcontract_services_to_third_party_flagged(self):
+        r = score_document(
+            [
+                "Provider may subcontract the provision of the services to any third party "
+                "without notice."
+            ],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_will_be_assigned_by_provider_flagged(self):
+        r = score_document(
+            ["This agreement will be assigned by Provider to a third party without notice."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_make_any_assignment_no_consent_flagged(self):
+        flagged = [
+            "Customer may make any assignment of this agreement to any third party "
+            "without the prior written consent of Provider.",
+            "Provider may make an assignment of this agreement without the consent of Customer.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-4" for p in r.penalties), t
+
+    def test_neither_party_verb_list_silent(self):
+        benign = [
+            "Neither party may assign, transfer or delegate any of its obligations under this "
+            "agreement without the prior written consent of the other party.",
+            "A party shall not assign, transfer or delegate this agreement without the other "
+            "party's consent.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-4" for p in r.penalties), t
+
+    def test_transfer_prohibition_shields_silent(self):
+        benign = [
+            "Neither party may transfer this agreement without the prior written consent of "
+            "the other party.",
+            "A party shall not transfer this agreement without the other party's consent.",
+            "Customer may transfer all of its rights under this agreement to an affiliate "
+            "without consent.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-4" for p in r.penalties), t
+
+    def test_delegate_shields_silent(self):
+        benign = [
+            "Neither party may delegate any of its obligations under this agreement without "
+            "the prior written consent of the other party.",
+            "A party shall not delegate its obligations under this agreement without the "
+            "other party's consent.",
+            "Provider may delegate its obligations to an affiliate without consent.",
+            "Provider may delegate its obligations upon the prior written consent of Customer.",
+            "Provider may delegate its obligations subject to the prior written consent of Customer.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-4" for p in r.penalties), t
+
+    def test_subcontract_shields_silent(self):
+        benign = [
+            "Provider may subcontract the provision of the services to an affiliate without consent.",
+            "Provider may subcontract the provision of the services upon the prior written "
+            "consent of Customer.",
+            "A party shall not subcontract its obligations without the prior written consent "
+            "of the other party.",
+            "Provider may subcontract the provision of the services to a third party selected "
+            "by Customer.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-4" for p in r.penalties), t
+
