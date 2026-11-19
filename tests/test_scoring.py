@@ -7112,3 +7112,84 @@ class TestCycle53Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-LIAB-6" for p in r.penalties), t
 
+
+
+class TestCycle54Precision:
+    """Cycle-54 precision: sanctioned-sales vocabulary and re-export/diversion
+    control gaps in R-EXP-2 / R-EXP-3.
+
+    R-EXP-2's topic condition only knew ``sell``/``sold``/``distribute``, so
+    "The distributor sells software in Sudan." and "Sales into North Korea are
+    permitted." reached neither the condition nor the country pattern and
+    under-fired. The condition now covers ``sells``/``selling``, ``sales`` and
+    ``distributor(s)``. Over-fires came from licensing/permissive carve-outs
+    the exclusion did not recognise: "Export to Iran requires a licence ...",
+    "Nothing in this Agreement shall permit the export of goods to Cuba.",
+    "This Agreement does not apply to exports into North Korea." and
+    "Sales to Iran are made only under a valid export licence." are all
+    compliance controls (licence-gated or expressly disallowed) and must stay
+    silent. Carve-out branches were added for require/obtain licence-tails,
+    "nothing ... shall permit/allow ...", "does/do not apply to <country>" and
+    "<country> ... under/pursuant to a ... licence".
+
+    R-EXP-3's pattern only matched re-export/diversion/end-use, so
+    "The buyer may re-export the products to any country." (condition lacked
+    re-export vocabulary), "Deliverables may be relayed onward without
+    end-use restrictions." and "Customer may divert the goods and resell them
+    abroad." under-fired. The pattern/condition now also cover resell,
+    re-sell, divert and relay(ed/ing), and "without end-use restrictions" is a
+    gap (a negated restriction, not a control). Over-fire: "No re-export of
+    the deliverables shall occur without a licence." states a prohibition that
+    *requires* a licence and must stay silent; a new exclusion branch covers
+    "No <re-export/export/diversion> ... shall occur/made/permitted without a
+    licence/authority/approval". The bare `restrictions`/`controls` catch-all
+    tail was replaced with qualified control wording ("export/sanction/trade
+    controls", "... control laws/regulations") so that affirmative control
+    language stays silent while negated restrictions still fire.
+    """
+
+    def test_sanctioned_sales_flagged(self):
+        # Stable-form "Sells into a sanctioned jurisdiction" must fire R-EXP-2
+        # even though the word "export" never appears.
+        flagged = [
+            "The distributor sells software in Sudan.",
+            "Sales into North Korea are permitted.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-EXP-2" for p in r.penalties), t
+
+    def test_sanctioned_sales_carve_outs_silent(self):
+        # Licence-gated or expressly disallowed sales to sanctioned
+        # jurisdictions are compliance controls and must not fire R-EXP-2.
+        benign = [
+            "Export to Iran requires a licence from the relevant authority.",
+            "Nothing in this Agreement shall permit the export of goods to Cuba.",
+            "This Agreement does not apply to exports into North Korea.",
+            "Sales to Iran are made only under a valid export licence.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-EXP-2" for p in r.penalties), t
+
+    def test_unrestricted_reexport_flagged(self):
+        # Wording that re-exports without a control must fire R-EXP-3 even when
+        # the condition previously lacked the re-export/diversion vocabulary.
+        flagged = [
+            "The buyer may re-export the products to any country.",
+            "Deliverables may be relayed onward without end-use restrictions.",
+            "Customer may divert the goods and resell them abroad.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-EXP-3" for p in r.penalties), t
+
+    def test_licence_gated_reexport_not_flagged(self):
+        # A prohibition that conditions re-export on a licence is a control,
+        # not a missing-controls gap: R-EXP-3 must stay silent.
+        benign = [
+            "No re-export of the deliverables shall occur without a licence.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-EXP-3" for p in r.penalties), t
