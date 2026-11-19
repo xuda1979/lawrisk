@@ -4760,7 +4760,7 @@ class TestCycle34Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while window/mid-phrase orders still flag.
         r = score_document(
             ["Provider shall retain customer online account historical usage audit event trail access control audit log monitoring review policy handling compliance data beyond the applicable retention period."], "d"
@@ -4880,7 +4880,7 @@ class TestCycle35Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while window/mid-phrase orders still flag.
         r = score_document(
             ["Provider shall retain customer online account historical usage audit event trail access control audit log monitoring review policy handling compliance data beyond the applicable retention period."], "d"
@@ -5029,7 +5029,7 @@ class TestCycle36Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while window/mid-phrase orders still flag.
         r = score_document(
             ["Provider shall retain customer online account historical usage audit event trail access control audit log monitoring review policy handling compliance data beyond the applicable retention period."], "d"
@@ -5122,11 +5122,12 @@ class TestCycle37Precision:
     slot to {0,13} and the branch-8 window to {0,104}, so the THIRTEEN-word
     boundary phrases below were bumped to FOURTEEN words ("...audit log
     monitoring review policy") to stay on the far side (13w reversed-passive
-    104-char gap now flags; the 14w 111-char gap stays silent). Cycle-44 widened
-    the slot to {0,14} and the branch-8 window to {0,111}, so the FOURTEEN-word
-    boundary phrases below were bumped to FIFTEEN words ("...audit log monitoring
-    review policy handling") to stay on the far side (14w reversed-passive
-    111-char gap now flags; the 15w 118-char gap stays silent).
+    104-char gap now flags; the 14w 111-char gap stays silent). The P4 campaign
+    later widened the slot to {0,15} and the branch-8 window to {0,120}, so the
+    boundary phrases below were bumped to SIXTEEN words ("...audit log monitoring
+    review policy handling compliance") to stay on the far side (15w
+    reversed-passive 120-char gap now flags at the exact window edge; the 16w
+    131-char gap stays silent).
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -5194,7 +5195,7 @@ class TestCycle37Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -5302,12 +5303,12 @@ class TestCycle38Precision:
     branch-8 window to "[^.;]{0,104}", so the THIRTEEN-word boundary phrases
     below were bumped to FOURTEEN words ("...audit log monitoring review
     policy") to stay on the far side (13w reversed-passive 104-char gap now
-    flags; the 14w 111-char gap stays silent). Cycle-44 widened the slot to
-    "(?:\w+ ){0,14}" and the branch-8 window to "[^.;]{0,111}", so the
-    FOURTEEN-word boundary phrases below were bumped to FIFTEEN words ("...audit
-    log monitoring review policy handling") to stay on the far side (14w
-    reversed-passive 111-char gap now flags; the 15w 118-char gap stays
-    silent).
+    flags; the 14w 111-char gap stays silent). The P4 campaign later widened the
+    slot to "(?:\w+ ){0,15}" and the branch-8 window to "[^.;]{0,120}", so the
+    boundary phrases below were bumped to SIXTEEN words ("...audit log monitoring
+    review policy handling compliance") to stay on the far side (15w
+    reversed-passive 120-char gap now flags at the exact window edge; the 16w
+    131-char gap stays silent).
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -5378,7 +5379,7 @@ class TestCycle38Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -5494,12 +5495,12 @@ class TestCycle39Precision:
     to "(?:\w+ ){0,13}" and the branch-8 window to "[^.;]{0,104}", so the
     THIRTEEN-word boundary phrases below were bumped to FOURTEEN words ("...audit
     log monitoring review policy") to stay on the far side (13w reversed-passive
-    104-char gap now flags; the 14w 111-char gap stays silent). Cycle-44 widens
-    the slot to "(?:\w+ ){0,14}" and the branch-8 window to "[^.;]{0,111}", so
-    the FOURTEEN-word boundary phrases below were bumped to FIFTEEN words
-    ("...audit log monitoring review policy handling") to stay on the far side
-    (14w reversed-passive 111-char gap now flags; the 15w 118-char gap stays
-    silent).
+    104-char gap now flags; the 14w 111-char gap stays silent). The P4 campaign
+    later widened the slot to "(?:\w+ ){0,15}" and the branch-8 window to
+    "[^.;]{0,120}", so the boundary phrases below were bumped to SIXTEEN words
+    ("...audit log monitoring review policy handling compliance") to stay on the
+    far side (15w reversed-passive 120-char gap now flags at the exact window
+    edge; the 16w 131-char gap stays silent).
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -5585,7 +5586,7 @@ class TestCycle39Precision:
             assert all(p.rule_id != "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -5651,12 +5652,12 @@ class TestCycle40Precision:
     to "(?:\w+ ){0,13}" and the branch-8 window to "[^.;]{0,104}", so the
     THIRTEEN-word boundary phrases below were bumped to FOURTEEN words ("...audit
     log monitoring review policy") to stay on the far side (13w reversed-passive
-    104-char gap now flags; the 14w 111-char gap stays silent). Cycle-44 widens
-    the slot to "(?:\w+ ){0,14}" and the branch-8 window to "[^.;]{0,111}", so
-    the FOURTEEN-word boundary phrases below were bumped to FIFTEEN words
-    ("...audit log monitoring review policy handling") to stay on the far side
-    (14w reversed-passive 111-char gap now flags; the 15w 118-char gap stays
-    silent).
+    104-char gap now flags; the 14w 111-char gap stays silent). The P4 campaign
+    later widened the slot to "(?:\w+ ){0,15}" and the branch-8 window to
+    "[^.;]{0,120}", so the boundary phrases below were bumped to SIXTEEN words
+    ("...audit log monitoring review policy handling compliance") to stay on the
+    far side (15w reversed-passive 120-char gap now flags at the exact window
+    edge; the 16w 131-char gap stays silent).
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -5724,7 +5725,7 @@ class TestCycle40Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -5797,7 +5798,12 @@ class TestCycle41Precision:
     reversed-passive (111-char gap, now at the exact window edge) flags again,
     and the FIFTEEN-word phrase ("...audit log monitoring review policy handling
     data") is the new far side — tight positives silent, reversed-passive silent
-    at its 118-char gap, denials keep over-firing.
+    at its 118-char gap, denials keep over-firing. The P4 campaign later widened
+    the slot to "(?:\w+ ){0,15}" and the branch-8 window to "[^.;]{0,120}": the
+    FIFTEEN-word reversed-passive (120-char gap, at the exact window edge) flags
+    again, the SIXTEEN-word phrase ("...audit log monitoring review policy
+    handling compliance data") is the new far side, and the summary lines below
+    now assert FIFTEEN-flag plus SIXTEEN-silent.
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -5866,7 +5872,7 @@ class TestCycle41Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -5932,9 +5938,14 @@ class TestCycle42Precision:
     over-firing. Cycle-44 widens the slot to "(?:\w+ ){0,14}" and the branch-8
     window to "[^.;]{0,111}": the FOURTEEN-word reversed-passive (111-char gap,
     now at the exact window edge) flags again, and the FIFTEEN-word phrase
-    ("...audit log monitoring review policy handling compliance data") is the new far side —
+    ("...audit log monitoring review policy handling data") is the new far side —
     tight positives silent, reversed-passive silent at its 118-char gap, denials
-    keep over-firing.
+    keep over-firing. The P4 campaign later widened the slot to "(?:\w+ ){0,15}"
+    and the branch-8 window to "[^.;]{0,120}": the FIFTEEN-word reversed-passive
+    (120-char gap, at the exact window edge) flags again, the SIXTEEN-word phrase
+    ("...audit log monitoring review policy handling compliance data") is the new
+    far side, and the summary lines below now assert FIFTEEN-flag plus
+    SIXTEEN-silent.
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -6016,7 +6027,7 @@ class TestCycle42Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the
         # tight object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -6083,8 +6094,13 @@ class TestCycle43Precision:
     and the FIFTEEN-word phrase ("...audit log monitoring review policy handling
     data") is the new far side — tight positives silent, reversed-passive silent
     at its 118-char gap, denials keep over-firing. Attributive mid-phrase still
-    flags at FIFTEEN words: the bare data noun sits mid-slot, so the
-    width-robust tail keeps matching.
+    flags at SIXTEEN words: the bare data noun sits mid-slot, so the
+    width-robust tail keeps matching. The P4 campaign later widened the slot to
+    "(?:\w+ ){0,15}" and the branch-8 window to "[^.;]{0,120}": the FIFTEEN-word
+    reversed-passive (120-char gap, at the exact window edge) flags again, the
+    SIXTEEN-word phrase ("...audit log monitoring review policy handling
+    compliance data") is the new far side, and the summary lines below now assert
+    FIFTEEN-flag plus SIXTEEN-silent.
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -6143,8 +6159,8 @@ class TestCycle43Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_thirteen_word_reversed_passive_still_flagged(self):
-        # THIRTEEN-word reversed-passive sits at a 104-char gap: the exact edge
-        # of branch 8's "[^.;]{0,104}" window, so it flags.
+        # THIRTEEN-word reversed-passive sits at a 104-char gap: inside branch
+        # 8's current "[^.;]{0,120}" window, so it flags.
         r = score_document(
             [f"After the applicable retention period, {self.THIRTEEN}data shall be retained by the Provider."], "d"
         )
@@ -6161,7 +6177,7 @@ class TestCycle43Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -6218,11 +6234,16 @@ class TestCycle44Precision:
     (111-char gap) flags again (rules.py:537/544/550/558/600/605/572).
 
     FOURTEEN-word phrases now flag on both sides; FIFTEEN-word phrases sit
-    beyond the new boundary: tight positives go silent and reversed-passive
-    (118-char gap) stays silent, while denials keep over-firing (window
-    threshold 14w=111 char gap FLAG, 15w=118 char gap SILENT). Attributive
-    mid-phrase still flags at FIFTEEN words: the bare data noun sits mid-slot,
-    so the width-robust tail keeps matching.
+    beyond the {0,14} slot: tight positives go silent and the reversed-passive
+    (111-char gap) sits at the edge of the {0,111} window, while denials keep
+    over-firing (window threshold 14w=111 char gap FLAG, 15w=118 char gap
+    SILENT). Attributive mid-phrase still flags at SIXTEEN words: the bare data
+    noun sits mid-slot, so the width-robust tail keeps matching. The P4 campaign
+    later widened the slot to {0,15} and the branch-8 window to {0,120}: the
+    FIFTEEN-word reversed-passive (120-char gap, at the exact window edge) now
+    flags again, the SIXTEEN-word phrase ("...audit log monitoring review policy
+    handling compliance data") is the new far side, and the summary lines below
+    now assert FIFTEEN-flag plus SIXTEEN-silent.
     """
 
     SEVEN = "customer online account historical usage audit event log "
@@ -6281,8 +6302,8 @@ class TestCycle44Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_fourteen_word_reversed_passive_still_flagged(self):
-        # FOURTEEN-word reversed-passive sits at a 111-char gap: the exact edge
-        # of branch 8's "[^.;]{0,111}" window, so it flags.
+        # FOURTEEN-word reversed-passive sits at a 111-char gap: inside branch
+        # 8's current "[^.;]{0,120}" window, so it flags.
         r = score_document(
             [f"After the applicable retention period, {self.FOURTEEN}data shall be retained by the Provider."], "d"
         )
@@ -6299,7 +6320,7 @@ class TestCycle44Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_tight_object_position_still_silent(self):
-        # Fifteen-word pre-data phrases sit beyond the {0,14} boundary: the tight
+        # Sixteen-word pre-data phrases sit beyond the {0,15} boundary: the tight
         # object tails go silent, while attributive mid-phrase still flags.
         benign = [
             f"Provider shall retain {self.SIXTEEN}data beyond the applicable retention period.",
@@ -6313,7 +6334,7 @@ class TestCycle44Precision:
 
     def test_sixteen_word_attributive_still_flagged(self):
         # Attributive mid-phrase stays width-robust: the bare data noun sits
-        # mid-slot at FIFTEEN words, so the tail keeps matching.
+        # mid-slot at SIXTEEN words, so the tail keeps matching.
         flagged = [
             f"{self.SIXTEEN}data retention beyond the applicable retention period.",
             f"{self.SIXTEEN}data backup copies retention beyond the applicable retention period.",
