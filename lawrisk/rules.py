@@ -596,7 +596,23 @@ RULES: List[Rule] = [
             r"forfeit(?:ed|ing)?\b|per[ -]?(?:day|week|month|occurrence|event)\b|"
             r"(?:\d+(?:\.\d+)?\s*%|\$\s?\d[\d,.]*|\d[\d,.]*\s*(?:USD|EUR|GBP|AUD|CAD|dollars?|euros?)|"
             r"(?:USD|EUR|GBP|AUD|CAD)\s*\d[\d,.]*)"
-            r"[^.;]{0,40}(?:for (?:any|each|every)|\bp(?:ayable|aid)\b|\bimposed\b))",
+            r"[^.;]{0,40}(?:for (?:any|each|every)|\bp(?:ayable|aid)\b|\bimposed\b))|"
+            r"damages[^.;]{0,45}"
+            r"(?:\$[^.;]{0,35}|\d+(?:\.\d+)?\s*%[^.;]{0,28}(?:of|of\s+the)|"
+            r"(?:USD|EUR|GBP|AUD|CAD)\s*\d[\d,.]*|\d[\d,.]*\s*(?:USD|EUR|GBP|AUD|CAD|dollars?|euros?))"
+            r"[^.;]{0,35}"
+            r"(?:per[ -]?(?:day|week|month|year|occurrence|event|delay|milestone|missed)\b|"
+            r"for (?:each|every|any)\s+(?:day|week|month|year|occurrence|event|delay|milestone|missed)\b|"
+            r"upon (?:each|every|any)\s*(?:missed|late|failure|delivery)\b|"
+            r"\baccru(?:e|es|ed|ing)?\b)|"
+            r"(?:per[ -]?(?:day|week|month|year|occurrence|event|delay|milestone|missed)\b|"
+            r"for (?:each|every|any)\s+(?:day|week|month|year|occurrence|event|delay|milestone|missed)\b)"
+            r"[^.;]{0,60}damages[^.;]{0,35}"
+            r"(?:\$[^.;]{0,25}|\d+(?:\.\d+)?\s*%"
+            r"|(?:USD|EUR|GBP|AUD|CAD)\s*\d[\d,.]*|\d[\d,.]*\s*(?:USD|EUR|GBP|AUD|CAD|dollars?|euros?))|"
+            r"damages[^.;]{0,50}\baccru(?:e|es|ed|ing)\b[^.;]{0,35}"
+            r"(?:at|in the amount of)[^.;]{0,40}"
+            r"(?:\$[\d,.]*|\d[\d,.]*\s*(?:USD|EUR|GBP|AUD|CAD|dollars?|euros?)|\d+(?:\.\d+)?\s*%)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -607,7 +623,7 @@ RULES: List[Rule] = [
             r"(?:neither party|no party)[^.;]{0,60}"
             r"(?:penalt|liquidated damage|forfeit|fixed charge)|"
             r"no (?:late fee|interest|damages)|"
-            r"(?:shall|will|may) not (?:be|accrue|apply|incur))",
+            r"(?:shall|will|may) not (?:be|accrue|apply|incur|exceed))",
             re.IGNORECASE,
         ),
         severity=20,
