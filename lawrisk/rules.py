@@ -183,7 +183,12 @@ RULES: List[Rule] = [
             r"its? rights? and obligations under (?:this agreement|the agreement)|"
             r"its? interests? (?:under|in) (?:this agreement|the agreement)))?"
             r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
-            r"assign[, ]+(?:or )?(?:transfer|delegate|subcontract)[^.]{0,70}without[^.]{0,30}consent|"
+            r"assign[, ]+(?:or )?(?:transfer|delegate|subcontract)"
+            r"[^.]{0,110}(?:without[^.]{0,30}consent|to any third party)|"
+            r"delegate(?: (?:all|any|some) (?:of )?(?:its?|their) (?:rights?|obligations|interests?))?"
+            r"[^.]{0,80}(?:without[^.]{0,30}consent|to any third party)|"
+            r"subcontract(?: the (?:provision of the )?services?)?"
+            r"[^.]{0,80}(?:without[^.]{0,30}consent|to any third party)|"
             r"(?:may|can|shall have the right to|reserves? the right to|is (?:entitled|authorised|authorized) to)"
             r"[^.]{0,15}(?:make (?:any |an )?)?assignment(?: of (?:this|these(?:\s+presents)?|the) agreement)?"
             r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
@@ -196,9 +201,11 @@ RULES: List[Rule] = [
             re.IGNORECASE,
         ),
         exclusion=re.compile(
-            r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? assign|"
-            r"(?:may|shall|will) not assign(?: this agreement)?|"
-            r"assign[^.]{0,60}(?:to an affiliate|(?:with|upon|under|subject to) (?:the )?(?:prior )?written consent))",
+            r"(?:(?:neither|either|each|both) party (?:may|shall|will)(?: not)? "
+            r"(?:assign|transfer|delegate|subcontract)|"
+            r"(?:may|shall|will) not (?:assign|transfer|delegate|subcontract)(?: this agreement)?|"
+            r"(?:assign|transfer|delegate|subcontract)[^.]{0,110}"
+            r"(?:to an affiliate|(?:with|upon|under|subject to) (?:the )?(?:prior )?written consent))",
             re.IGNORECASE,
         ),
         severity=20,
