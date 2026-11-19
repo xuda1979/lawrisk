@@ -4965,11 +4965,12 @@ class TestCycle36Precision:
     the THIRTEEN-word boundary phrases below were bumped to FOURTEEN words
     ("audit event trail access control audit log monitoring review policy") to
     stay on the far side (13w reversed-passive 104-char gap now flags; the 14w
-    111-char gap stays silent). Cycle-44 widened the slot to {0,14} and the
-    branch-8 window to {0,111}, so the FOURTEEN-word boundary phrases below were
-    bumped to FIFTEEN words ("audit event trail access control audit log
-    monitoring review policy handling") to stay on the far side (14w
-    reversed-passive 111-char gap now flags; the 15w 118-char gap stays silent).
+    111-char gap stays silent). The P4 campaign later widened the slot to {0,15}
+    and the branch-8 window to {0,120}, so the boundary phrases below were
+    bumped to SIXTEEN words ("audit event trail access control audit log
+    monitoring review policy handling compliance") to stay on the far side
+    (15w reversed-passive 120-char gap now flags at the exact window edge; the
+    16w 131-char gap stays silent).
     """
 
     def test_six_word_pre_data_denials_not_flagged(self):
@@ -5740,16 +5741,20 @@ class TestCycle40Precision:
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
     def test_sixteen_word_reversed_passive_still_silent(self):
-        # Branch 8's "[^.;]{0,111}" window covers the 13-word (104-char gap) and
-        # 14-word (111-char gap) reversed-passive forms: both flag (the 14-word
-        # at the exact window edge). At FIFTEEN words (118-char gap) the data
-        # noun sits beyond the window: silent.
+        # Branch 8's "[^.;]{0,120}" window covers the ELEVEN (86-char gap),
+        # THIRTEEN (104-char gap) and FIFTEEN (120-char gap) reversed-passive
+        # forms: all flag (the FIFTEEN at the exact window edge). The SIXTEEN
+        # phrase (131-char gap) sits beyond the window: silent.
         r = score_document(
             [f"After the applicable retention period, {self.ELEVEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
             [f"After the applicable retention period, {self.THIRTEEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            [f"After the applicable retention period, {self.FIFTEEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
@@ -5878,16 +5883,20 @@ class TestCycle41Precision:
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
     def test_sixteen_word_reversed_passive_still_silent(self):
-        # Branch 8's "[^.;]{0,111}" window covers the 13-word (104-char gap) and
-        # 14-word (111-char gap) reversed-passive forms: both flag (the 14-word
-        # at the exact window edge). At FIFTEEN words (118-char gap) the data
-        # noun sits beyond the window: silent.
+        # Branch 8's "[^.;]{0,120}" window covers the ELEVEN (86-char gap),
+        # THIRTEEN (104-char gap) and FIFTEEN (120-char gap) reversed-passive
+        # forms: all flag (the FIFTEEN at the exact window edge). The SIXTEEN
+        # phrase (131-char gap) sits beyond the window: silent.
         r = score_document(
             [f"After the applicable retention period, {self.ELEVEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
             [f"After the applicable retention period, {self.THIRTEEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            [f"After the applicable retention period, {self.FIFTEEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
@@ -6024,16 +6033,20 @@ class TestCycle42Precision:
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
     def test_sixteen_word_reversed_passive_still_silent(self):
-        # Branch 8's "[^.;]{0,111}" window covers the 13-word (104-char gap)
-        # and 14-word (111-char gap) reversed-passive forms: both flag (the
-        # 14-word at the exact window edge). At FIFTEEN words (118-char gap)
-        # the data noun sits beyond the window: silent.
+        # Branch 8's "[^.;]{0,120}" window covers the TWELVE (97-char gap),
+        # THIRTEEN (104-char gap) and FIFTEEN (120-char gap) reversed-passive
+        # forms: all flag (the FIFTEEN at the exact window edge). The SIXTEEN
+        # phrase (131-char gap) sits beyond the window: silent.
         r = score_document(
             [f"After the applicable retention period, {self.TWELVE}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
             [f"After the applicable retention period, {self.THIRTEEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            [f"After the applicable retention period, {self.FIFTEEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
@@ -6165,16 +6178,20 @@ class TestCycle43Precision:
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
 
     def test_sixteen_word_reversed_passive_still_silent(self):
-        # Branch 8's "[^.;]{0,111}" window covers the 13-word (104-char gap) and
-        # 14-word (111-char gap) reversed-passive forms: both flag (the 14-word
-        # at the exact window edge). At FIFTEEN words (118-char gap) the data
-        # noun sits beyond the window: silent.
+        # Branch 8's "[^.;]{0,120}" window covers the TWELVE (97-char gap),
+        # THIRTEEN (104-char gap) and FIFTEEN (120-char gap) reversed-passive
+        # forms: all flag (the FIFTEEN at the exact window edge). The SIXTEEN
+        # phrase (131-char gap) sits beyond the window: silent.
         r = score_document(
             [f"After the applicable retention period, {self.TWELVE}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
             [f"After the applicable retention period, {self.THIRTEEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            [f"After the applicable retention period, {self.FIFTEEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
@@ -6306,16 +6323,20 @@ class TestCycle44Precision:
             assert any(p.rule_id == "R-DATA-5" for p in r.penalties), t
 
     def test_sixteen_word_reversed_passive_still_silent(self):
-        # Branch 8's "[^.;]{0,111}" window covers the 13-word (104-char gap) and
-        # 14-word (111-char gap) reversed-passive forms: both flag (the 14-word
-        # at the exact window edge). At FIFTEEN words (118-char gap) the data
-        # noun sits beyond the window: silent.
+        # Branch 8's "[^.;]{0,120}" window covers the THIRTEEN (104-char gap),
+        # FOURTEEN (111-char gap) and FIFTEEN (120-char gap) reversed-passive
+        # forms: all flag (the FIFTEEN at the exact window edge). The SIXTEEN
+        # phrase (131-char gap) sits beyond the window: silent.
         r = score_document(
             [f"After the applicable retention period, {self.THIRTEEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
             [f"After the applicable retention period, {self.FOURTEEN}data shall be retained by the Provider."], "d"
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+        r = score_document(
+            [f"After the applicable retention period, {self.FIFTEEN}data shall be retained by the Provider."], "d"
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
         r = score_document(
