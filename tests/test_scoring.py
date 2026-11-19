@@ -6519,3 +6519,75 @@ class TestCycle46Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-LIAB-1" for p in r.penalties), t
+
+
+class TestCycle47Precision:
+    # R-COMM-8 cycle-47 precision: qualifier variants + passive voice
+
+    def test_without_any_notice_flagged(self):
+        r = score_document(
+            ["Provider may suspend the services without any notice whatsoever."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-8" for p in r.penalties)
+
+    def test_without_any_warning_flagged(self):
+        r = score_document(
+            ["Provider may suspend the services without any warning."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-8" for p in r.penalties)
+
+    def test_with_no_notice_flagged(self):
+        r = score_document(
+            ["Provider may suspend the services with no notice."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-8" for p in r.penalties)
+
+    def test_in_sole_discretion_flagged(self):
+        r = score_document(
+            ["Provider may suspend the services in its sole discretion."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-8" for p in r.penalties)
+
+    def test_complete_discretion_flagged(self):
+        r = score_document(
+            ["Provider may deactivate the account at its complete discretion."], "d"
+        )
+        assert any(p.rule_id == "R-COMM-8" for p in r.penalties)
+
+    def test_passive_suspended_flagged(self):
+        flagged = [
+            "The services may be suspended at any time without notice.",
+            "Any account may be deactivated by Provider without notice.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-8" for p in r.penalties), t
+
+    def test_passive_notice_bound_silent(self):
+        benign = [
+            "The services may be suspended by Provider only if 30 days' written notice is given.",
+            "Any account may be suspended if Customer materially breaches this agreement.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-8" for p in r.penalties), t
+
+    def test_passive_mutual_silent(self):
+        benign = [
+            "Each account may be suspended by either party upon written notice.",
+            "The services may be suspended by either party where the other party is in material breach and fails to cure.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-8" for p in r.penalties), t
+
+    def test_new_qualifier_carve_out_silent(self):
+        benign = [
+            "Provider may suspend the services in its sole discretion unless Customer cures the breach within 10 days.",
+            "Provider may suspend the services without any warning provided it gives written notice of the non-payment.",
+            "Provider may suspend the services with no notice provided it gives Customer prior written notice.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-8" for p in r.penalties), t
+

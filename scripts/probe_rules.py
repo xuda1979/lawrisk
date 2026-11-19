@@ -100,6 +100,14 @@ SHOULD_NOT_FIRE = [
     ("C-7 neg: non-refundable unless defective work", "Custom development fees are non-refundable after the work has been performed, unless the work was defective."),
     # cycle 9 R-COMM-8 over-fire
     ("C-8 neg: suspension required by law / court order", "Provider may suspend the services with immediate effect where required by law or a court order."),
+    # cycle 47 R-COMM-8 over-fire (qualifier variants + passive voice shields)
+    ("C-8 neg: mutual passive suspension", "Each account may be suspended by either party upon written notice."),
+    ("C-8 neg: passive notice-bound", "The services may be suspended by Provider only if 30 days' written notice is given."),
+    ("C-8 neg: passive for cause", "Any account may be suspended if Customer materially breaches this agreement."),
+    ("C-8 neg: passive under court order", "The services may be suspended where required by law or a court order."),
+    ("C-8 neg: in its sole discretion carve", "Provider may suspend the services in its sole discretion unless Customer cures the breach within 10 days."),
+    ("C-8 neg: any warning provided gives notice", "Provider may suspend the services without any warning provided it gives written notice of the non-payment."),
+    ("C-8 neg: no notice provided written notice", "Provider may suspend the services with no notice provided it gives Customer prior written notice."),
     # cycle 9 R-COMM-2 over-fire
     ("C-2 neg: terminate required by law", "Company may terminate this agreement without cause where required by applicable law."),
     # cycle 9 R-COMM-3 over-fire
@@ -223,6 +231,14 @@ SHOULD_FIRE = [
     ("C-6 pos: finance charge $25/month", "Accounts paid late shall incur a finance charge of $25 per month."),
     # cycle 9 R-LIAB-3 under-fire
     ("L-3 pos: held harmless from third-party claims", "Provider shall be held harmless from any claims by third parties arising out of Customer's use of the services."),
+    # cycle 47 R-COMM-8 under-fire (qualifier variants + passive voice)
+    ("C-8 pos: without any notice", "Provider may suspend the services without any notice whatsoever."),
+    ("C-8 pos: without any warning", "Provider may suspend the services without any warning."),
+    ("C-8 pos: with no notice", "Provider may suspend the services with no notice."),
+    ("C-8 pos: in its sole discretion", "Provider may suspend the services in its sole discretion."),
+    ("C-8 pos: at its complete discretion", "Provider may deactivate the account at its complete discretion."),
+    ("C-8 pos: passive suspended without notice", "The services may be suspended at any time without notice."),
+    ("C-8 pos: passive deactivated no notice", "Any account may be deactivated by Provider without notice."),
     # cycle 45 R-LIAB-3 under-fire ('for' connector + fault controls)
     ("L-3 pos: indemnify for any claims it may suffer", "Supplier agrees to indemnify Customer for any claims or losses it may suffer."),
     ("L-3 pos: indemnify for any claims", "Supplier shall indemnify Customer for any claims."),
