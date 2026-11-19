@@ -7544,3 +7544,70 @@ class TestCycle57Precision:
             "d",
         )
         assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+
+class TestCycle58Precision:
+    # R-COMM-4 cycle-58 precision: freely-assign(able) forms, "to a third party"
+    # indefinite determiner, third-party-such-as-acquirer tail, and silence for
+    # receivables/claims financing assignments and customer-selected third parties
+
+    def test_assign_agreement_freely_flagged(self):
+        r = score_document(
+            ["Provider may assign the agreement freely."], "d")
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_freely_assignable_by_passive_flagged(self):
+        r = score_document(
+            ["This agreement is freely assignable by the Provider."], "d")
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_may_freely_assign_flagged(self):
+        r = score_document(
+            ["The Provider may freely assign this agreement."], "d")
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_to_third_party_such_as_acquirer_flagged(self):
+        r = score_document(
+            ["Provider may assign this agreement to a third party such as an acquirer."], "d")
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_to_third_parties_flagged(self):
+        r = score_document(
+            ["Provider may assign the agreement to third parties without consent."], "d")
+        assert any(p.rule_id == "R-COMM-4" for p in r.penalties)
+
+    def test_assign_receivables_for_financing_stays_silent(self):
+        r = score_document(
+            ["Provider may assign its receivables to any third party for financing purposes."], "d")
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_claim_for_payment_to_bank_stays_silent(self):
+        r = score_document(
+            ["Provider may assign any claim for payment to a bank or finance company."], "d")
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_subcontract_to_customer_selected_third_party_stays_silent(self):
+        r = score_document(
+            ["Provider may subcontract the provision of the services to a third party "
+             "selected by Customer."], "d")
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_assign_to_affiliate_stays_silent(self):
+        r = score_document(
+            ["Provider may assign this agreement to an affiliate."], "d")
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_prior_written_consent_stays_silent(self):
+        r = score_document(
+            ["Provider may assign this agreement upon prior written consent of the other party."], "d")
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_mutual_consent_stays_silent(self):
+        r = score_document(
+            ["Each party may assign this agreement only with the other party's prior written consent."], "d")
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+    def test_neither_party_stays_silent(self):
+        r = score_document(
+            ["Neither party may assign this agreement without the other's consent."], "d")
+        assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
