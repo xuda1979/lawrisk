@@ -6694,3 +6694,87 @@ class TestCycle48Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-COMM-4" for p in r.penalties), t
 
+
+class TestCycle49Precision:
+    # R-LIAB-3 cycle-49 precision: passive be-indemnified/harmless,
+    # keep/kept harmless, in-respect-of connector, own-fault shields
+
+    def test_passive_be_indemnified_flagged(self):
+        flagged = [
+            "Customer shall be indemnified by Provider against any claims arising out of the services.",
+            "Customer will be indemnified by Supplier against all third party claims.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-3" for p in r.penalties), t
+
+    def test_passive_held_harmless_flagged(self):
+        r = score_document(
+            ["Customer shall be held harmless by Provider against any claims arising out of the services."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
+
+    def test_keep_harmless_flagged(self):
+        r = score_document(
+            ["Customer shall keep Provider harmless from any claims arising out of the services."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
+
+    def test_in_respect_of_connector_flagged(self):
+        flagged = [
+            "Supplier shall indemnify Customer in respect of any claims from third parties.",
+            "Vendor indemnifies Buyer in respect of any losses incurred under this agreement.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-3" for p in r.penalties), t
+
+    def test_indemnified_past_tense_flagged(self):
+        r = score_document(
+            ["Vendor indemnified Buyer against all losses incurred under this agreement."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
+
+    def test_indemnifying_gerund_flagged(self):
+        r = score_document(
+            ["Provider is indemnifying Customer for any third party claims arising from the software."],
+            "d",
+        )
+        assert any(p.rule_id == "R-LIAB-3" for p in r.penalties)
+
+    def test_passive_beneficiary_own_fault_flagged(self):
+        # Indemnitee is at fault; one-sided risk to the counterparty -> fires
+        flagged = [
+            "Customer shall be indemnified by Provider against claims arising out of Customer's own negligence.",
+            "Customer shall be held harmless by Provider against claims arising out of Customer's own negligence.",
+            "Customer shall be kept harmless by Provider against claims arising out of Customer's own negligence.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-3" for p in r.penalties), t
+
+    def test_passive_holder_own_fault_silent(self):
+        # Indemnitor is at fault -> own-fault shield stays silent
+        benign = [
+            "Provider shall be held harmless by Customer against claims arising out of Customer's own negligence.",
+            "Provider shall be indemnified by Customer to the extent caused by Customer's own negligence.",
+            "Vendor shall be kept harmless by Customer against claims arising out of Customer's own negligence.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-3" for p in r.penalties), t
+
+    def test_keep_harmless_own_fault_shields_silent(self):
+        benign = [
+            "The parties shall keep each other harmless against claims arising out of their own negligence.",
+            "Customer shall keep Vendor harmless against claims arising out of Customer's own negligence.",
+            "Each party shall keep the other harmless against claims arising out of its own breach.",
+            "The parties shall keep each other harmless from any claims arising out of the parties' own acts.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-3" for p in r.penalties), t
+

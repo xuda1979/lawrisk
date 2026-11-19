@@ -118,6 +118,12 @@ SHOULD_NOT_FIRE = [
     ("C-4 neg: neither party verb list", "Neither party may assign, transfer or delegate any of its obligations under this agreement without the prior written consent of the other party."),
     ("C-4 neg: subcontract to affiliate", "Provider may subcontract the provision of the services to an affiliate without consent."),
     ("C-4 neg: subcontract upon written consent", "Provider may subcontract the provision of the services upon the prior written consent of Customer."),
+    # cycle 49 R-LIAB-3 over-fire (passive + keep/kept own-fault shields)
+    ("L-3 neg: passive held indemnitor own", "Provider shall be held harmless by Customer against claims arising out of Customer's own negligence."),
+    ("L-3 neg: passive indemnified indemnitor own", "Provider shall be indemnified by Customer to the extent caused by Customer's own negligence."),
+    ("L-3 neg: keep mutual", "The parties shall keep each other harmless against claims arising out of their own negligence."),
+    ("L-3 neg: keep named own", "Customer shall keep Vendor harmless against claims arising out of Customer's own negligence."),
+    ("L-3 neg: kept passive own", "Vendor shall be kept harmless by Customer against claims arising out of Customer's own negligence."),
     # cycle 9 R-COMM-2 over-fire
     ("C-2 neg: terminate required by law", "Company may terminate this agreement without cause where required by applicable law."),
     # cycle 9 R-COMM-3 over-fire
@@ -241,6 +247,12 @@ SHOULD_FIRE = [
     ("C-6 pos: finance charge $25/month", "Accounts paid late shall incur a finance charge of $25 per month."),
     # cycle 9 R-LIAB-3 under-fire
     ("L-3 pos: held harmless from third-party claims", "Provider shall be held harmless from any claims by third parties arising out of Customer's use of the services."),
+    # cycle 49 R-LIAB-3 under-fire (passive + keep/kept + in-respect-of)
+    ("L-3 pos: passive be indemnified", "Customer shall be indemnified by Provider against any claims arising out of the services."),
+    ("L-3 pos: passive held harmless", "Customer shall be held harmless by Provider against any claims arising out of the services."),
+    ("L-3 pos: keep harmless", "Customer shall keep Provider harmless from any claims arising out of the services."),
+    ("L-3 pos: in respect of connector", "Supplier shall indemnify Customer in respect of any claims from third parties."),
+    ("L-3 pos: passive beneficiary own fault", "Customer shall be indemnified by Provider against claims arising out of Customer's own negligence."),
     # cycle 47 R-COMM-8 under-fire (qualifier variants + passive voice)
     ("C-8 pos: without any notice", "Provider may suspend the services without any notice whatsoever."),
     ("C-8 pos: without any warning", "Provider may suspend the services without any warning."),
