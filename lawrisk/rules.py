@@ -356,7 +356,7 @@ RULES: List[Rule] = [
     Rule(
         rule_id="R-LIAB-1",
         dimension=Dimension.LIABILITY,
-        pattern=re.compile(r"((?:in no event|under no circumstances)) (?:shall|will) (?:the )?(?:provider|company|vendor|supplier|licensor)|(?:provider|company|vendor|supplier|licensor) (?:shall|will) (?:not (?:be )?(?:liable|responsible|held liable)(?:\s+(?:or|and)\s+(?:liable|responsible))?|not have (?:any|no) liability|have no liability) for", re.IGNORECASE),
+        pattern=re.compile(r"((?:in no event|under no circumstances)) (?:shall|will) (?:the )?(?:provider|company|vendor|supplier|licensor)|(?:provider|company|vendor|supplier|licensor) (?:(?:shall|will|is|are|has|have) not (?:(?:be )?(?:liable|responsible|held liable)(?:\s+(?:or|and)\s+(?:liable|responsible))?|have (?:any|no) liability)|(?:shall|will|has|have) (?:have )?(?:any|no) (?:liability|responsibility)|(?:shall|will|may|accepts?)?\s*(?:accepts?|bears?|has?|have) no liability|(?:disclaims?|excludes?) (?:all |any )?liability) for", re.IGNORECASE),
         exclusion=re.compile(r"(?:fraud|death|personal injury|gross negligence|wilful misconduct|willful misconduct|neither party|both parties|each party|either party)", re.IGNORECASE),
         severity=25,
         reason="Broad disclaimer covering consequential/indirect damages",
