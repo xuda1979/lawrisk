@@ -6778,3 +6778,80 @@ class TestCycle49Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-LIAB-3" for p in r.penalties), t
 
+
+class TestCycle50Precision:
+    # R-DATA-4 cycle-50 precision: PII/special-category-denotes topic,
+    # national data-protection law names as protective terms, and
+    # retention/minimisation/privacy-law shields silent on R-DATA-1+R-DATA-4
+
+    def test_pii_topic_without_protection_flagged(self):
+        flagged = [
+            "The parties acknowledge that customer PII will be processed under this agreement.",
+            "The parties may process special category data relating to data subjects.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-DATA-4" for p in r.penalties), t
+
+    def test_national_data_protection_laws_silent(self):
+        benign = [
+            "The Provider shall process personal data in accordance with the requirements of PIPEDA.",
+            "Personal data shall be handled in line with the LGPD.",
+            "The parties shall process personal information in accordance with the CPRA.",
+            "The parties shall process personal data in accordance with the PDPA.",
+            "Personal data shall be handled in accordance with the APPI.",
+            "The parties shall process personal data in line with the requirements of the DPDP Act.",
+            "Personal data shall be processed in compliance with the PIPL.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+
+    def test_purpose_limited_processing_silent(self):
+        benign = [
+            "The OSP shall process personal data only for the purposes of providing the services and shall delete or anonymise it promptly upon termination.",
+            "Provider shall process personal data solely for the purpose of providing the services.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+
+    def test_privacy_law_compliance_silent(self):
+        benign = [
+            "Each party shall comply with its privacy obligations under applicable law when handling personal data.",
+            "Provider shall handle personal data in accordance with applicable privacy laws.",
+            "The parties shall process personal data in compliance with applicable privacy legislation.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+
+    def test_retention_denial_silent(self):
+        benign = [
+            "Provider shall not retain any personal data after the termination of this agreement.",
+            "Provider shall not keep personal data longer than necessary.",
+            "Provider may not retain personal data without Customer's written consent.",
+            "Neither party shall retain personal data for longer than twelve months.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+
+    def test_no_pii_denial_silent(self):
+        benign = [
+            "The parties agree that no PII is collected or processed under this agreement.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+
+    def test_general_privacy_shields_silent(self):
+        # Already-silent before the cycle: unchanged behaviour preserved
+        benign = [
+            "Provider shall process personal data in accordance with applicable data protection principles and shall safeguard it at all times.",
+            "Neither party shall disclose personal data received from the other party to any third party.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
+

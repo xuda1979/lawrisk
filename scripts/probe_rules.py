@@ -154,6 +154,13 @@ SHOULD_NOT_FIRE = [
     # cycle 12 R-DATA-5 over-fire (bounded retention)
     ("D-5 neg: retain for tax purposes", "Provider shall retain Customer data following termination for tax purposes as required by applicable law."),
     ("D-5 neg: retain for compliance purposes", "Following termination, Provider shall retain Customer records solely to comply with regulatory obligations."),
+    # cycle 50 R-DATA-4 over-fire (national laws, purpose limits, privacy compliance, retention denial)
+    ("D-4 neg: PIPEDA compliance", "The Provider shall process personal data in accordance with the requirements of PIPEDA."),
+    ("D-4 neg: LGPD compliance", "Personal data shall be handled in line with the LGPD."),
+    ("D-4 neg: solely for purpose", "Provider shall process personal data solely for the purpose of providing the services."),
+    ("D-4 neg: privacy obligations applicable law", "Each party shall comply with its privacy obligations under applicable law when handling personal data."),
+    ("D-4 neg: no retention after termination", "Provider shall not retain any personal data after the termination of this agreement."),
+    ("D-4 neg: no PII", "The parties agree that no PII is collected or processed under this agreement."),
     # cycle 12 R-COMM-1 over-fire (opt-out / no-rollover controls)
     ("C-1 neg: renew unless notice not to renew", "This agreement shall automatically renew for successive one-year terms unless either party provides written notice not to renew at least 60 days prior to expiration."),
     ("C-1 neg: extended with 90-day opt-out", "The term shall be automatically extended for successive one-year periods unless either party gives written notice of termination at least 90 days before the expiry date."),
@@ -315,6 +322,8 @@ SHOULD_FIRE = [
     # cycle 12 R-DATA-5 under-fire (retention phrasing variants)
     ("D-5 pos: retain possession of data", "Following termination of this agreement, Provider may retain possession of Customer data."),
     ("D-5 pos: preserve data after termination", "Provider shall preserve Customer data after termination of this agreement."),
+    # cycle 50 R-DATA-4 under-fire (PII topic without protective terms)
+    ("D-4 pos: PII topic no protection", "The parties acknowledge that customer PII will be processed under this agreement."),
 ]
 
 
