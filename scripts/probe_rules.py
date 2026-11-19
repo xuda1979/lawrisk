@@ -98,6 +98,11 @@ SHOULD_NOT_FIRE = [
     ("C-4 neg: assign upon written consent", "Customer may assign this agreement to any third party upon the prior written consent of Provider."),
     # cycle 9 R-COMM-7 over-fire
     ("C-7 neg: non-refundable unless defective work", "Custom development fees are non-refundable after the work has been performed, unless the work was defective."),
+    # cycle 51 R-COMM-7 over-fire (gov-tax denials + permissive/bounded refunds)
+    ("C-7 neg: non-refundable government taxes", "Any taxes imposed by governmental authorities are non-refundable by the parties."),
+    ("C-7 neg: no refund of government taxes", "No refunds shall be made for taxes imposed by governmental authorities."),
+    ("C-7 neg: permissive refund policy", "Customers may request a refund within 30 days of purchase."),
+    ("C-7 neg: refunds required by statute", "Refunds will be made where required by applicable law or consumer protection statutes."),
     # cycle 9 R-COMM-8 over-fire
     ("C-8 neg: suspension required by law / court order", "Provider may suspend the services with immediate effect where required by law or a court order."),
     # cycle 47 R-COMM-8 over-fire (qualifier variants + passive voice shields)
@@ -280,6 +285,18 @@ SHOULD_FIRE = [
     ("D-2 pos: accessible by employees in China", "Customer data is accessible by our employees in China."),
     # cycle 10 R-COMM-7 under-fire
     ("C-7 pos: payments final, no credits returns refunds", "All payments are final and no credits, returns, or refunds will be given once services have commenced."),
+    # cycle 51 R-COMM-7 under-fire (verb/noun-phrase denial variants)
+    ("C-7 pos: no cancellation or refund", "There is no cancellation or refund of fees once the work begins."),
+    ("C-7 pos: not subject to refund", "All amounts paid under this agreement are not subject to refund."),
+    ("C-7 pos: not eligible for a refund", "Fees paid in advance are not eligible for a refund."),
+    ("C-7 pos: no reimbursement denials", "Prepaid amounts shall not be reimbursed or refunded at any time."),
+    ("C-7 pos: fees forfeited on termination", "Any fees paid are forfeited if the agreement is terminated early."),
+    ("C-7 pos: unused credits not credited back", "Unused credits shall not be credited back upon termination."),
+    ("C-7 pos: final and not refundable in any event", "All payments are final and not refundable in any event."),
+    ("C-7 pos: license cannot be cancelled or refunded", "Once purchased, the license cannot be cancelled or refunded."),
+    ("C-7 pos: not refundable for any reason", "These fees are not refundable for any reason after the order is submitted."),
+    ("C-7 pos: no refunds available", "No refunds are available once the services begin."),
+    ("C-7 pos: refunds are not given", "Refunds are not given for partially consumed services."),
     # cycle 10 R-COMM-4 under-fire
     ("C-4 pos: transfer all rights to third party", "Customer may transfer all of its rights under this agreement to any third party without consent."),
     # cycle 48 R-COMM-4 under-fire (verb-list grants + delegate/subcontract)

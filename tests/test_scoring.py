@@ -6855,3 +6855,88 @@ class TestCycle50Precision:
             r = score_document([t], "d")
             assert all(p.rule_id not in {"R-DATA-1", "R-DATA-4"} for p in r.penalties), t
 
+
+class TestCycle51Precision:
+    # R-COMM-7 cycle-51 precision: verb- and noun-phrase refund/credit/
+    # cancellation/reimbursement denials fire; permissive policies, defect/
+    # quality carve-outs and purely governmental tax denials stay silent.
+
+    def test_no_cancellation_or_refund_flagged(self):
+        flagged = [
+            "There is no cancellation or refund of fees once the work begins.",
+            "No cancellation or refund shall be permitted after the term begins.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), t
+
+    def test_subject_to_refund_denial_flagged(self):
+        flagged = [
+            "All amounts paid under this agreement are not subject to refund.",
+            "Fees paid in advance are not eligible for a refund.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), t
+
+    def test_reimbursement_denial_flagged(self):
+        flagged = [
+            "Prepaid amounts shall not be reimbursed or refunded at any time.",
+            "No reimbursement shall be made to the Customer for early termination.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), t
+
+    def test_fee_forfeiture_flagged(self):
+        flagged = [
+            "Any fees paid are forfeited if the agreement is terminated early.",
+            "All deposits shall be forfeited upon cancellation by the Customer.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), t
+
+    def test_credit_not_carried_over_flagged(self):
+        flagged = [
+            "Unused credits shall not be credited back upon termination.",
+            "Any unused balance shall not be carried over after expiry of the term.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), t
+
+    def test_not_refundable_adjectival_flagged(self):
+        flagged = [
+            "All payments are final and not refundable in any event.",
+            "These fees are not refundable for any reason after the order is submitted.",
+            "Once purchased, the license cannot be cancelled or refunded.",
+            "No refunds are available once the services begin.",
+            "Refunds are not given for partially consumed services.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-7" for p in r.penalties), t
+
+    def test_gov_tax_denial_silent(self):
+        benign = [
+            "Any taxes imposed by governmental authorities are non-refundable by the parties.",
+            "Non-refundable duties levied by the customs authority are borne by the importer.",
+            "No refunds shall be made for taxes imposed by governmental authorities.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-7" for p in r.penalties), t
+
+    def test_bounded_and_permissive_refunds_silent(self):
+        benign = [
+            "Customers may request a refund within 30 days of purchase.",
+            "The parties mutually agree that refunds are permitted for unused services.",
+            "If a quality issue is identified, funds shall be refunded to the client.",
+            "A refund for any reason whatsoever is available within 30 days.",
+            "Refunds will be made where required by applicable law or consumer protection statutes.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-7" for p in r.penalties), t
+
