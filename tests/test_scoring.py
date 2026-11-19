@@ -6940,3 +6940,89 @@ class TestCycle51Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-COMM-7" for p in r.penalties), t
 
+
+class TestCycle52Precision:
+    # R-LIAB-5 cycle-52 precision: passive / no-assurance / without-warranty /
+    # provided-without-interruption / free-from-errors disclaimers of service
+    # availability or quality fire; disclaimers conditioned on force majeure,
+    # scheduled maintenance, customer breach/failure or third-party networks
+    # stay silent.
+
+    def test_no_assurance_given_flagged(self):
+        flagged = [
+            "No assurance is given that the Platform will be available at all times.",
+            "No guarantee is made that the platform will be free from errors.",
+            "No representation is made that the software will operate without error.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-5" for p in r.penalties), t
+
+    def test_without_warranty_of_availability_flagged(self):
+        flagged = [
+            "The services are provided without warranty of availability.",
+            "The tool is furnished without any warranty of reliability.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-5" for p in r.penalties), t
+
+    def test_disclaims_that_error_free_flagged(self):
+        # Passive object-clause form: "disclaims that the software will be
+        # error-free" has no warranty/guarantee noun to latch onto.
+        flagged = [
+            "The Company disclaims that the software will be error-free.",
+            "Each party disclaims that the services will be uninterrupted.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-5" for p in r.penalties), t
+
+    def test_noun_led_passive_not_guaranteed_flagged(self):
+        flagged = [
+            "Fitness for a particular purpose is not guaranteed by the Supplier.",
+            "Reliability of the platform is not guaranteed by the Vendor.",
+            "Error-free operation is not guaranteed by Provider.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-5" for p in r.penalties), t
+
+    def test_provided_without_interruption_flagged(self):
+        flagged = [
+            "The Provider does not warrant that the services will be provided without interruption.",
+            "The Vendor makes no warranty that the services will be performed without interruption.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-5" for p in r.penalties), t
+
+    def test_force_majeure_conditioned_denial_silent(self):
+        benign = [
+            "Service availability is not guaranteed during Force Majeure events.",
+            "Availability of the service is not guaranteed in the event of force majeure.",
+            "The parties acknowledge that internet availability is not guaranteed by this agreement.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-5" for p in r.penalties), t
+
+    def test_customer_breach_conditioned_denial_silent(self):
+        benign = [
+            "Availability of the service is not guaranteed if the Customer fails to pay on time.",
+            "The Provider does not warrant that the services will meet requirements if the Customer modifies the software.",
+            "Availability is not guaranteed where the Customer breaches the acceptable use policy.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-5" for p in r.penalties), t
+
+    def test_maintenance_conditioned_denial_silent(self):
+        benign = [
+            "Service availability is not guaranteed in the event of scheduled maintenance.",
+            "Availability is not guaranteed during planned maintenance windows.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-5" for p in r.penalties), t
+
