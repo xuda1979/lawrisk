@@ -212,22 +212,27 @@ RULES: List[Rule] = [
             r"any (?:of )?its? (?:rights?|obligations)|"
             r"its? rights? and obligations under (?:this agreement|the agreement)|"
             r"its? interests? (?:under|in) (?:this agreement|the agreement)))?"
-            r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
+            r"[^.]{0,40}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)|\bfreely\b)|"
             r"assign[, ]+(?:or )?(?:transfer|delegate|subcontract)"
-            r"[^.]{0,110}(?:without[^.]{0,30}consent|to any third party)|"
+            r"[^.]{0,110}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)|\bfreely\b)|"
             r"delegate(?: (?:all|any|some) (?:of )?(?:its?|their) (?:rights?|obligations|interests?))?"
-            r"[^.]{0,80}(?:without[^.]{0,30}consent|to any third party)|"
+            r"[^.]{0,80}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)|\bfreely\b)|"
             r"subcontract(?: the (?:provision of the )?services?)?"
-            r"[^.]{0,80}(?:without[^.]{0,30}consent|to any third party)|"
+            r"[^.]{0,80}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)|\bfreely\b)|"
             r"(?:may|can|shall have the right to|reserves? the right to|is (?:entitled|authorised|authorized) to)"
             r"[^.]{0,15}(?:make (?:any |an )?)?assignment(?: of (?:this|these(?:\s+presents)?|the) agreement)?"
-            r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
+            r"[^.]{0,40}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)|\bfreely\b)|"
             r"transfer(?: (?:all|any) (?:of )?its? rights?(?: and obligations)?(?: under (?:this |the )?agreement|in(?:to| under) this agreement)?)?"
-            r"[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)|"
+            r"[^.]{0,40}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)|\bfreely\b)|"
             r"transfer this agreement[^.]{0,30}without|"
             r"(?:may|can)\s+assign this agreement\s+at any time|"
             r"this agreement (?:may|shall|will|can) be assigned (?:to any third party )?(?:by [^.;]{0,30})?without|"
-            r"novat(?:e|es|ed|ing)?\s+(?:this agreement|the agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to any third party)",
+            r"this agreement (?:is|shall be|may be|can be)\s+freely\s+(?:assignable|transferable)"
+            r"(?:\s+by[^.;]{0,30})?(?:\s+without\s+(?:the\s+)?(?:prior\s+)?consent)?|"
+            r"(?:may|can|is (?:entitled|authorised|authorized) to|reserves? the right to|has the right to)"
+            r"\s+freely\s+(?:assign|transfer)(?:[^.;]{0,40}(?:this|the) agreement|"
+            r"[^.;]{0,40}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)))?|"
+            r"novat(?:e|es|ed|ing)?\s+(?:this agreement|the agreement)?[^.]{0,40}(?:without[^.]{0,30}consent|to (?:any |a )?third part(?:y|ies)|\bfreely\b)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
@@ -235,7 +240,11 @@ RULES: List[Rule] = [
             r"(?:assign|transfer|delegate|subcontract)|"
             r"(?:may|shall|will) not (?:assign|transfer|delegate|subcontract)(?: this agreement)?|"
             r"(?:assign|transfer|delegate|subcontract)[^.]{0,110}"
-            r"(?:to an affiliate|(?:with|upon|under|subject to) (?:the )?(?:prior )?written consent))",
+            r"(?:to an affiliate|(?:with|upon|under|subject to) (?:the )?(?:prior )?written consent)|"
+            r"(?:its|the|our|their)?\s*(?:receivables|accounts?\s+receivable|claims?\s+for\s+payment|"
+            r"monies?\s+due)\b[^.;]{0,60}\b(?:financ\w*|bank|collect|recourse)\w*\b|"
+            r"(?:to (?:any |a )?third part(?:y|ies))[^.;]{0,60}"
+            r"\b(?:selected|chosen|designated|appointed)\s+by\b)",
             re.IGNORECASE,
         ),
         severity=20,
