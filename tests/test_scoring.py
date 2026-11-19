@@ -7026,3 +7026,89 @@ class TestCycle52Precision:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-LIAB-5" for p in r.penalties), t
 
+
+class TestCycle53Precision:
+    # R-LIAB-6 cycle-53 precision: bare "damages" (without "liquidated")
+    # keyed to a fixed currency amount or percentage and a per-period /
+    # per-occurrence / per-event anchor concentrates the same
+    # disproportionate-recovery risk as an explicit penalty clause and must
+    # fire. Bound and denial phrasings (caps, exclusions, genuine
+    # pre-estimate, no-damages) stay silent.
+
+    def test_damages_per_week_flagged(self):
+        flagged = [
+            "Damages of $1,000 per week shall apply for each week of delay.",
+            "The Customer shall pay damages of $2,000 per week of delay beyond the agreed date.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-6" for p in r.penalties), t
+
+    def test_damages_per_day_flagged(self):
+        flagged = [
+            "The Customer will be liable for damages of $500 for each day of delay.",
+            "The Contractor shall pay damages at $750 per day of non-performance.",
+            "For each day of delay the Contractor shall be liable for damages of $1,200.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-6" for p in r.penalties), t
+
+    def test_damages_per_month_flagged(self):
+        flagged = [
+            "Any delay will result in damages of EUR 2,000 per month of delay.",
+            "Any late delivery shall give rise to damages of EUR 5,000 per occurrence.",
+            "The Supplier shall pay damages of $3,500 for each missed delivery.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-6" for p in r.penalties), t
+
+    def test_damages_per_occurrence_flagged(self):
+        flagged = [
+            "Delays in delivery will incur damages of $10,000 for each occurrence.",
+            "Any late delivery shall give rise to damages of EUR 5,000 per occurrence.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-6" for p in r.penalties), t
+
+    def test_damages_upon_missed_event_flagged(self):
+        flagged = [
+            "The Supplier pays damages of $5,000 upon each missed delivery date.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-6" for p in r.penalties), t
+
+    def test_damages_accrue_flagged(self):
+        flagged = [
+            "Damages shall accrue at $1,500 per month until performance is completed.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-LIAB-6" for p in r.penalties), t
+
+    def test_plain_damages_not_flagged_when_bounded(self):
+        benign = [
+            "The liability of each party for damages is subject to the cap in Section 9.",
+            "Damages payable under this clause shall not exceed the fees paid.",
+            "Each party's liability for damages is limited to the fees paid under this agreement.",
+            "Any penalty or liquidated damages for delay shall not exceed the damages actually suffered.",
+            "The penalty for delay shall not exceed 5% of the contract value.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-6" for p in r.penalties), t
+
+    def test_plain_damages_not_flagged_when_denied(self):
+        benign = [
+            "No damages shall be payable for any delay in delivery.",
+            "Damages are excluded unless caused by the gross negligence of the supplier.",
+            "Neither party shall be liable for a penalty or liquidated damages for delay.",
+            "In no event shall the Provider be liable for consequential damages.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-LIAB-6" for p in r.penalties), t
+
