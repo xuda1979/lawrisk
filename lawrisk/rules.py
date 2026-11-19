@@ -330,16 +330,50 @@ RULES: List[Rule] = [
             r"(?:shall|will|may|can|cannot?|may not)\s+(?:be\s+)?(?:made|given|paid|issued|provided)|"
             r"refunds? (?:will|shall) not (?:be )?(?:made|given|paid|issued)|"
             r"no refunds?[^.;]{0,25}(?:for any reason|under any circumstances|whatsoever)\b|"
-            r"there (?:are|will be|shall be|can be) no refunds?\b|"
+            r"there (?:is|are|will be|shall be|can be|may be) no "
+            r"(?:refunds?|cancellation|cancelation)"
+            r"(?:[^.;]{0,20}(?:or|and) (?:refunds?|cancellation|cancelation))?\b|"
+            r"no (?:refunds?|reimbursements?|cancellation|cancelation|credits?)"
+            r"(?:[^.;]{0,20}(?:or|and) "
+            r"(?:refunds?|reimbursements?|cancellation|cancelation|credits?))?"
+            r"\s+(?:shall|will|may|cannot?)\s+(?:not\s+)?(?:be\s+)?"
+            r"(?:made|given|paid|issued|allowed|available|provided|permitted)|"
             r"(?:payments?|fees?)[^.;]{0,35}(?:are|shall be|will be)? final[^.;]{0,40}"
-            r"(?:shall|will) not (?:be )?refunded",
+            r"(?:shall|will) not (?:be )?refunded|"
+            r"(?:fees?|payments?|amounts?|charges?|any amount|licenses?|subscriptions?)"
+            r"[^.;]{0,30}(?:are|is|shall|will|may)\s+"
+            r"(?:final[^.;]{0,20}and )?(?:not|never)\s+(?:be\s+)?"
+            r"(?:refundable|refunded|cancellable|cancelled|canceled|reimbursable|"
+            r"reimbursed|returned|returnable|subject to (?:a |any )?refund|"
+            r"eligible for (?:a |any )?refund)|"
+            r"(?:fees?|payments?|amounts?|charges?|licenses?|subscriptions?|credits?|services?)"
+            r"[^.;]{0,30}(?:cannot?|can never|may never|shall never)\s+(?:be\s+)?"
+            r"(?:cancelled|canceled|refunded|returned|reimbursed|forfeited|credited)|"
+            r"(?:fees?|payments?|amounts?|deposits?)[^.;]{0,30}"
+            r"(?:(?:are|shall be|will be|may be)\s+)?forfeited|"
+            r"(?:unused )?(?:credits?|units?|balance)[^.;]{0,30}"
+            r"(?:shall|will|cannot?|may)\s+(?:not|never)\s+(?:be\s+)?"
+            r"(?:credited|returned|refunded|carried over)[^.;]{0,25}"
+            r"(?:upon|after|on) (?:the )?"
+            r"(?:termination|cancellation|cancelation|expiry)\b|"
+            r"no refunds? (?:are|is|shall be|will be) "
+            r"(?:available|made|given|paid|issued|provided|permitted|allowed)|"
+            r"refunds? (?:are|is) not "
+            r"(?:available|made|given|paid|issued|provided|permitted|allowed)\b",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:" + _CARVEOUT.pattern + r")|"
             r"unless[^.;]{0,60}(?:defect|defective|quality|warrant)|"
             r"(?:defect|defective|quality issue)[^.;]{0,40}refund|"
-            r"refunds?[^.;]{0,40}(?:defect|defective|quality)",
+            r"refunds?[^.;]{0,40}(?:defect|defective|quality)|"
+            r"(?:taxes?|duties?|levies?|government(?:al)? (?:fees?|charges?)|"
+            r"charges? imposed by (?:a |any )?government(?:al)? authorit(?:y|ies))"
+            r"[^.;]{0,55}non[ -]?refundable|"
+            r"non[ -]?refundable[^.;]{0,35}"
+            r"(?:taxes?|duties?|levies?|government(?:al)? (?:fees?|charges?))|"
+            r"no refunds?[^.;]{0,40}(?:for|of|on) "
+            r"(?:taxes?|duties?|levies?|government(?:al)? (?:fees?|charges?))",
             re.IGNORECASE,
         ),
         severity=15,
