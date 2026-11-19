@@ -7193,3 +7193,82 @@ class TestCycle54Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-EXP-3" for p in r.penalties), t
+
+
+class TestCycle55Precision:
+    """Cycle-55 precision: R-COMM-6 above-market late-payment interest.
+
+    Probing found 8 under-fires and 0 over-fires. R-COMM-6's percent tokens
+    only accepted a literal "%" sign, so spelled-out "percent"/"per cent"
+    rates ("Unpaid invoices accrue interest of 0.05 percent per day.") slipped
+    through. The noun-leading reversed orderings ("Amounts overdue accrue
+    interest at 10% annually.", "Invoices that are overdue shall bear
+    interest at 2% monthly.", "All sums unpaid bear interest at 3% per
+    month.") and the implied-delinquency form "not paid by the due date"
+    also missed: the qualifier usually preceded the noun, so the post-noun
+    "past due" branch never fired. "incur/incurred" was missing from every
+    verb list. The pattern now accepts percent/per cent alongside "%" on six
+    branches, widens the post-noun qualifier to overdue/delinquent/late/
+    unpaid/"not paid by (the )?due date", adds sums/sums? to the noun lists
+    and incur(red/ring) to the verb lists. Statutory/market/benchmark rates,
+    ordinary non-delinquent interest and one-off fees must stay silent.
+    """
+
+    def test_spelled_out_percent_rates_flagged(self):
+        # A spelled-out "percent"/"per cent" rate on late/delinquent sums is
+        # as one-sided as a "%" sign and must fire R-COMM-6.
+        flagged = [
+            "Unpaid invoices accrue interest of 0.05 percent per day.",
+            "Any amount past due shall bear interest at a rate of 18 percent per annum.",
+            "Overdue amounts accrue a late charge at two percent per month.",
+            "Unpaid balances shall incur a finance charge at 1.5 percent monthly.",
+            "Unpaid amounts accrue interest at 0.1 per cent per day.",
+            "Late payments shall accrue interest at a rate of 3 percent per month.",
+            "Late payments accrue a penalty at 2 percent per month.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-6" for p in r.penalties), t
+
+    def test_noun_led_delinquency_flagged(self):
+        # Rates where the noun precedes its delinquency qualifier ("Amounts
+        # overdue", "Invoices that are overdue", "All sums unpaid", "not paid
+        # by the due date") must fire R-COMM-6.
+        flagged = [
+            "Amounts overdue accrue interest at 10% annually.",
+            "Invoices that are overdue shall bear interest at 2% monthly.",
+            "All sums unpaid bear interest at 3% per month.",
+            "Any amount not paid by the due date accrues interest at 2.5% per month.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-6" for p in r.penalties), t
+
+    def test_incur_verb_flagged(self):
+        # "incur/incurred" alongside overdue/balance language must fire.
+        flagged = [
+            "Any balance past due shall incur interest at 2% per month.",
+            "Unpaid invoices may incur a late fee of 1.5 per cent per month.",
+        ]
+        for t in flagged:
+            r = score_document([t], "d")
+            assert any(p.rule_id == "R-COMM-6" for p in r.penalties), t
+
+    def test_statutory_and_ordinary_rates_not_flagged(self):
+        # Statutory/market/benchmark rates, ordinary non-delinquent interest
+        # and one-off fees must stay silent even with percent variants.
+        benign = [
+            "Late payments accrue interest at the statutory rate of 8% per annum.",
+            "Overdue amounts bear interest at the prevailing market rate.",
+            "Interest on late payments shall be at the ECB base rate plus 2%.",
+            "Late payments accrue interest at the legal maximum rate allowed by law.",
+            "Unpaid balance accrues interest at LIBOR plus 3 per annum.",
+            "The loan shall accrue interest at 12% per annum.",
+            "The deposit bears interest at 3% annually.",
+            "The parties may charge interest of 5% on any amounts advanced under this agreement.",
+            "A commission of 5% is payable to the broker on each sale.",
+            "No interest shall accrue until 30 days after the due date; thereafter at the statutory rate.",
+        ]
+        for t in benign:
+            r = score_document([t], "d")
+            assert all(p.rule_id != "R-COMM-6" for p in r.penalties), t
