@@ -710,8 +710,10 @@ RULES: List[Rule] = [
         exclusion=re.compile(
             r"(?:gdpr|ccpa|data protection|privacy (?:policy|statement|notice)|dpa\b|data processing agreement|"
             r"standard contractual clauses|sccs?|adequacy (?:decision|determination|finding|adoption)|appropriate safeguards|"
+            r"\b(?:PIPEDA|LGPD|CPRA|PDPA|APPI|PIPL|DPDP)\b|"
             r"comply (?:with|ing)|consent|lawful basis|"
             r"(?:shall|will) only be (?:used|processed)|(?:only|solely) for the purpose|"
+            r"(?:only|solely)[^.;]{0,50}for (?:the )?purposes? of|"
             r"purpose of performing|"
             r"solely to (?:provide|perform|fulfil|fulfill)|"
             r"(?:only|solely|strictly) (?:as|to)[^.]{0,20}(?:necessary|required) (?:for|to)|"
@@ -719,17 +721,23 @@ RULES: List[Rule] = [
             r"minimi[sz](?:ation|e[ds]?|ing)?|"
             r"for no other purpose|no other purpose|"
             r"no (?:transfer|processing|collection|sharing|disclosure)(?:s)? of (?:personal )?(?:data|information)|"
+            r"no \bPII\b|"
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
-            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain|transfer|disclose)"
-            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
+            r"(?:shall|will|does|do|must|may) not "
+            r"(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep))*"
             r"\s+(?:any |all (?:the )?|the )?personal (?:data|information)|"
             r"personal (?:data|information)[^.;]{0,20}"
             r"(?:is|are|shall|will|may|cannot?|must) not (?:be )?"
-            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b|"
+            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided|retained|kept)\b|"
             r"(?:neither|no (?:party|person))[^.;]{0,40}"
-            r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
-            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
-            r"\s+(?:any |all (?:the )?|the )?personal (?:data|information))",
+            r"(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep))*"
+            r"\s+(?:any |all (?:the )?|the )?personal (?:data|information)|"
+            r"(?:comply(?:s|ing)? with|in accordance with|pursuant to|subject to)"
+            r"(?:its |their |the |applicable )?privacy (?:obligations?|laws?|legislation)|"
+            r"privacy (?:obligations?|laws?) under applicable law|"
+            r"applicable privacy (?:laws?|legislation))",
             re.IGNORECASE,
         ),
         severity=20,
@@ -954,24 +962,37 @@ ABSENCE_RULES: List[Rule] = [
         rule_id="R-DATA-4",
         dimension=Dimension.DATA,
         condition=re.compile(
-            r"personal (?:data|information)|personally identifiable",
+            r"personal (?:data|information)|personally identifiable|\bPII\b|"
+            r"special catego(?:ry|ries) data",
             re.IGNORECASE,
         ),
-        pattern=re.compile(r"data (?:protection|controller|processor)|GDPR|CCPA|privacy (?:policy|statement|notice)|data processing agreement|DPA\b", re.IGNORECASE),
+        pattern=re.compile(
+            r"data (?:protection|controller|processor)|GDPR|CCPA|"
+            r"\b(?:PIPEDA|LGPD|CPRA|PDPA|APPI|PIPL|DPDP)\b|"
+            r"privacy (?:policy|statement|notice)|data processing agreement|DPA\b",
+            re.IGNORECASE,
+        ),
         exclusion=re.compile(
             r"no personal (?:data|information)[^.;]{0,20}(?:is|shall (?:be )?be|will be|may be)|"
-            r"(?:shall|will|does|do|must|may) not (?:collect|process|use|share|store|obtain|transfer|disclose)"
-            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
+            r"no \bPII\b|"
+            r"(?:shall|will|does|do|must|may) not "
+            r"(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep))*"
             r"\s+(?:any |all (?:the )?|the )?personal (?:data|information)|"
             r"(?:neither|no (?:party|person))[^.;]{0,40}"
-            r"(?:collect|process|use|share|store|obtain|transfer|disclose)"
-            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose))*"
+            r"(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep)"
+            r"(?:[ ,]*(?:and |or )?(?:collect|process|use|share|store|obtain|transfer|disclose|retain|keep))*"
             r"\s+(?:any |all (?:the )?|the )?personal (?:data|information)|"
             r"personal (?:data|information)[^.;]{0,20}"
             r"(?:is|are|shall|will|may|cannot?|must) not (?:be )?"
-            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided)\b|"
+            r"(?:collected|processed|used|shared|stored|transferred|disclosed|provided|retained|kept)\b|"
             r"only[^.;]{0,35}necessary (?:for|to)|necessary (?:for|to) (?:the )?purpose|"
-            r"minimi[sz](?:ation|e[ds]?|ing)?",
+            r"(?:only|solely)[^.;]{0,50}for (?:the )?purposes? of|"
+            r"minimi[sz](?:ation|e[ds]?|ing)?|"
+            r"(?:comply(?:s|ing)? with|in accordance with|pursuant to|subject to)"
+            r"(?:its |their |the |applicable )?privacy (?:obligations?|laws?|legislation)|"
+            r"privacy (?:obligations?|laws?) under applicable law|"
+            r"applicable privacy (?:laws?|legislation)",
             re.IGNORECASE,
         ),
         severity=20,
