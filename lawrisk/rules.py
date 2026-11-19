@@ -139,18 +139,33 @@ RULES: List[Rule] = [
         rule_id="R-COMM-2",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"\b(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?|terminab(?:le|ility))\b[^.]{0,40}"
-            r"(?:without cause|for any(?: reason| purpose)?|for no reason|at will|"
+            r"\b(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?|"
+            r"terminab(?:le|ility))\b[^.;]{0,40}"
+            r"(?:without (?:giving |assigning )?(?:any |just |good )?(?:cause|reason)|"
+            r"with no (?:cause|reason)|"
+            r"for whatever reason|for any or no reason|for any(?: reason| purpose)?|for no reason|at will|"
             r"(?:at|for)\s+(?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience|"
-            r"for convenience|without assigning any reason|without (?:any )?reason\b)"
+            r"for convenience|without justification|"
+            r"(?:at|in)\s+(?:(?:its|our|their)|(?:the\s+)?(?:provider|company|vendor|customer|client|"
+            r"licensor|licensee)[’']s)\s+(?:own|sole|absolute)(?:\s+and\s+(?:own|sole|absolute))?\s+discretion)"
             r"|(?:at|for)\s+(?:its|our|their|the (?:provider|company|vendor))? ?(?:own |sole |absolute )?convenience"
+            r"[^.;]{0,45}\b(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?)\b"
+            r"|(?:at|in)\s+(?:(?:its|our|their)|(?:the\s+)?(?:provider|company|vendor|customer|client|"
+            r"licensor|licensee)[’']s)\s+(?:own|sole|absolute)(?:\s+and\s+(?:own|sole|absolute))?\s+discretion"
             r"[^.;]{0,45}\b(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?)\b",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:{})|(?:{})|"
             r"(?:where|as|if|to the extent)\s+(?:so\s+)?required\s+by\s+(?:applicable\s+)?law\b|"
-            r"(?:by\s+order\s+of\s+(?:a\s+)?court|(?:by|under|pursuant\s+to)\s+(?:applicable\s+)?law\b|court\s+order\b)".format(_CARVEOUT.pattern, _MUTUAL.pattern),
+            r"(?:by\s+order\s+of\s+(?:a\s+)?court|(?:by|under|pursuant\s+to)\s+(?:applicable\s+)?law\b|court\s+order\b)|"
+            r"(?:(?:does|shall|will|may|can)\s+not\b|cannot\b|can'?t\b)\s+"
+            r"(?:(?:have\s+the\s+(?:right|option)\s+to\s+)|(?:be\s+able\s+to\s+))?"
+            r"(?:be\s+)?(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?|terminab(?:le|ility))\b|"
+            r"(?:no|neither)\s+party\s+(?:may|shall|will|can)\s+(?:be\s+able\s+to\s+)?"
+            r"(?:terminat(?:e|es|ed|ing|ion)|end(?:s|ed|ing)?|cancel(?:s|led|ling)?|terminab(?:le|ility))\b|"
+            r"(?:(?:termination|ending|cancellation|cancelation)\b[^.;]{{0,45}}"
+            r"(?:is|shall\s+be|will\s+be)\s+(?:deemed\s+)?(?:prohibited|void|null and void|not\s+(?:permitted|allowed|authorized))\b)".format(_CARVEOUT.pattern, _MUTUAL.pattern),
             re.IGNORECASE,
         ),
         severity=25,
