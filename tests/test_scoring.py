@@ -7384,3 +7384,163 @@ class TestCycle56Precision:
             "d",
         )
         assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+
+class TestCycle57Precision:
+    """Cycle-57: R-COMM-2 unilateral without-cause / sole-discretion precision."""
+
+    def test_without_just_cause_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement without just cause."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_without_good_cause_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement without good cause."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_with_no_cause_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement with no cause."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_for_whatever_reason_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement for whatever reason."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_for_any_reason_whatsoever_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement for any reason whatsoever."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_without_any_cause_whatsoever_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement without any cause whatsoever."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_at_its_sole_discretion_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement at its sole discretion."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_in_its_sole_discretion_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement in its sole discretion."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_at_its_own_discretion_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement at its own discretion."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_in_its_absolute_discretion_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement in its absolute discretion."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_discretion_before_verb_fires(self):
+        r = score_document(
+            ["Provider may in its sole discretion terminate this agreement."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_termination_without_justification_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement without justification."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_without_giving_any_reason_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement without giving any reason."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_without_assigning_any_reason_fires(self):
+        r = score_document(
+            ["Provider may terminate this agreement without assigning any reason."], "d")
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_sole_discretion_right_fires(self):
+        r = score_document(
+            ["Provider shall have the right to terminate this agreement at its sole discretion."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-2" for p in r.penalties)
+
+    def test_may_not_terminate_without_cause_silent(self):
+        r = score_document(
+            ["Provider may not terminate this agreement without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_shall_not_terminate_without_cause_silent(self):
+        r = score_document(
+            ["Provider shall not terminate this agreement without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_will_not_terminate_without_cause_silent(self):
+        r = score_document(
+            ["Provider will not terminate this agreement without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_cannot_terminate_without_cause_silent(self):
+        r = score_document(
+            ["Provider cannot terminate this agreement without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_does_not_have_right_to_terminate_without_cause_silent(self):
+        r = score_document(
+            ["Provider does not have the right to terminate this agreement without cause."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_either_party_may_not_terminate_without_cause_silent(self):
+        r = score_document(
+            ["Either party may not terminate this agreement without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_no_party_may_terminate_without_cause_silent(self):
+        r = score_document(
+            ["No party may terminate this agreement without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_neither_party_may_terminate_without_cause_silent(self):
+        r = score_document(
+            ["Neither party may terminate this agreement without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_may_not_be_terminated_without_cause_silent(self):
+        r = score_document(
+            ["This agreement may not be terminated without cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_termination_without_cause_prohibited_silent(self):
+        r = score_document(
+            ["Termination without cause is prohibited."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_termination_without_cause_void_silent(self):
+        r = score_document(
+            ["Any termination without cause shall be deemed void."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_vendor_loss_boundary_stays_silent(self):
+        r = score_document(
+            ["The vendor responsibility for any loss shall not be terminated."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_for_cause_stays_silent(self):
+        r = score_document(
+            ["Provider may terminate this agreement for cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_with_just_cause_stays_silent(self):
+        r = score_document(
+            ["Provider may terminate this agreement with just cause."], "d")
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
+
+    def test_mutual_termination_stays_silent(self):
+        r = score_document(
+            ["Either party may terminate this agreement without cause upon 90 days written notice."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-2" for p in r.penalties)
