@@ -7272,3 +7272,115 @@ class TestCycle55Precision:
         for t in benign:
             r = score_document([t], "d")
             assert all(p.rule_id != "R-COMM-6" for p in r.penalties), t
+
+
+class TestCycle56Precision:
+    """Cycle-56 precision regression: R-COMM-1 auto-renewal variant families
+    (rollover phrasings, continue-consecutive, deemed-renewed negation,
+    provided-that and object-in-writing opt-outs)."""
+
+    # --- R-COMM-1 under-fire regressions ---
+
+    def test_extended_for_additional_periods_flagged(self):
+        # Regression: "is extended automatically for additional periods" is an
+        # automatic rollover and must fire R-COMM-1 even with a tense/voice
+        # combination the pattern previously missed.
+        r = score_document(
+            ["The term of this Agreement is extended automatically for additional "
+             "periods of one year."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_roll_over_successive_terms_flagged(self):
+        # Regression: "will roll over for successive ... terms" is an
+        # auto-renewal idiom and must fire R-COMM-1.
+        r = score_document(
+            ["This agreement will roll over for successive twelve-month terms."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_roll_over_another_term_flagged(self):
+        # Regression: "roll over automatically for another twelve-month term"
+        # (adverb + indefinite-determiner object) must fire R-COMM-1.
+        r = score_document(
+            ["The agreement will roll over automatically for another twelve-month "
+             "term."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_continue_consecutive_terms_flagged(self):
+        # Regression: "continue for additional consecutive terms" (consecutive
+        # as the rolled period qualifier) must fire R-COMM-1.
+        r = score_document(
+            ["This Agreement shall continue for additional consecutive terms of "
+             "one year each."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    def test_continue_successive_numeric_periods_flagged(self):
+        # Regression: "continue in force for successive periods of 12 months
+        # each" (numeric rollover with continue-phrasing) must fire R-COMM-1.
+        r = score_document(
+            ["This agreement shall continue in force for successive periods of "
+             "12 months each."],
+            "d",
+        )
+        assert any(p.rule_id == "R-COMM-1" for p in r.penalties)
+
+    # --- R-COMM-1 over-fire controls ---
+
+    def test_neither_party_deemed_renewed_automatically_not_flagged(self):
+        # Control: "Neither party shall be deemed to have renewed ... 
+        # automatically" denies renewal; it is an opt-out statement and must
+        # stay silent.
+        r = score_document(
+            ["Neither party shall be deemed to have renewed this agreement "
+             "automatically."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_continue_provided_that_termination_notice_not_flagged(self):
+        # Control: a continue-for-successive-terms clause carrying a
+        # provided-that written-notice opt-out must stay silent.
+        r = score_document(
+            ["The Agreement shall continue in effect for successive terms; "
+             "provided that either party may terminate upon written notice."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_each_party_object_in_writing_not_flagged(self):
+        # Control: a conditional renewal with an "each Party ... object in
+        # writing" right is a genuine opt-out and must stay silent.
+        r = score_document(
+            ["Should the contract be renewed automatically, each Party shall "
+             "have the right to object in writing."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_nothing_shall_cause_auto_renewal_not_flagged(self):
+        # Control: "Nothing ... shall cause ... renew automatically" is a
+        # denial of rollover and must stay silent.
+        r = score_document(
+            ["Nothing in this clause shall cause the agreement to renew "
+             "automatically."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
+
+    def test_shall_not_renew_automatically_not_flagged(self):
+        # Control: "The parties shall not renew this agreement automatically"
+        # is an express no-auto-renewal statement and must stay silent even
+        # when a reason clause follows in the same sentence.
+        r = score_document(
+            ["The parties shall not renew this agreement automatically; renewal "
+             "requires a new contract."],
+            "d",
+        )
+        assert all(p.rule_id != "R-COMM-1" for p in r.penalties)
