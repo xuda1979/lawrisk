@@ -7695,3 +7695,108 @@ class TestCycle59Precision:
         r = score_document(
             ["Provider may amend terms at the Vendor's discretion."], "d")
         assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+
+class TestCycle60Precision:
+    """R-COMM-3: unilateral price adjustment precision probes."""
+
+    def test_has_the_right_to_increase_fees_flagged(self):
+        r = score_document(
+            ["Provider has the right to increase the fees at any time."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_entitled_to_increase_fees_flagged(self):
+        r = score_document(
+            ["Provider is entitled to increase the fees at any time."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_retains_right_to_adjust_fees_flagged(self):
+        r = score_document(
+            ["Provider retains the right to adjust the fees."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_reserves_option_to_increase_fees_flagged(self):
+        r = score_document(
+            ["Provider reserves the option to increase the fees."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_can_increase_fees_flagged(self):
+        r = score_document(
+            ["Provider can increase the fees at any time."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_will_increase_fees_annually_flagged(self):
+        r = score_document(
+            ["Provider will increase the fees annually upon 60 days' written notice."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_shall_increase_fees_upon_notice_flagged(self):
+        r = score_document(
+            ["Provider shall increase the fees upon 30 days' notice."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_may_at_any_time_increase_fees_flagged(self):
+        r = score_document(
+            ["Provider may at any time increase the fees."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_possessive_fees_flagged(self):
+        r = score_document(
+            ["Provider may increase its fees at any time.", "Provider may increase our fees at any time."], "d")
+        hits = [p.rule_id for p in r.penalties]
+        assert hits.count("R-COMM-3") == 2
+
+    def test_monthly_maintenance_fee_flagged(self):
+        r = score_document(
+            ["Provider may adjust the monthly maintenance fee shown in the price list."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_pricing_may_be_adjusted_flagged(self):
+        r = score_document(
+            ["Pricing may be adjusted by Provider at any time."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_reserves_right_to_raise_prices_flagged(self):
+        r = score_document(
+            ["The Provider may raise prices at any time."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_fees_subject_to_adjustment_flagged(self):
+        r = score_document(
+            ["Fees are subject to adjustment at any time."], "d")
+        assert any(p.rule_id == "R-COMM-3" for p in r.penalties)
+
+    def test_capped_increase_stays_silent(self):
+        r = score_document(
+            ["Price increases shall not exceed five percent per year."], "d")
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_consent_gated_increase_stays_silent(self):
+        r = score_document(
+            ["Provider may increase the fees with the prior written consent of Customer."], "d")
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_cpi_reference_increase_stays_silent(self):
+        r = score_document(
+            ["Fees will be adjusted to reflect the consumer price index."], "d")
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_mutual_written_agreement_increase_stays_silent(self):
+        r = score_document(
+            ["Fees may be increased upon the mutual written agreement of the parties."], "d")
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_mutual_discretion_stays_silent(self):
+        r = score_document(
+            ["The parties may adjust the fees at their mutual discretion."], "d")
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_other_party_consent_stays_silent(self):
+        r = score_document(
+            ["Each party may adjust the fees with the other party's written consent."], "d")
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+    def test_cost_pass_through_stays_silent(self):
+        r = score_document(
+            ["Provider may increase the fees to reflect changes in wholesale costs."], "d")
+        assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
