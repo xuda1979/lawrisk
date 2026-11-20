@@ -7800,3 +7800,86 @@ class TestCycle60Precision:
         r = score_document(
             ["Provider may increase the fees to reflect changes in wholesale costs."], "d")
         assert all(p.rule_id != "R-COMM-3" for p in r.penalties)
+
+
+class TestCycle61Precision:
+    """R-DATA-2: cross-border transfer precision probes."""
+
+    def test_disclose_to_subsidiaries_flagged(self):
+        r = score_document(
+            ["Provider may disclose personal data to its subsidiaries in the "
+             "United States."], "d")
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_held_on_servers_flagged(self):
+        r = score_document(
+            ["Personal data is held on servers in the United States."], "d")
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_retained_on_servers_flagged(self):
+        r = score_document(
+            ["Data may be retained on servers in Brazil."], "d")
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_kept_on_servers_flagged(self):
+        r = score_document(
+            ["Personal data will be kept on servers in Australia."], "d")
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_located_in_uk_flagged(self):
+        r = score_document(
+            ["Data is stored on cloud infrastructure located in the United "
+             "Kingdom."], "d")
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_imports_into_servers_flagged(self):
+        r = score_document(
+            ["The vendor imports user data into servers in Canada."], "d")
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_under_sccs_stays_silent(self):
+        r = score_document(
+            ["Data may be transferred to India under the Standard Contractual "
+             "Clauses."], "d")
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
+    def test_covered_by_sccs_stays_silent(self):
+        r = score_document(
+            ["Transfers of personal data to the United States are covered by "
+             "the SCCs."], "d")
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
+    def test_bound_by_sccs_stays_silent(self):
+        # The safeguarded form still trips sibling rules (R-COMM-4, R-DATA-4);
+        # R-DATA-2 itself must stay silent.
+        r = score_document(
+            ["Personal data may be transferred to third parties outside the "
+             "EEA bound by the Standard Contractual Clauses."], "d")
+        hits = [p.rule_id for p in r.penalties]
+        assert "R-DATA-2" not in hits
+
+    def test_data_subject_consent_stays_silent(self):
+        r = score_document(
+            ["Provider warrants that transfers of data outside the EEA will "
+             "only occur with the data subject's consent."], "d")
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
+    def test_us_processing_control_still_flagged(self):
+        # Control: any processing/storage in the US must keep firing even when
+        # bracketed by a service-scope qualifier (mirrors
+        # test_cross_border_controls_still_flagged).
+        r = score_document(
+            ["The parties will process data in the United States only for "
+             "rendering the service."], "d")
+        assert any(p.rule_id == "R-DATA-2" for p in r.penalties)
+
+    def test_no_transfer_outside_uk_stays_silent(self):
+        r = score_document(
+            ["No transfer of personal data outside the United Kingdom shall "
+             "occur."], "d")
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
+    def test_eea_storage_stays_silent(self):
+        r = score_document(
+            ["Data is stored on servers located in the EEA."], "d")
+        assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
