@@ -177,24 +177,41 @@ RULES: List[Rule] = [
         rule_id="R-COMM-3",
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
-            r"(?:reserves the right to (?:adjust|increase|change|modify|revise|update)|"
+            r"(?:reserves the (?:right|option) to (?:adjust|increase|change|modify|revise|update|raise)|"
+            r"(?:has|retains) the right to (?:adjust|increase|change|modify|revise|update|raise)|"
+            r"is (?:entitled|authorised|authorized) to (?:adjust|increase|change|modify|revise|update|raise)|"
             r"(?:shall|will|may)\s+have the (?:right|option) to (?:adjust|increase|change|modify|revise|update)|"
-            r"may (?:adjust|increase|change|modify|revise|update)|(?:can|may) adjust|(?:can|may) revise|"
-            r"(?:can|may|shall|will) update)"
-            r" (?:the )?(?:(?:monthly|annual|yearly|service|platform|subscription|"
-            r"license|licence|usage)\s+)?(?:price|prices|fees|fee|pricing)"
-            r"|(?:price|prices|fees|fee)[^.;]{0,30}(?:may|shall|will|can) be "
-            r"(?:adjusted|increased|changed|modified|revised|altered)"
-            r"|(?:prices?|fees?)\s+(?:may|shall|will|can)\s+(?:change\b|increase\b|rise\b|escalate\b)|"
-            r"(?:prices?|fees?)\s+(?:are|is|shall be|will be|may be)\s+subject to\s+change\b|"
+            r"(?:may|can|shall|will) (?:adjust|increase|change|modify|revise|update|raise)"
+            r"|(?:can|may) adjust|(?:can|may) revise)"
+            r" (?:the )?(?:(?:its|our|their|his) )?(?:(?:monthly|annual|yearly|service|platform|"
+            r"subscription|license|licence|usage|maintenance)\s+)*"
+            r"(?:price|prices|fees|fee|pricing)"
+            r"|(?:may|can|shall|will)\s+(?:at any time|from time to time)"
+            r"\s+(?:adjust|increase|change|modify|revise|update|raise)"
+            r" (?:the )?(?:(?:its|our|their|his) )?(?:(?:monthly|annual|yearly|service|platform|"
+            r"subscription|license|licence|usage|maintenance)\s+)*"
+            r"(?:price|prices|fees|fee|pricing)"
+            r"|(?:price|prices|fees|fee|pricing)[^.;]{0,30}(?:may|shall|will|can) be "
+            r"(?:adjusted|increased|changed|modified|revised|altered|raised)"
+            r"|(?:prices?|fees?|pricing)\s+(?:may|shall|will|can)\s+"
+            r"(?:change\b|increase\b|rise\b|escalate\b)|"
+            r"(?:prices?|fees?|pricing)\s+(?:are|is|shall be|will be|may be)\s+"
+            r"subject to\s+(?:adjustment|change)\b|"
             r"price (?:increase|escalation)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:no price increase|without (?:any )?price increase|"
             r"there (?:shall|will|can|is|be) no|"
-            r"by mutual(?: written)? agreement|mutual written consent|"
-            r"(?:in accordance with|in line with|per the|as per) [^.;]{0,40}"
+            r"by mutual(?: written)? agreement|upon (?:the )?mutual written agreement|"
+            r"mutual written consent|at (?:their|its|your) mutual discretion|"
+            r"(?:each|either|both) party[^.;]{0,60}consent\b|"
+            r"with (?:the )?(?:other party'?s |other parties' )?(?:prior )?written consent|"
+            r"upon (?:the )?(?:prior )?written consent|subject to (?:the )?(?:prior )?written consent|"
+            r"(?:shall|will|must) (?:not )?exceed\b[^.;]{0,40}(?:percent|per cent|%)\b|"
+            r"(?:increase|increases?)[^.;]{0,30}(?:shall|will|may)? ?not?\s*exceed\b|"
+            r"to reflect (?:changes in )?(?:wholesale|raw material|running|actual|underlying|\w+ )?costs?|"
+            r"(?:in accordance with|in line with|per the|as per|to reflect) [^.;]{0,40}"
             r"(?:consumer price index|cpi|index(?:ed)?))",
             re.IGNORECASE,
         ),
