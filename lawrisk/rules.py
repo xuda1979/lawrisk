@@ -902,13 +902,16 @@ RULES: List[Rule] = [
             # verb-led: {transfer...} {data} {outbound}
             r"(?:transfer(?:ring|red|s)?|transmit(?:ting|ted|s)?|process(?:ing|ed|es)?|"
             r"share(?:ing|d|s)?|store(?:ing|d|s)?|export(?:ing|ed|s)?|send(?:ing)?|"
-            r"access(?:ing|ed)?|move(?:ing|d)?|host(?:ing|ed|s)?)"
+            r"access(?:ing|ed)?|move(?:ing|d)?|host(?:ing|ed|s)?|"
+            r"disclos(?:ing|ed|es|s)?|import(?:ing|ed|es|s)?|"
+            r"retain(?:ing|ed|s)?|hold(?:s|ing)?|held|keep(?:s|ing)?|kept)"
             r"[^.]{0,20}(?:personal )?(?:data|information)[^.]{0,30}"
             r"(?:to|outside|abroad|from|in|at|into)"
             r"[^.]{0,20}(?:the )?"
             r"(?:united states|u\.?s\.?a?\.?\b|e\.?u\.?\b|eea\b|third[ -]countr(?:y|ies)|"
             r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
             r"third[ -]parti(?:es|y)|outside|abroad|"
+            r"united kingdom|u\.?k\.?\b|"
             r"\b(?:india|china|brazil|canada|mexico|japan|australia|singapore|south korea|"
             r"hong kong|israel|russia|south africa|philippines|indonesia|vietnam|malaysia|"
             r"thailand|taiwan|argentina|chile|colombia|nigeria|kenya|new zealand|turkey|"
@@ -919,14 +922,15 @@ RULES: List[Rule] = [
             r"(?:pii\b|(?:personal )?(?:data|information))[^.]{0,15}"
             r"(?:(?:is|are|shall|will|may|can|be|being|was|were)[^.]{0,5})?"
             r"(?:transferred|transmitted|processed|stored|shared|accessed|exported|sent|moved|"
-            r"hosted|located|maintained|accessible)"
-            r"[^.]{0,30}"
+            r"hosted|located|maintained|accessible|held|kept|retained|disclosed)"
+            r"[^.]{0,45}"
             r"(?:abroad|outside|"
             r"(?:to|from|in|at|into|with|outside)"
             r"[^.]{0,20}(?:the )?"
             r"(?:united states|u\.?s\.?a?\.?\b|e\.?u\.?\b|eea\b|third[ -]countr(?:y|ies)|"
             r"foreign countr(?:y|ies)|affiliate(?:s)?|subprocessor(?:s)?|subsidiari(?:es|s)|"
             r"third[ -]parti(?:es|y)|outside|abroad|"
+            r"united kingdom|u\.?k\.?\b|"
             r"\b(?:india|china|brazil|canada|mexico|japan|australia|singapore|south korea|"
             r"hong kong|israel|russia|south africa|philippines|indonesia|vietnam|malaysia|"
             r"thailand|taiwan|argentina|chile|colombia|nigeria|kenya|new zealand|turkey|"
@@ -937,14 +941,19 @@ RULES: List[Rule] = [
             re.IGNORECASE,
         ),
         exclusion=re.compile(
-            r"(?:(?:shall|will|does|do|must|may) (?:not|never) (?:be )?transfer(?:red)?|"
+            r"(?:(?:shall|will|does|do|must|may) (?:not|never) (?:be )?"
+            r"(?:transfer(?:red)?|disclos(?:ed|e|es|ing)?)|"
             r"no (?:transfer|transfers) of (?:personal )?data[^.;]{0,50}shall|"
             r"shall not (?:occur|take place)|"
             r"(?:within|in|to|into)\s+(?:the\s+)?(?:e\.?u\.?\b|eea\b|european (?:union|economic area))\b|"
-            r"(?:with|upon|subject to|in accordance with|pursuant to|following)\s+"
+            r"(?:with|upon|subject to|in accordance with|pursuant to|following|under)\s+"
             r"(?:adequate|appropriate|standard contractual|sccs?|"
             r"the (?:standard )?(?:contractual clauses|sccs?)|"
-            r"(?:an |the )?(?:eu|e\.?u\.?)? ?adequacy (?:decision|determination|finding|adoption))\b)",
+            r"(?:an |the )?(?:eu|e\.?u\.?)? ?adequacy (?:decision|determination|finding|adoption))\b|"
+            r"(?:covered|bound) (?:by|under) (?:the )?(?:sccs?|standard contractual clauses|"
+            r"the (?:standard )?(?:contractual clauses|sccs?))\b|"
+            r"data subject'?s (?:prior )?(?:consent|authorization|authorisation)|"
+            r"consent of (?:the )?data subject)",
             re.IGNORECASE,
         ),
         severity=35,
