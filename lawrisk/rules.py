@@ -257,20 +257,23 @@ RULES: List[Rule] = [
         dimension=Dimension.COMMERCIAL,
         pattern=re.compile(
             r"(?:"
-            r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
+            r"(?:may|can|reserves? the right to|shall have the right to|has the right to|retains the right to|is (?:entitled|authorised|authorized) to)"
             r"[^.]{0,30}"
             r"(?:amend|modify|alter|vary|change|revise|update)\s+"
-            r"(?:this agreement|these presents|these terms|the terms|terms|conditions|"
-            r"the terms and conditions|"
+            r"(?:(?:this|the) agreement|these presents|these terms|the terms|terms|conditions|"
+            r"the terms and conditions|the (?:terms|conditions) of this agreement|"
+            r"any provision of this agreement|"
+            r"(?:its|our|their|(?:the )?(?:provider|company|vendor|licensor|supplier)'s) (?:terms|conditions)|"
+            r"such (?:terms|conditions)|"
             r"any (?:of the )?(?:term|provision|clause|condition)s?[^.]{0,8}hereof)"
             r"[^.]{0,35}"
             r"(?:at any time|"
             r"(?:at|in) (?:its|his|their|our)? ?(?:own )?(?:sole|absolute) discretion|"
             r"(?:at|in) (?:the )?(?:provider|company|vendor|licensor|supplier)'s (?:own )?(?:sole|absolute) discretion|"
             r"(?:at|in) (?:the )?(?:sole|absolute) discretion of (?:the )?(?:provider|company|vendor|licensor|supplier)|"
-            r"without (?:prior )?(?:notice|consent|approval)|unilaterally|from time to time)"
+            r"without (?:the )?(?:prior )?(?:notice|consent|approval)|unilaterally|from time to time)"
             r")|"
-            r"(?:may|can|reserves? the right to|is (?:entitled|authorised|authorized) to)"
+            r"(?:may|can|reserves? the right to|shall have the right to|has the right to|retains the right to|is (?:entitled|authorised|authorized) to)"
             r"[^.]{0,20}(?:amend|modify|alter|vary|change|revise|update)\s+"
             r"(?:this agreement|these presents|these terms|the terms|terms|conditions|"
             r"the terms and conditions|"
@@ -279,20 +282,29 @@ RULES: List[Rule] = [
             r"[^.]{0,15}(?:(?:at|in) (?:its|his|their|our)? ?(?:own )?(?:sole|absolute) discretion|"
             r"(?:at|in) (?:the )?(?:provider|company|vendor|licensor|supplier)'s (?:own )?(?:sole|absolute) discretion|"
             r"(?:at|in) (?:the )?(?:sole|absolute) discretion of (?:the )?(?:provider|company|vendor|licensor|supplier))|"
-            r"(?:these terms|the terms and conditions|the terms|this agreement)"
-            r"[^.]{0,35}(?:may|can|shall|will) be (?:amended|modified|altered|varied|changed|revised|updated)"
+            r"(?:these terms|the terms and conditions|the terms|this agreement|the agreement)"
+            r"(?: (?:may|can|shall|will))? ?be (?:amended|modified|altered|varied|changed|revised|updated)"
             r"[^.]{0,25}(?:by(?: the)? (?:provider|company|vendor|licensor|supplier))"
-            r"[^.]{0,40}(?:at any time|without (?:prior )?(?:notice|consent|approval)|"
+            r"[^.]{0,40}(?:at any time|without (?:the )?(?:prior )?(?:notice|consent|approval)|"
             r"(?:at|in) (?:its|their|our)? ?(?:own )?(?:sole|absolute) discretion|"
             r"(?:at|in) (?:the )?(?:provider|company|vendor|licensor|supplier)'s (?:own )?(?:sole|absolute) discretion|"
             r"(?:at|in) (?:the )?(?:sole|absolute) discretion of (?:the )?(?:provider|company|vendor|licensor|supplier)|"
-            r"unilaterally|from time to time)",
+            r"unilaterally|from time to time)|"
+            r"(?:may|can|reserves? the right to|shall have the right to|has the right to|retains the right to|is (?:entitled|authorised|authorized) to)\s+"
+            r"(?:at any time|from time to time|"
+            r"(?:at|in) (?:its|his|their|our|(?:the )?(?:provider|company|vendor|licensor|supplier)'s)? ?(?:own )?(?:sole|absolute) discretion)\s+"
+            r"(?:amend|modify|alter|vary|change|revise|update) (?:this|the) agreement|"
+            r"make\s+(?:any\s+)?(?:amendments?|modifications?|changes?|alterations?|variations?)"
+            r"[^.]{0,40}(?:to (?:this|the) agreement|to (?:its|the) terms|to the terms and conditions)"
+            r"[^.]{0,30}(?:at any time|without (?:the )?(?:prior )?(?:notice|consent|approval)|unilaterally|from time to time|"
+            r"(?:at|in) (?:its|his|their|our)? ?(?:own )?(?:sole|absolute) discretion)",
             re.IGNORECASE,
         ),
         exclusion=re.compile(
             r"(?:{}|"
-            r"by mutual (?:written )?(?:agreement|consent)|"
+            r"by (?:mutual\s+)?written (?:agreement|consent|instrument)|"
             r"mutual written consent|"
+            r"\bthe parties\b[^.;]{{0,60}}\bby (?:mutual\s+)?written (?:agreement|consent|instrument) or similar|"
             r"with (?:the )?(?:prior )?written consent of (?:both|either|each) parties?)".format(
                 _MUTUAL.pattern
             ),
