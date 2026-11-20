@@ -7883,3 +7883,95 @@ class TestCycle61Precision:
         r = score_document(
             ["Data is stored on servers located in the EEA."], "d")
         assert all(p.rule_id != "R-DATA-2" for p in r.penalties)
+
+class TestCycle62Precision:
+    """Cycle-62 precision cases for R-DATA-3 (broad/unlimited purposes)."""
+
+    # ---- information-token and purpose-tail variants (under-fire fixes) ----
+
+    def test_use_customer_information_any_purpose_flagged(self):
+        r = score_document(
+            ["Provider may use customer information for any purpose."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_use_personal_information_any_purpose_flagged(self):
+        r = score_document(
+            ["Provider may use personal information for any purpose "
+             "whatsoever."], "d")
+        hits = [p.rule_id for p in r.penalties]
+        assert "R-DATA-3" in hits
+
+    def test_any_or_all_purposes_flagged(self):
+        r = score_document(
+            ["Provider may use data for any or all purposes."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_all_purposes_flagged(self):
+        r = score_document(
+            ["Provider may use data for all purposes."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_whatever_purpose_flagged(self):
+        r = score_document(
+            ["Provider may use data for whatever purpose."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_own_commercial_purposes_flagged(self):
+        r = score_document(
+            ["Provider may use data for its own commercial purposes."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_own_marketing_purposes_flagged(self):
+        r = score_document(
+            ["Provider may use data for its own marketing purposes."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_share_with_third_parties_any_purpose_flagged(self):
+        r = score_document(
+            ["Provider may share data with third parties for any purpose."],
+            "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_collect_any_purpose_flagged(self):
+        r = score_document(
+            ["Provider may collect data for any purpose."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_store_any_purpose_flagged(self):
+        r = score_document(
+            ["Provider may store data for any purpose."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_may_be_shared_for_marketing_purposes_flagged(self):
+        r = score_document(
+            ["Data may be shared for marketing purposes."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    def test_is_collected_for_any_purpose_flagged(self):
+        # simple-present passive (no "be") must still fire
+        r = score_document(
+            ["Data is collected for any purpose."], "d")
+        assert any(p.rule_id == "R-DATA-3" for p in r.penalties)
+
+    # ---- denial / shield over-fire fixes ----
+
+    def test_will_not_use_for_marketing_purposes_stays_silent(self):
+        r = score_document(
+            ["We will not use your data for marketing purposes."], "d")
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_shall_not_share_for_any_purpose_stays_silent(self):
+        r = score_document(
+            ["Data shall not be shared for any purpose."], "d")
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_is_not_processed_any_purpose_stays_silent(self):
+        r = score_document(
+            ["Data is not processed for any purpose."], "d")
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+    def test_statistical_purposes_stays_silent(self):
+        # control: statistical purposes must remain outside the flagged set
+        r = score_document(
+            ["Data may be retained for statistical purposes."], "d")
+        assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
