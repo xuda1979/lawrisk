@@ -8138,3 +8138,117 @@ class TestCycle64Precision:
             "d",
         )
         assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+
+class TestCycle65Precision:
+    """Cycle-65 precision: R-EXP-2 sanctioned-jurisdiction negation wording.
+
+    The R-EXP-2 exclusion already covered "shall/will/must not export...",
+    "not for delivery/sale/export to <country>", "no export...to",
+    "prohibit/banned", licence-gated and excluding/<country> carve-outs.
+    This cycle widens the negation family to the remaining common drafting
+    variants: passive "are/is/are not permitted/allowed/authorized",
+    "cannot/can't  be exported", bare "do not sell", and "forbidden",
+    and extends the coupled R-EXP-1/R-EXP-4 shield so modal-negation bans
+    naming a bare sanctioned country (e.g. "cannot be exported to Myanmar",
+    "may not export to Iran") stay silent.  Unprotected references to
+    sanctioned jurisdictions (may export / sales are permitted / ships goods
+    to) must keep firing.
+    """
+
+    # ---- negation shields (want: silent, no R-EXP-2) ----
+
+    def test_sales_to_iran_not_permitted_shield_silent(self):
+        r = score_document(["Sales to Iran are not permitted."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_deliveries_to_cuba_not_permitted_shield_silent(self):
+        r = score_document(
+            ["Deliveries to Cuba are not permitted under this Agreement."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_software_not_exported_to_north_korea_shield_silent(self):
+        r = score_document(["Software shall not be exported to North Korea."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_products_will_not_be_exported_to_syria_shield_silent(self):
+        r = score_document(["The products will not be exported to Syria."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_goods_cannot_be_exported_to_myanmar_shield_silent(self):
+        r = score_document(["Goods cannot be exported to Myanmar."], "d")
+        # also guards the coupled R-EXP-1/R-EXP-4 negation shield
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-2", "R-EXP-4")
+                   for p in r.penalties)
+
+    def test_no_sales_into_sudan_permitted_shield_silent(self):
+        r = score_document(["No sales into Sudan are permitted."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_prohibited_and_not_permitted_shield_silent(self):
+        r = score_document(
+            ["Exports to Iran are strictly prohibited and not permitted."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_sales_to_cuba_prohibited_shield_silent(self):
+        r = score_document(["Sales to Cuba are prohibited."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_parties_shall_not_sell_to_north_korea_shield_silent(self):
+        r = score_document(
+            ["The parties shall not sell any products into North Korea."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_may_not_export_to_iran_shield_silent(self):
+        r = score_document(["Customer may not export the software to Iran."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_do_not_sell_to_sudan_shield_silent(self):
+        r = score_document(["We do not sell to Sudan or Myanmar."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_sales_to_cuba_not_authorized_shield_silent(self):
+        r = score_document(["Sales to Cuba are not authorized."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_distributor_not_permitted_to_sell_to_iran_shield_silent(self):
+        r = score_document(
+            ["The distributor is not permitted to sell to Iran."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_sales_into_sudan_forbidden_shield_silent(self):
+        r = score_document(["Sales into Sudan are forbidden."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_export_of_goods_to_cuba_prohibited_shield_silent(self):
+        r = score_document(["Export of any goods to Cuba is prohibited."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    def test_neither_party_shall_export_to_north_korea_shield_silent(self):
+        r = score_document(
+            ["Neither party shall export goods to North Korea."], "d")
+        assert all(p.rule_id != "R-EXP-2" for p in r.penalties)
+
+    # ---- unprotected-jurisdiction guards (want: R-EXP-2 still fires) ----
+
+    def test_may_export_to_iran_still_flagged(self):
+        r = score_document(["Customer may export the software to Iran."], "d")
+        hits = [p.rule_id for p in r.penalties]
+        assert "R-EXP-2" in hits
+
+    def test_sales_into_sudan_permitted_still_flagged(self):
+        r = score_document(["Sales into Sudan are permitted."], "d")
+        assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
+
+    def test_sells_software_in_myanmar_still_flagged(self):
+        r = score_document(["The distributor sells software in Myanmar."], "d")
+        assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
+
+    def test_ships_goods_to_cuba_still_flagged(self):
+        r = score_document(["The company ships goods to Cuba."], "d")
+        assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
+
+    def test_export_to_north_korea_allowed_still_flagged(self):
+        r = score_document(
+            ["Export of the software to North Korea is allowed."], "d")
+        assert any(p.rule_id == "R-EXP-2" for p in r.penalties)
