@@ -8040,3 +8040,101 @@ class TestCycle63Precision:
             ["The parties shall export the deliverables worldwide without restriction."], "d")
         hit_ids = [p.rule_id for p in r.penalties]
         assert "R-EXP-1" in hit_ids and "R-EXP-4" in hit_ids
+
+
+class TestCycle64Precision:
+    """Cycle-64 precision: R-DATA-5 bounded-retention bound variants.
+
+    The R-DATA-5 exclusion already covered "for a period of", "up to",
+    "for N days/weeks/months", "within N of termination", and "no more than".
+    This cycle widens the bound family to the remaining common drafting
+    variants: "for no longer than", "for at most", "for a duration of",
+    "for a term of", "until N [unit] after/following termination", and the
+    standalone comma-joined "but no longer than".  Genuinely unbounded
+    retention (indefinitely / permanently / no less than / for any period of
+    time) must keep firing.
+    """
+
+    # ---- bounded-retention shields (want: silent, no R-DATA-5) ----
+
+    def test_for_no_longer_than_shield_silent(self):
+        r = score_document(
+            ["Following termination, Provider may retain copies of personal data for no longer than 90 days."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_for_at_most_shield_silent(self):
+        r = score_document(
+            ["Provider may keep customer data for at most 12 months after expiry of this agreement."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_for_a_duration_of_shield_silent(self):
+        r = score_document(
+            ["Provider shall retain such data for a duration of 90 days after termination."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_for_a_term_of_shield_silent(self):
+        r = score_document(
+            ["Provider shall retain such data for a term of 90 days after termination."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_until_n_days_after_termination_shield_silent(self):
+        r = score_document(
+            ["Provider may retain such data until 90 days after termination of this agreement."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_until_n_months_following_termination_shield_silent(self):
+        r = score_document(
+            ["Provider may retain such data until 180 days following termination."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_standalone_no_longer_than_shield_silent(self):
+        r = score_document(
+            ["Provider shall retain customer data, but no longer than 90 days after termination."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    def test_for_a_maximum_of_shield_silent(self):
+        r = score_document(
+            ["Provider shall retain billing records for a maximum of seven years following termination."],
+            "d",
+        )
+        assert all(p.rule_id != "R-DATA-5" for p in r.penalties)
+
+    # ---- unbounded-retention guards (want: R-DATA-5 still fires) ----
+
+    def test_indefinitely_still_flagged(self):
+        r = score_document(
+            ["Provider shall retain such data indefinitely after termination."], "d")
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_permanently_still_flagged(self):
+        r = score_document(
+            ["Provider may retain personal data permanently after termination."], "d")
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_no_less_than_still_flagged(self):
+        r = score_document(
+            ["Provider shall retain copies of personal data for no less than 90 days after termination."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
+
+    def test_any_period_of_time_still_flagged(self):
+        r = score_document(
+            ["Provider shall retain copies of personal data for any period of time after termination."],
+            "d",
+        )
+        assert any(p.rule_id == "R-DATA-5" for p in r.penalties)
