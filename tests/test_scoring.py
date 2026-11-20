@@ -7975,3 +7975,68 @@ class TestCycle62Precision:
         r = score_document(
             ["Data may be retained for statistical purposes."], "d")
         assert all(p.rule_id != "R-DATA-3" for p in r.penalties)
+
+
+class TestCycle63Precision:
+    """Cycle-63 precision cases for R-EXP-1/R-EXP-4 (export protective wording)."""
+
+    # ---- protective-law shields (over-fire fixes) ----
+
+    def test_subject_to_export_control_laws_shield_silent(self):
+        r = score_document(
+            ["Exports are subject to the export control laws of the United States."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_hyphenated_export_control_laws_shield_silent(self):
+        r = score_document(
+            ["Exports are subject to applicable export-control laws."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_governed_by_export_control_laws_shield_silent(self):
+        r = score_document(
+            ["Exports are governed by the export-control laws of the United States."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_not_subject_to_itar_shield_silent(self):
+        r = score_document(
+            ["The software is not subject to the ITAR."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_relevant_export_licence_shield_silent(self):
+        r = score_document(
+            ["Exports shall be made under the relevant export licence."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_in_accordance_with_valid_export_license_shield_silent(self):
+        r = score_document(
+            ["Exports may be made in accordance with a valid export license."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_in_accordance_with_export_laws_shield_silent(self):
+        r = score_document(
+            ["Exports will be made in accordance with the export laws of the relevant countries."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_will_not_export_to_sanctioned_country_shield_silent(self):
+        r = score_document(
+            ["The parties will not export the software to any sanctioned country."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    def test_nothing_authorizes_export_to_iran_shield_silent(self):
+        r = score_document(
+            ["Nothing in this agreement authorizes the export of the software to Iran."], "d")
+        assert all(p.rule_id not in ("R-EXP-1", "R-EXP-4") for p in r.penalties)
+
+    # ---- uncontrolled-export controls (under-fire guards) ----
+
+    def test_may_export_to_any_country_still_flagged(self):
+        r = score_document(
+            ["Customer may export the software to any country."], "d")
+        hits = [p.rule_id for p in r.penalties]
+        assert "R-EXP-1" in hits and "R-EXP-4" in hits
+
+    def test_export_worldwide_without_restriction_still_flagged(self):
+        r = score_document(
+            ["The parties shall export the deliverables worldwide without restriction."], "d")
+        hit_ids = [p.rule_id for p in r.penalties]
+        assert "R-EXP-1" in hit_ids and "R-EXP-4" in hit_ids
