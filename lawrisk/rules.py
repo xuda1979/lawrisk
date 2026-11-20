@@ -965,18 +965,23 @@ RULES: List[Rule] = [
         rule_id="R-DATA-3",
         dimension=Dimension.DATA,
         pattern=re.compile(
-            r"(?:process|use|sell|disclos|retain)(?:ing|es|ed|s)?"
-            r"[^.]{0,30}data[^.]{0,20}"
-            r"(?:for any (?:purpose|reason)(?: whatsoever)?|for any other purpose|"
-            r"for any (?:and all|other) purposes?|"
-            r"for (?:its|our) own(?: independent)?(?: business)? purposes|"
+            r"(?:process(?:es|ed|ing)?|use(?:s|d)?|sell(?:s|ing)?|disclos(?:e|es|ed|ing)?|"
+            r"retain(?:s|ed|ing)?|share(?:s|d|ing)?|collect(?:s|ed|ing)?|store(?:s|d|ing)?|"
+            r"transfer(?:s|red|ring)?)"
+            r"[^.]{0,30}(?:data|information)[^.]{0,20}"
+            r"(?:for any (?:purpose|reason)(?: whatsoever)?|for any (?:other|and all|or all) purposes?|"
+            r"for all purposes?|for whatever purpose|"
+            r"for (?:its|our) own"
+            r"(?: (?:independent|business|commercial|marketing|advertising|internal|unrelated|operational)){0,2}\s+purposes?|"
             r"for (?:marketing|advertising|commercial|unrelated) purposes|"
             r"for purposes? other than|unlimited|without limitation)|"
-            r"data[^.]{0,25}(?:may|can|shall|will|is|are)(?: not)?\s+be\s+"
-            r"(?:used|processed|sold|disclosed|retained)[^.]{0,15}(?:as\s+)?"
-            r"(?:for any (?:purpose|reason)(?: whatsoever)?|for any other purpose|"
-            r"for any (?:and all|other) purposes?|"
-            r"for (?:its|our) own(?: independent)?(?: business)? purposes|"
+            r"(?:data|information)[^.]{0,25}(?:may|can|shall|will|is|are)(?: not)?\s+(?:be\s+)?"
+            r"(?:used|processed|sold|disclosed|retained|shared|collected|stored|held|kept|transferred)"
+            r"[^.]{0,15}(?:as\s+)?"
+            r"(?:for any (?:purpose|reason)(?: whatsoever)?|for any (?:other|and all|or all) purposes?|"
+            r"for all purposes?|for whatever purpose|"
+            r"for (?:its|our) own"
+            r"(?: (?:independent|business|commercial|marketing|advertising|internal|unrelated|operational)){0,2}\s+purposes?|"
             r"for (?:marketing|advertising|commercial|unrelated) purposes|"
             r"for purposes? other than|unlimited|without limitation)",
             re.IGNORECASE,
@@ -987,9 +992,10 @@ RULES: List[Rule] = [
             r"required by (?:applicable )?(?:law|regulation)|"
             r"to meet (?:its|their) legal (?:and regulatory )?obligations?|"
             r"legal (?:and regulatory )?obligations?|"
-            r"(?:shall|will|may|must)\s+not[^.;]{0,60}"
-            r"(?:process|use|sell|disclos|retain)(?:ing|e|es|s)?"
-            r"[^.;]{0,40}(?:for|to)\s+(?:any\s+)?purpose|"
+            r"(?:shall|will|may|must|is|are)\s+not[^.;]{0,60}"
+            r"(?:process(?:es|ed|ing)?|use(?:s|d)?|sell(?:s|ing)?|disclos(?:e|es|ed|ing)?|retain(?:s|ed|ing)?|"
+            r"share(?:s|d|ing)?|collect(?:s|ed|ing)?|store(?:s|d|ing)?|transfer(?:s|red|ring)?)"
+            r"[^.;]{0,40}(?:for|to)\s+(?:(?:any\s+)?[\w&.\-]+(?:\s+[\w&.\-]+){0,3}\s+)?purpose(?:s)?|"
             r"(?:for|to)\s+(?:any\s+)?purpose(?:s)?\s+(?:other than|except\b)"
             r"(?![^.;]{0,40}\b(?:including|such as)\b))",
             re.IGNORECASE,
