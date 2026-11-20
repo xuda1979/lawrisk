@@ -1013,6 +1013,10 @@ RULES: List[Rule] = [
         exclusion=re.compile(
             r"(?:comply (?:with|ing)|in compliance|"
             r"subject to (?:[^.]{0,20})?(?:export|sanction)s?|"
+            r"(?:governed by|in accordance with) (?:the |applicable |relevant )?"
+            r"(?:export|sanctions?)(?:[- ]?controls?| laws?| regulations?| rules?| requirements?)|"
+            r"(?:(?:is|are|may|shall|will|must|can) )?not subject to (?:the )?"
+            r"(?:export|sanction|embargo|itar|export[- ]?control)\b|"
             r"subject to (?:the )?(?:prior |written |express ){0,2}"
             r"(?:authori[sz](?:ation)?|approval|permission|consent)|"
             r"responsible for obtaining|shall ensure|shall obtain|shall be responsible|counter[- ]sanctions|"
@@ -1040,10 +1044,16 @@ RULES: List[Rule] = [
             r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies))|"
             r"(?:excluding|excluded|exclude|except\b)[^.;]{0,80}"
             r"(?:regions?|territor(?:y|ies)|jurisdiction(?:s)?|countr(?:y|ies)|sanctioned)|"
-            r"(?:\bunder|pursuant to) (?:a |the |an |valid |applicable |appropriate |current "
-            r"|export |re[- ]?export |sanctions? ){0,3}licen[cs]e(?:s)?\b|"
+            r"(?:\bunder|pursuant to|in accordance with) (?:a |the |an |valid |applicable |appropriate "
+            r"|current |export |re[- ]?export |sanctions? |relevant ){0,3}licen[cs]e(?:s)?\b|"
             r"\blicen[cs]ed[^.;]{0,40}(?:under|pursuant to)[^.;]{0,25}"
-            r"(?:export|sanction|licen[cs]e)s?\b)",
+            r"(?:export|sanction|licen[cs]e)s?\b|"
+            r"nothing in (?:this|the) (?:agreement|contract|clause|section|document)"
+            r"[^.;]{0,40}(?:authori[sz](?:es|e)?|permit|allow|direct|sanction)"
+            r"[^.;]{0,60}(?:export|exportation)[^.;]{0,40}(?:to|into|in)[^.;]{0,30}"
+            r"(?:(?:sanctioned|prohibited|restricted|embargoed)[^.;]{0,20}"
+            r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies))"
+            r"|\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b))",
             re.IGNORECASE,
         ),
         severity=25,
@@ -1214,7 +1224,12 @@ ABSENCE_RULES: List[Rule] = [
         pattern=re.compile(
             r"export control|compliance with (?:applicable )?(?:export|sanctions)|sanctions compliance|"
             r"export (?:licens|regulation|law)|sanctions (?:licens|regulation|law)|"
-            r"re[- ]?export|diversion|export controls?|"
+            r"re[- ]?export|diversion|export controls?|export[- ]?control"
+            r"(?: (?:laws?|regulations?|rules?|requirements?))?|"
+            r"(?:governed by|in accordance with|subject to) (?:the |applicable |relevant )?"
+            r"(?:export|sanctions?)(?:[- ]?controls?| laws?| regulations?| rules?| requirements?)|"
+            r"(?:is|are|may|shall|will|must|can)? not subject to (?:the )?"
+            r"(?:export|sanction|embargo|itar|export[- ]?control)\b|"
             r"(?:comply|compliance)[^.]{0,30}(?:controls?|measures?)|"
             r"(?:comply|compliance)[^.]{0,40}(?:with all applicable laws?|with applicable laws?)"
             r"[^.]{0,40}(?:including|such as)[^.]{0,40}(?:export|sanction)|"
@@ -1240,8 +1255,18 @@ ABSENCE_RULES: List[Rule] = [
             r"(?:may|shall|will|must|can) not (?:be )?(?:export(?:ed|ing)?|re[- ]?export(?:ed|ing)?)"
             r"[^.;]{0,50}without[^.;]{0,40}"
             r"(?:prior |written |express )?(?:authori[sz](?:ation)?|approval|permission|consent)|"
+            r"(?:may|shall|will|must|can) not (?:be )?(?:export(?:ed)?|ship(?:ped)?|sell|sold|"
+            r"deliver(?:ed)?|transfer(?:red)?|provide(?:d)?)[^.;]{0,60}(?:to|into|in)"
+            r"[^.;]{0,30}(?:any )?(?:sanctioned|prohibited|restricted|embargoed)[^.;]{0,20}"
+            r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies))|"
+            r"nothing in (?:this|the) (?:agreement|contract|clause|section|document)"
+            r"[^.;]{0,40}(?:authori[sz](?:es|e)?|permit|allow|direct|sanction)"
+            r"[^.;]{0,60}(?:export|exportation)[^.;]{0,40}(?:to|into|in)[^.;]{0,30}"
+            r"(?:(?:sanctioned|prohibited|restricted|embargoed)[^.;]{0,20}"
+            r"(?:jurisdiction(?:s)?|countr(?:y|ies)|destination(?:s)?|territor(?:y|ies))"
+            r"|\b(?:cuba|iran|syria|north korea|crimea|sudan|myanmar)\b)|"
             r"(?:\bunder|pursuant to) (?:a |the |an |valid |applicable |appropriate |current "
-            r"|export |re[- ]?export |sanctions? ){0,3}licen[cs]e(?:s)?\b|"
+            r"|export |re[- ]?export |sanctions? |relevant ){0,3}licen[cs]e(?:s)?\b|"
             r"\blicen[cs]ed[^.;]{0,40}(?:under|pursuant to)[^.;]{0,25}"
             r"(?:export|sanction|licen[cs]e)s?\b",
             re.IGNORECASE,
