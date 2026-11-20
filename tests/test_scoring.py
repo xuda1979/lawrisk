@@ -7611,3 +7611,87 @@ class TestCycle58Precision:
         r = score_document(
             ["Neither party may assign this agreement without the other's consent."], "d")
         assert all(p.rule_id != "R-COMM-4" for p in r.penalties)
+
+
+class TestCycle59Precision:
+    """R-COMM-5: unilateral amendment / sole-discretion-to-change-terms precision probes."""
+
+    def test_amend_any_provision_without_notice_flagged(self):
+        r = score_document(
+            ["Provider may amend any provision of this agreement without prior notice."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_revise_its_terms_without_consent_flagged(self):
+        r = score_document(
+            ["Provider may revise its terms without consent."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_change_such_terms_at_any_time_flagged(self):
+        r = score_document(
+            ["Provider may change such terms at any time."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_may_at_any_time_amend_flagged(self):
+        r = score_document(
+            ["Provider may at any time amend this agreement."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_agreement_may_be_amended_from_time_to_time_flagged(self):
+        r = score_document(
+            ["The agreement may be amended by Provider from time to time."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_make_amendments_to_agreement_flagged(self):
+        r = score_document(
+            ["Provider may make amendments to this agreement at any time."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_terms_of_agreement_without_the_consent_flagged(self):
+        r = score_document(
+            ["Provider may amend the terms of this agreement without the consent of Customer."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_shall_have_the_right_to_amend_flagged(self):
+        r = score_document(
+            ["Provider shall have the right to amend these terms at any time."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_retains_right_to_update_terms_flagged(self):
+        r = score_document(
+            ["Provider retains the right to update the terms and conditions at any time."], "d")
+        assert any(p.rule_id == "R-COMM-5" for p in r.penalties)
+
+    def test_write_consent_of_customer_stays_silent(self):
+        r = score_document(
+            ["Provider may amend this agreement with the prior written consent of Customer."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_mutual_agreement_stays_silent(self):
+        r = score_document(
+            ["The parties may amend this agreement at any time by written agreement."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_legal_compliance_only_stays_silent(self):
+        r = score_document(
+            ["Provider may amend this agreement only for the purpose of complying with legal requirements."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_thirty_days_notice_stays_silent(self):
+        r = score_document(
+            ["Provider shall give 30 days notice before amending the terms."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_each_party_with_consent_stays_silent(self):
+        r = score_document(
+            ["Each party may amend this agreement upon the prior written consent of the other party."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_unqualified_discretion_still_silent(self):
+        r = score_document(
+            ["Provider may amend terms at its discretion."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
+
+    def test_absolute_discretion_of_provider_still_silent(self):
+        r = score_document(
+            ["Provider may amend terms at the Vendor's discretion."], "d")
+        assert all(p.rule_id != "R-COMM-5" for p in r.penalties)
